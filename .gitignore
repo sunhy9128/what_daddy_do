@@ -1,0 +1,41 @@
+# Expo
+.expo/
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+*.pkl
+
+# Supabase
+supabase/.temp
+
+# Tool config
+.deepseek/
+.playwright-mcp/
+
+# Design artifacts
+design-bundle/
+
+# Build artifacts
+*.js.map
+*.js.bak
+
+# Project-specific generated files
+src/lib/api.js
+src/lib/supabase.js
