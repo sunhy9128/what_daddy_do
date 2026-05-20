@@ -28,6 +28,7 @@ supabase/.temp
 # Tool config
 .deepseek/
 .playwright-mcp/
+.zcf/
 
 # Design artifacts
 design-bundle/
