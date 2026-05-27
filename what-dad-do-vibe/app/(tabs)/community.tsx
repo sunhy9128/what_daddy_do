@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useApp } from '../../src/context/AppContext';
+import { useApp, CommunityPost } from '../../src/context/AppContext';
+import { useAuth } from '../../src/context/AuthContext';
+import { toggleLike, getLikeStatus, getComments, addComment } from '../../src/lib/api';
 import { Card } from '../../src/components/atoms';
 import { PostCard, KnowledgeCard, SearchBar } from '../../src/components/molecules';
 import { StageTabs } from '../../src/components/molecules';
+import { Avatar, Badge } from '../../src/components/atoms';
 import { colors, spacing, typography } from '../../src/styles/tokens';
+import { PostComment } from '../../src/lib/supabase';
+import { formatRelativeTime } from '../../src/lib/time';
 
 const CATEGORIES = ['推荐', '知识', '经验', '问答'];
 const KNOWLEDGE_ITEMS = [
@@ -20,6 +25,69 @@ export default function CommunityScreen() {
   const [searchText, setSearchText] = useState('');
   const [activeCategory, setActiveCategory] = useState('推荐');
   const [loading, setLoading] = useState(true);
+
+  // 本地帖子列表（在点赞/评论后同步更新计数）
+  const [postList, setPostList] = useState<CommunityPost[]>([]);
+  useEffect(() => {
+    setPostList(state.communityPosts);
+  }, [state.communityPosts]);
+
+  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [comments, setComments] = useState<PostComment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
+  const [commentLimit, setCommentLimit] = useState(3);
+  const { user } = useAuth();
+
+  // 选中帖子时加载互动数据
+  useEffect(() => {
+    if (!selectedPost || !user) return;
+    setLiked(false);
+    setLikesCount(selectedPost.likes);
+    setComments([]);
+    setCommentLimit(3);
+    getLikeStatus(selectedPost.id, user.id).then(setLiked);
+    getComments(selectedPost.id).then(setComments);
+  }, [selectedPost, user]);
+
+  const likingRef = useRef(false);
+  const handleLike = async () => {
+    if (likingRef.current || !selectedPost || !user) return;
+    likingRef.current = true;
+    try {
+      const result = await toggleLike(selectedPost.id, user.id);
+    setLiked(result.liked);
+    setLikesCount(result.likesCount);
+    // 同步更新列表中的点赞数
+    setPostList(prev => prev.map(p =>
+      p.id === selectedPost.id ? { ...p, likes: result.likesCount } : p
+    ));
+    } finally {
+      likingRef.current = false;
+    }
+  };
+
+  const handleSendComment = async () => {
+    if (!selectedPost || !user || !commentText.trim()) return;
+    setSendingComment(true);
+    try {
+      const newComment = await addComment(selectedPost.id, user.id, commentText.trim());
+      setComments(prev => [...prev, newComment]);
+      setCommentText('');
+      // 新评论发布后展开全部，确保能看到
+      setCommentLimit(999);
+      // 同步更新列表中的评论数
+      setPostList(prev => prev.map(p =>
+        p.id === selectedPost!.id ? { ...p, comments: p.comments + 1 } : p
+      ));
+    } catch (error) {
+      Alert.alert('发送失败', '请重试');
+    } finally {
+      setSendingComment(false);
+    }
+  };
 
   useEffect(() => {
     loadPosts();
@@ -91,24 +159,132 @@ export default function CommunityScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>爸爸经验</Text>
         </View>
-        {state.communityPosts.slice(0, 5).map(post => (
+        {postList.slice(0, 5).map(post => (
           <PostCard
             key={post.id}
             authorName={post.authorName}
             stage={post.category}
-            time="最近"
+            time={formatRelativeTime(post.createdAt)}
             category="经验"
             content={post.content}
             likes={post.likes}
             comments={post.comments}
+            onPress={() => setSelectedPost(post)}
           />
         ))}
-        {state.communityPosts.length === 0 && (
+        {postList.length === 0 && (
           <Text style={styles.emptyText}>暂���爸爸经验，快来分享</Text>
         )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* FAB — 发布帖子 */}
+      <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('提示', '发布功能即将上线')} activeOpacity={0.8}>
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
+
+      {/* 帖子详情弹窗 — 小红书风格 */}
+      <Modal visible={!!selectedPost} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedPost && (
+              <>
+                {/* 关闭按钮（独立，不占布局） */}
+                <View style={styles.modalTopBar}>
+                  <TouchableOpacity
+                    style={styles.modalClose}
+                    onPress={() => setSelectedPost(null)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Text style={styles.modalCloseIcon}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 作者 */}
+                <View style={styles.modalAuthor}>
+                  <Avatar name={selectedPost.authorName} size="medium" />
+                  <Text style={styles.modalAuthorName}>{selectedPost.authorName}</Text>
+                </View>
+
+                {/* 标题 */}
+                <Text style={styles.modalPostTitle}>{selectedPost.title}</Text>
+
+                {/* 正文 */}
+                <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                  <Text style={styles.modalBodyText}>{selectedPost.content}</Text>
+                </ScrollView>
+
+                {/* 信息 + 操作 — 内容下方 */}
+                <View style={styles.modalMetaRow}>
+                  <Text style={styles.modalMetaText}>{selectedPost.category}</Text>
+                  <Text style={styles.modalMetaDot}>·</Text>
+                  <Text style={styles.modalMetaText}>{formatRelativeTime(selectedPost.createdAt)}</Text>
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity style={styles.modalAction} onPress={handleLike}>
+                    <Text style={[styles.modalActionIcon, liked && styles.modalActionIconLiked]}>
+                      {liked ? '♥' : '♡'}
+                    </Text>
+                    <Text style={styles.modalActionCount}>{likesCount}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.modalAction}>
+                    <Text style={styles.modalActionIcon}>💬</Text>
+                    <Text style={styles.modalActionCount}>{comments.length}</Text>
+                  </View>
+                </View>
+
+                {/* 分隔线 */}
+                {comments.length > 0 && <View style={styles.modalDivider} />}
+
+                {/* 评论列表 */}
+                {comments.length > 0 && (
+                  <View style={styles.commentList}>
+                    <ScrollView style={styles.commentScroll} nestedScrollEnabled>
+                      {comments.slice(0, commentLimit).map(c => (
+                        <View key={c.id} style={styles.commentItem}>
+                          <Text style={styles.commentAuthor}>{c.user_id.slice(0, 8)}</Text>
+                          <Text style={styles.commentContent}>{c.content}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                    {comments.length > commentLimit && (
+                      <TouchableOpacity
+                        style={styles.commentMoreBtn}
+                        onPress={() => setCommentLimit(prev => prev + 5)}
+                      >
+                        <Text style={styles.commentMoreText}>
+                          查看更多评论（共 {comments.length} 条）
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
+                {/* 评论输入 */}
+                <View style={styles.commentInputRow}>
+                  <TextInput
+                    style={styles.commentInput}
+                    placeholder="写评论..."
+                    placeholderTextColor={colors.muted}
+                    value={commentText}
+                    onChangeText={setCommentText}
+                    multiline={false}
+                  />
+                  <TouchableOpacity
+                    style={[styles.commentSend, (!commentText.trim() || sendingComment) && styles.commentSendDisabled]}
+                    onPress={handleSendComment}
+                    disabled={!commentText.trim() || sendingComment}
+                  >
+                    <Text style={styles.commentSendText}>{sendingComment ? '…' : '发送'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -123,4 +299,188 @@ const styles = StyleSheet.create({
   sectionHeader: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   sectionTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, textTransform: 'uppercase' },
   emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+  fab: {
+    position: 'absolute',
+    bottom: 90,
+    right: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  fabIcon: { fontSize: 28, color: colors.surface, lineHeight: 30 },
+
+  // 详情弹窗 — 小红书风格
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    maxHeight: '85%',
+    width: '100%',
+    maxWidth: 500,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl,
+  },
+  modalTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: spacing.md,
+  },
+  modalAuthor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  modalAuthorName: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+  },
+  modalClose: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseIcon: {
+    fontSize: 13,
+    color: colors.muted,
+    fontWeight: '600',
+  },
+  modalPostTitle: {
+    ...typography.title2,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  modalBody: {
+    maxHeight: 300,
+    marginBottom: spacing.lg,
+  },
+  modalBodyText: {
+    ...typography.body,
+    color: colors.fgSecondary,
+    lineHeight: 26,
+  },
+  modalMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+    paddingTop: spacing.md,
+  },
+  modalMetaText: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
+  modalMetaDot: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
+  modalDivider: {
+    height: 0.5,
+    backgroundColor: colors.border,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  modalAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  modalActionIcon: {
+    fontSize: 18,
+  },
+  modalActionIconLiked: {
+    color: colors.error,
+  },
+  modalActionCount: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
+
+  // 评论
+  commentList: {
+    marginTop: spacing.md,
+    borderTopWidth: 0.5,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+  },
+  commentScroll: {
+    maxHeight: 200,
+  },
+  commentItem: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  commentAuthor: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: colors.accent,
+    minWidth: 60,
+  },
+  commentContent: {
+    ...typography.footnote,
+    color: colors.fg,
+    flex: 1,
+    lineHeight: 20,
+  },
+  commentMoreBtn: {
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  commentMoreText: {
+    ...typography.footnote,
+    color: colors.accent,
+    fontWeight: '500',
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  commentInput: {
+    flex: 1,
+    ...typography.footnote,
+    color: colors.fg,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  commentSend: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  commentSendDisabled: {
+    opacity: 0.5,
+  },
+  commentSendText: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: '#fff',
+  },
 });

@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#34c759',
+    backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   streakLabel: {
     ...typography.footnote,
-    color: '#34c759',
+    color: colors.success,
     fontWeight: '600',
   },
   infoButton: {

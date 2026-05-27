@@ -1,41 +1,40 @@
-// Design Tokens - Based on design-spec.md
-// 爸爸去哪了 App 温暖实用男风格
+// Kami Design Tokens
+// Warm parchment · Ink-blue accent · Editorial restraint
 
 export const colors = {
   // 主色调
-  primary: '#E89B5A',        // oklch(58% 0.15 35)
-  primaryLight: '#F2C08A',  // oklch(70% 0.12 35)
-  primaryDark: '#D67A3D',    // oklch(48% 0.12 35)
+  primary: '#2C3E6B',        // oklch(36% 0.06 270) 墨蓝
+  primaryLight: '#E8ECF4',  // oklch(92% 0.008 270)
+  primaryDark: '#1A2745',    // oklch(25% 0.05 270)
 
   // 背景色
-  bg: '#FAF5F0',             // oklch(98% 0.008 240) 奶白
-  surface: '#FFFFFF',        // oklch(100% 0 0) 纯白
-  surfaceSecondary: '#F5F1ED', // oklch(97% 0.005 240) 浅灰
+  bg: '#F5F0E8',             // oklch(96% 0.01 60)  暖羊皮纸
+  surface: '#FCFAF5',        // oklch(99% 0.006 60) 暖白
+  surfaceSecondary: '#F0ECE4', // oklch(95% 0.008 60)
 
   // 文字色
-  textPrimary: '#2D2D2D',     // oklch(18% 0.012 250) 深灰
-  textSecondary: '#6B6B6B',  // oklch(54% 0.012 250) 中灰
-  textTertiary: '#A3A3A3',   // oklch(72% 0.008 240) 浅灰
+  textPrimary: '#1A1A2E',     // oklch(18% 0.015 270) 浓墨
+  textSecondary: '#5A5A6E',  // oklch(45% 0.012 270) 中墨
+  textTertiary: '#8A8A9A',   // oklch(62% 0.008 270) 淡墨
 
   // 标签色
-  tagShort: '#5D9CEC',      // oklch(55% 0.16 210) 蓝色 短期任务
-  tagLong: '#5DD79F',       // oklch(58% 0.16 145) 绿色 长期任务
-  tagCustom: '#F5C65D',     // oklch(68% 0.18 45) 黄色 自建任务
-  tagDone: '#E5E5E5',       // oklch(72% 0.008 240) 灰色 已完成
+  tagShort: '#4A6B8A',      // oklch(48% 0.06 250)
+  tagLong: '#4A7C5E',       // oklch(52% 0.08 155)
+  tagCustom: '#B8963E',     // oklch(62% 0.10 85)
+  tagDone: '#D4D0C8',       // oklch(82% 0.005 60)
 
   // 边框/分隔
-  border: '#E8E8E8',         // oklch(92% 0.005 250)
-  divider: '#F0F0F0',       // oklch(94% 0.003 240)
+  border: '#E8E4D9',         // oklch(91% 0.006 60)
+  divider: '#F0ECE4',        // oklch(94% 0.005 60)
 
   // 功能色
-  success: '#5DD79F',
-  warning: '#F5C65D',
-  error: '#E85D5D',
-  info: '#5D9CEC',
+  success: '#4A7C5E',
+  warning: '#B8963E',
+  error: '#B84A4A',
+  info: '#4A6B8A',
 } as const;
 
 export const typography = {
-  // 字号
   fontTitle: 28,
   fontHeading: 20,
   fontSubhead: 16,
@@ -43,12 +42,10 @@ export const typography = {
   fontCaption: 13,
   fontTag: 12,
 
-  // 字重
   fontWeightBold: 600,
   fontWeightMedium: 500,
   fontWeightRegular: 400,
 
-  // 行高
   lineHeightTight: 1.2,
   lineHeightNormal: 1.4,
   lineHeightRelaxed: 1.6,
@@ -73,30 +70,30 @@ export const borderRadius = {
 
 export const shadows = {
   sm: {
-    shadowColor: '#000',
+    shadowColor: '#1A1A2E',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
   md: {
-    shadowColor: '#000',
+    shadowColor: '#1A1A2E',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
   },
   lg: {
-    shadowColor: '#000',
+    shadowColor: '#1A1A2E',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 5,
   },
   xl: {
-    shadowColor: '#000',
+    shadowColor: '#1A1A2E',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.10,
     shadowRadius: 32,
     elevation: 8,
   },

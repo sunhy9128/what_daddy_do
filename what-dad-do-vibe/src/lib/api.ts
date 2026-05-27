@@ -1,11 +1,11 @@
-import { supabase, Task, Record, CommunityPost, PregnancyStage } from '../lib/supabase';
+import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostLike, PostComment, PregnancyStage } from '../lib/supabase';
 
 // 预设任务类型
 export interface PresetTask {
   id: string;
   title: string;
   description: string;
-  stage: 'preconception' | 'first' | 'second' | 'third';
+  stage: 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
   type: 'prenatal' | 'daily' | 'custom' | 'checkin';
   due_date?: string;
   created_at?: string;
@@ -88,19 +88,6 @@ export async function toggleTaskComplete(id: string, isCompleted: boolean): Prom
   if (error) throw error;
 }
 
-// 日常任务计数增加
-export async function incrementDailyCount(id: string, currentCount: number): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
-  const { error } = await supabase
-    .from('tasks')
-    .update({
-      daily_count: currentCount + 1,
-      daily_date: today
-    })
-    .eq('id', id);
-  if (error) throw error;
-}
-
 // 记录 CRUD
 export async function getRecords(userId: string): Promise<Record[]> {
   const { data, error } = await supabase
@@ -140,5 +127,189 @@ export async function getCommunityPosts(category?: string): Promise<CommunityPos
 
   const { data, error } = await query;
   if (error) throw error;
+
+  // 从 post_likes / post_comments 取真实计数
+  const posts = data || [];
+  const enriched = await Promise.all(posts.map(async (post) => {
+    const { count: likesCount } = await supabase
+      .from('post_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', post.id);
+    const { count: commentsCount } = await supabase
+      .from('post_comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', post.id);
+    return { ...post, likes: likesCount || 0, comments: commentsCount || 0 };
+  }));
+
+  return enriched;
+}
+
+// 紧急关注 CRUD
+export async function getUrgentNotes(userId: string): Promise<UrgentNote[]> {
+  const { data, error } = await supabase
+    .from('urgent_notes')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
   return data || [];
+}
+
+export async function createUrgentNote(note: Partial<UrgentNote>): Promise<UrgentNote> {
+  const { data, error } = await supabase
+    .from('urgent_notes')
+    .insert(note)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function dismissUrgentNote(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('urgent_notes')
+    .update({ is_active: false, dismissed_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// 宝宝 CRUD
+export async function getBabies(userId: string): Promise<Baby[]> {
+  const { data, error } = await supabase
+    .from('babies')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createBaby(baby: Partial<Baby>): Promise<Baby> {
+  const { data, error } = await supabase
+    .from('babies')
+    .insert(baby)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateBaby(id: string, updates: Partial<Baby>): Promise<Baby> {
+  const { data, error } = await supabase
+    .from('babies')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// 孕期阶段计算
+export type StageKey = 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
+
+export function calculateStageFromDueDate(dueDate: string): {
+  stage: StageKey;
+  weeksPregnant: number;
+  stageLabel: string;
+} {
+  const today = new Date();
+  const due = new Date(dueDate);
+  const diffMs = due.getTime() - today.getTime();
+  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const weeksPregnant = Math.max(0, Math.floor((280 - daysLeft) / 7));
+
+  let stage: StageKey;
+  let stageLabel: string;
+
+  if (daysLeft > 280) {
+    // 距离预产期超过40周，还没到孕早期
+    stage = 'preconception';
+    stageLabel = '备孕';
+  } else if (weeksPregnant <= 12) {
+    stage = 'first';
+    stageLabel = '孕早期';
+  } else if (weeksPregnant <= 27) {
+    stage = 'second';
+    stageLabel = '孕中期';
+  } else if (weeksPregnant <= 40) {
+    stage = 'third';
+    stageLabel = '孕晚期';
+  } else {
+    stage = 'postpartum';
+    stageLabel = '产后';
+  }
+
+  return { stage, weeksPregnant, stageLabel };
+}
+
+// 帖子互动
+export async function toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
+  // 检查是否已点赞
+  const { data: existing } = await supabase
+    .from('post_likes')
+    .select('id')
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) {
+    // 取消点赞
+    await supabase.from('post_likes').delete().eq('id', existing.id);
+    const { count } = await supabase
+      .from('post_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId);
+    // 同步更新 community_posts 计数
+    await supabase.from('community_posts').update({ likes: count || 0 }).eq('id', postId);
+    return { liked: false, likesCount: count || 0 };
+  } else {
+    // 点赞
+    await supabase.from('post_likes').insert({ post_id: postId, user_id: userId });
+    const { count } = await supabase
+      .from('post_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId);
+    // 同步更新 community_posts 计数
+    await supabase.from('community_posts').update({ likes: count || 0 }).eq('id', postId);
+    return { liked: true, likesCount: count || 0 };
+  }
+}
+
+export async function getLikeStatus(postId: string, userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('post_likes')
+    .select('id')
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return !!data;
+}
+
+export async function getComments(postId: string): Promise<PostComment[]> {
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('*')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function addComment(postId: string, userId: string, content: string): Promise<PostComment> {
+  const { data, error } = await supabase
+    .from('post_comments')
+    .insert({ post_id: postId, user_id: userId, content })
+    .select()
+    .single();
+  if (error) throw error;
+  // 同步更新 community_posts 评论计数
+  const { count } = await supabase
+    .from('post_comments')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', postId);
+  await supabase.from('community_posts').update({ comments: count || 0 }).eq('id', postId);
+  return data;
 }

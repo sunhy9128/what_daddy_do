@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { useApp } from '../../src/context/AppContext';
@@ -18,12 +17,13 @@ const STAGES = [
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, toggleTask } = useApp();
+  const { state, toggleTask, dismissUrgentNote } = useApp();
   const { session, loading: authLoading } = useAuth();
-  const [currentStage, setCurrentStage] = useState(state.stage);
 
-  const totalTasks = state.tasks.length;
-  const completedTasks = state.tasks.filter(t => t.isCompleted).length;
+  // 进度只统计一次性任务（排除日常/打卡等重复任务）
+  const oneTimeTasks = state.tasks.filter(t => t.type !== 'daily' && t.type !== 'checkin' && t.taskSubtype !== 'recurring');
+  const totalTasks = oneTimeTasks.length;
+  const completedTasks = oneTimeTasks.filter(t => t.isCompleted).length;
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   if (authLoading || state.loading) {
@@ -45,7 +45,7 @@ export default function HomeScreen() {
     );
   }
 
-  const stageLabel = STAGES.find(s => s.key === currentStage)?.label || '孕晚期';
+  const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
   const incompleteTasks = state.tasks.filter(t => !t.isCompleted);
   const todayTasks = incompleteTasks.slice(0, 3);
 
@@ -55,8 +55,49 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.greeting}>准爸爸，你好 👋</Text>
-          <Text style={styles.stageText}>{stageLabel}</Text>
+          <View style={styles.stageRow}>
+            <Text style={styles.stageText}>{stageLabel}</Text>
+            {state.babies.length > 0 && (
+              <Text style={styles.weekText}>第 {state.weeksPregnant} 周</Text>
+            )}
+          </View>
         </View>
+
+        {/* 紧急关注 */}
+        {state.urgentNotes.length > 0 && (
+          <View style={styles.urgentSection}>
+            {state.urgentNotes.map(note => (
+              <View key={note.id} style={styles.urgentCard}>
+                <View style={styles.urgentBody}>
+                  <View style={styles.urgentDot} />
+                  <Text style={styles.urgentText}>{note.content}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.urgentClose}
+                  onPress={() => {
+                    if (Platform.OS === 'web') {
+                      if (window.confirm('关闭后将不再展示，确定要关闭吗？')) {
+                        dismissUrgentNote(note.id);
+                      }
+                    } else {
+                      Alert.alert(
+                        '关闭提醒',
+                        '关闭后将不再展示，确定要关闭吗？',
+                        [
+                          { text: '取消', style: 'cancel' },
+                          { text: '确定关闭', style: 'destructive', onPress: () => dismissUrgentNote(note.id) },
+                        ]
+                      );
+                    }
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.urgentCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Progress Ring */}
         <Card style={styles.progressCard}>
@@ -138,6 +179,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   greeting: { ...typography.footnote, color: colors.muted, marginBottom: spacing.xs },
   stageText: { ...typography.title1, fontWeight: '700' },
+  stageRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  weekText: { ...typography.callout, color: colors.accent, fontWeight: '500' },
 
   // Progress
   progressCard: { marginTop: 0 },
@@ -176,6 +219,56 @@ const styles = StyleSheet.create({
   },
   quickIconText: { fontSize: 16, color: colors.accent },
   quickLabel: { ...typography.footnote, fontWeight: '500' },
+
+  // 紧急关注
+  urgentSection: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  urgentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F5E6D0',
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+  },
+  urgentBody: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  urgentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D97706',
+    marginRight: spacing.sm,
+    flexShrink: 0,
+  },
+  urgentText: {
+    ...typography.callout,
+    color: '#92400E',
+    lineHeight: 22,
+    flexShrink: 1,
+  },
+  urgentClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.sm,
+  },
+  urgentCloseText: {
+    fontSize: 14,
+    color: '#D97706',
+    fontWeight: '400',
+  },
 
   // Section
   sectionHeader: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },

@@ -20,6 +20,7 @@
       }
     },
     "android": {
+      "package": "com.seansun.whatdaddovibe",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FAF5F0"
@@ -33,6 +34,13 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e74018ba-6f34-4ecc-9f12-b2222f6ae95b"
+      }
+    },
+    "owner": "sean_sun"
   }
 }

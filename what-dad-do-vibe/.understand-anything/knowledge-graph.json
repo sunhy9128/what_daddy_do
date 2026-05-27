@@ -1,0 +1,2306 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "what-dad-do-vibe",
+    "languages": [
+      "json",
+      "sql",
+      "typescript"
+    ],
+    "frameworks": [
+      "Expo",
+      "expo-router",
+      "React Navigation",
+      "Supabase"
+    ],
+    "description": "A family knowledge sharing mobile app built with Expo/React Native, enabling family members to share tasks, records, and community content. Uses expo-router for file-based navigation and Supabase for backend services.",
+    "analyzedAt": "2026-05-26T01:40:51.213Z",
+    "gitCommitHash": "58355abdb62ea5f3a05e993d9bb625b5e6eb9e62"
+  },
+  "nodes": [
+    {
+      "id": "file:src/components/atoms/Avatar.tsx",
+      "type": "file",
+      "name": "Avatar.tsx",
+      "filePath": "src/components/atoms/Avatar.tsx",
+      "summary": "Avatar原子组件，显示用户头像首字母，支持不同尺寸和背景颜色定制。",
+      "tags": [
+        "atom",
+        "ui-component",
+        "avatar"
+      ],
+      "complexity": "simple",
+      "languageNotes": "React Native函数组件，使用charAt获取首字母并转换为大写。"
+    },
+    {
+      "id": "file:src/components/atoms/Badge.tsx",
+      "type": "file",
+      "name": "Badge.tsx",
+      "filePath": "src/components/atoms/Badge.tsx",
+      "summary": "Badge原子组件，用于显示小型标签或角标信息。",
+      "tags": [
+        "atom",
+        "ui-component",
+        "badge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/atoms/Button.tsx",
+      "type": "file",
+      "name": "Button.tsx",
+      "filePath": "src/components/atoms/Button.tsx",
+      "summary": "Button原子组件，支持primary/default变体，包含loading和disabled状态。",
+      "tags": [
+        "atom",
+        "ui-component",
+        "button",
+        "form-control"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/atoms/Card.tsx",
+      "type": "file",
+      "name": "Card.tsx",
+      "filePath": "src/components/atoms/Card.tsx",
+      "summary": "Card原子组件，提供卡片容器功能，支持default/solid变体。",
+      "tags": [
+        "atom",
+        "ui-component",
+        "card",
+        "container"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/atoms/Progress.tsx",
+      "type": "file",
+      "name": "Progress.tsx",
+      "filePath": "src/components/atoms/Progress.tsx",
+      "summary": "进度条和进度环组件，支持线性和环形两种进度展示形式。",
+      "tags": [
+        "atom",
+        "ui-component",
+        "progress",
+        "visualization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/components/atoms/Progress.tsx:ProgressBar",
+      "type": "function",
+      "name": "ProgressBar",
+      "filePath": "src/components/atoms/Progress.tsx",
+      "lineRange": [
+        10,
+        17
+      ],
+      "summary": "线性进度条组件，使用Math.min/max限制value在0-100范围。",
+      "tags": [
+        "atom",
+        "progress",
+        "linear"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/components/atoms/Progress.tsx:ProgressRing",
+      "type": "function",
+      "name": "ProgressRing",
+      "filePath": "src/components/atoms/Progress.tsx",
+      "lineRange": [
+        25,
+        56
+      ],
+      "summary": "环形进度条组件，使用SVG绘制圆形进度，支持自定义尺寸和线宽。",
+      "tags": [
+        "atom",
+        "progress",
+        "circular",
+        "svg"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/atoms/Tag.tsx",
+      "type": "file",
+      "name": "Tag.tsx",
+      "filePath": "src/components/atoms/Tag.tsx",
+      "summary": "Tag原子组件，用于标签展示，支持default/success/warning/error变体。",
+      "tags": [
+        "atom",
+        "ui-component",
+        "tag"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/molecules/KnowledgeCard.tsx",
+      "type": "file",
+      "name": "KnowledgeCard.tsx",
+      "filePath": "src/components/molecules/KnowledgeCard.tsx",
+      "summary": "知识卡片分子组件，展示文章类内容，包含emoji、标题、阅读时间和来源。",
+      "tags": [
+        "molecule",
+        "card",
+        "knowledge",
+        "content"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/molecules/RecordEntry.tsx",
+      "type": "file",
+      "name": "RecordEntry.tsx",
+      "filePath": "src/components/molecules/RecordEntry.tsx",
+      "summary": "记录条目分子组件，展示标题、内容、时间和隐私设置。",
+      "tags": [
+        "molecule",
+        "record",
+        "list-item"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/molecules/SearchBar.tsx",
+      "type": "file",
+      "name": "SearchBar.tsx",
+      "filePath": "src/components/molecules/SearchBar.tsx",
+      "summary": "搜索框分子组件，提供文本输入和搜索回调功能。",
+      "tags": [
+        "molecule",
+        "search",
+        "form-control",
+        "input"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/molecules/StageTabs.tsx",
+      "type": "file",
+      "name": "StageTabs.tsx",
+      "filePath": "src/components/molecules/StageTabs.tsx",
+      "summary": "阶段标签分子组件，用于切换不同阶段或状态。",
+      "tags": [
+        "molecule",
+        "tabs",
+        "navigation",
+        "stage"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/organisms/CollapsibleGroup.tsx",
+      "type": "file",
+      "name": "CollapsibleGroup.tsx",
+      "filePath": "src/components/organisms/CollapsibleGroup.tsx",
+      "summary": "可折叠组 organisms组件，使用useState管理展开/收起状态。",
+      "tags": [
+        "organism",
+        "collapsible",
+        "accordion",
+        "stateful"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/organisms/SegmentControl.tsx",
+      "type": "file",
+      "name": "SegmentControl.tsx",
+      "filePath": "src/components/organisms/SegmentControl.tsx",
+      "summary": "分段控制器organisms组件，用于在多个选项间切换。",
+      "tags": [
+        "organism",
+        "segment",
+        "selector",
+        "navigation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/organisms/TabBar.tsx",
+      "type": "file",
+      "name": "TabBar.tsx",
+      "filePath": "src/components/organisms/TabBar.tsx",
+      "summary": "标签栏 organisms组件，应用底部导航，提供tab切换功能。",
+      "tags": [
+        "organism",
+        "tabbar",
+        "navigation",
+        "bottom-nav"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/styles/tokens.ts",
+      "type": "file",
+      "name": "tokens.ts",
+      "filePath": "src/styles/tokens.ts",
+      "summary": "设计令牌中心化管理模块，导出colors、fonts、spacing、radius、shadows、typography等设计变量，供全项目共享使用。",
+      "tags": [
+        "design-system",
+        "tokens",
+        "theme",
+        "configuration"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "TypeScript常量对象导出，包含颜色、字体、间距、圆角、阴影、排版等设计令牌。"
+    },
+    {
+      "id": "file:app/(tabs)/_layout.tsx",
+      "type": "file",
+      "name": "_layout.tsx",
+      "filePath": "app/(tabs)/_layout.tsx",
+      "summary": "Tab layout component that wraps the tabs navigation, conditionally rendering AuthGuard to protect tab routes.",
+      "tags": [
+        "layout",
+        "navigation",
+        "authentication",
+        "tabs"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:app/(tabs)/index.tsx",
+      "type": "file",
+      "name": "index.tsx",
+      "filePath": "app/(tabs)/index.tsx",
+      "summary": "Home screen displaying pregnancy stages, task statistics, recent records, and incomplete tasks with navigation to detail screens.",
+      "tags": [
+        "screen",
+        "home",
+        "dashboard",
+        "tasks",
+        "records"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:app/_layout.tsx",
+      "type": "file",
+      "name": "_layout.tsx",
+      "filePath": "app/_layout.tsx",
+      "summary": "Root layout with AuthRedirector component that handles authentication-based routing redirects.",
+      "tags": [
+        "layout",
+        "navigation",
+        "authentication",
+        "routing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:app/login.tsx",
+      "type": "file",
+      "name": "login.tsx",
+      "filePath": "app/login.tsx",
+      "summary": "Login screen with sign-in/sign-up forms, admin login option, and authentication state handling.",
+      "tags": [
+        "screen",
+        "login",
+        "authentication",
+        "forms"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/AuthGuard.tsx",
+      "type": "file",
+      "name": "AuthGuard.tsx",
+      "filePath": "src/components/AuthGuard.tsx",
+      "summary": "Authentication guard component that redirects unauthenticated users to login page.",
+      "tags": [
+        "component",
+        "authentication",
+        "guard",
+        "redirect"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/context/AppContext.tsx",
+      "type": "file",
+      "name": "AppContext.tsx",
+      "filePath": "src/context/AppContext.tsx",
+      "summary": "Application state management context providing task, record, and community post operations with Redux-style reducer pattern.",
+      "tags": [
+        "context",
+        "state-management",
+        "tasks",
+        "records",
+        "api-integration"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/context/AuthContext.tsx",
+      "type": "file",
+      "name": "AuthContext.tsx",
+      "filePath": "src/context/AuthContext.tsx",
+      "summary": "Authentication context providing sign-in, sign-up, sign-out operations and session state management via Supabase.",
+      "tags": [
+        "context",
+        "authentication",
+        "session",
+        "supabase"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/api.ts",
+      "type": "file",
+      "name": "api.ts",
+      "filePath": "src/lib/api.ts",
+      "summary": "Supabase database API layer with 12 functions for tasks, records, preset tasks, pregnancy stages, and community posts operations.",
+      "tags": [
+        "api",
+        "database",
+        "supabase",
+        "crud",
+        "data-access"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/supabase.ts",
+      "type": "file",
+      "name": "supabase.ts",
+      "filePath": "src/lib/supabase.ts",
+      "summary": "Supabase client singleton initialization with environment configuration.",
+      "tags": [
+        "supabase",
+        "client",
+        "database",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/supabase.ts:supabase",
+      "type": "function",
+      "name": "supabase",
+      "filePath": "src/lib/supabase.ts",
+      "lineRange": [
+        5,
+        8
+      ],
+      "summary": "Supabase client singleton instance created with createClient, configured via environment variables.",
+      "tags": [
+        "supabase",
+        "client",
+        "singleton",
+        "database"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/(tabs)/_layout.tsx:TabLayout",
+      "type": "function",
+      "name": "TabLayout",
+      "filePath": "app/(tabs)/_layout.tsx",
+      "lineRange": [
+        6,
+        69
+      ],
+      "summary": "Tab navigation layout component wrapping Tabs with AuthGuard protection.",
+      "tags": [
+        "function",
+        "layout",
+        "navigation",
+        "tabs"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:app/(tabs)/index.tsx:HomeScreen",
+      "type": "function",
+      "name": "HomeScreen",
+      "filePath": "app/(tabs)/index.tsx",
+      "lineRange": [
+        18,
+        130
+      ],
+      "summary": "Home screen component displaying stage tabs, task counts, progress rings, recent records, and navigation to task/record detail screens.",
+      "tags": [
+        "function",
+        "screen",
+        "home",
+        "dashboard"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:app/_layout.tsx:AuthRedirector",
+      "type": "function",
+      "name": "AuthRedirector",
+      "filePath": "app/_layout.tsx",
+      "lineRange": [
+        8,
+        27
+      ],
+      "summary": "Effect hook component that redirects users based on authentication state and current route segment.",
+      "tags": [
+        "function",
+        "authentication",
+        "redirect",
+        "navigation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/_layout.tsx:RootLayout",
+      "type": "function",
+      "name": "RootLayout",
+      "filePath": "app/_layout.tsx",
+      "lineRange": [
+        29,
+        46
+      ],
+      "summary": "Root layout component providing SafeAreaProvider and context providers wrapper.",
+      "tags": [
+        "function",
+        "layout",
+        "root",
+        "providers"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/login.tsx:LoginScreen",
+      "type": "function",
+      "name": "LoginScreen",
+      "filePath": "app/login.tsx",
+      "lineRange": [
+        24,
+        140
+      ],
+      "summary": "Login screen with sign-in/sign-up form states, admin login handler, and authentication feedback.",
+      "tags": [
+        "function",
+        "screen",
+        "login",
+        "authentication"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/components/AuthGuard.tsx:AuthGuard",
+      "type": "function",
+      "name": "AuthGuard",
+      "filePath": "src/components/AuthGuard.tsx",
+      "lineRange": [
+        10,
+        25
+      ],
+      "summary": "Authentication guard component redirecting to login when user is not authenticated.",
+      "tags": [
+        "function",
+        "guard",
+        "authentication",
+        "redirect"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/context/AppContext.tsx:reducer",
+      "type": "function",
+      "name": "reducer",
+      "filePath": "src/context/AppContext.tsx",
+      "lineRange": [
+        73,
+        114
+      ],
+      "summary": "Redux-style state reducer handling tasks, records, and loading state updates with immutable patterns.",
+      "tags": [
+        "function",
+        "reducer",
+        "state-management",
+        "immutable"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/context/AppContext.tsx:AppProvider",
+      "type": "function",
+      "name": "AppProvider",
+      "filePath": "src/context/AppContext.tsx",
+      "lineRange": [
+        128,
+        473
+      ],
+      "summary": "Main application context provider with task/record CRUD operations, data loading from Supabase, and preset task initialization.",
+      "tags": [
+        "function",
+        "provider",
+        "context",
+        "data-management"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/context/AppContext.tsx:useApp",
+      "type": "function",
+      "name": "useApp",
+      "filePath": "src/context/AppContext.tsx",
+      "lineRange": [
+        475,
+        481
+      ],
+      "summary": "Custom hook for accessing AppContext value.",
+      "tags": [
+        "function",
+        "hook",
+        "context"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/context/AuthContext.tsx:AuthProvider",
+      "type": "function",
+      "name": "AuthProvider",
+      "filePath": "src/context/AuthContext.tsx",
+      "lineRange": [
+        39,
+        91
+      ],
+      "summary": "Authentication context provider managing session state and Supabase auth integration.",
+      "tags": [
+        "function",
+        "provider",
+        "authentication",
+        "session"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/context/AuthContext.tsx:useAuth",
+      "type": "function",
+      "name": "useAuth",
+      "filePath": "src/context/AuthContext.tsx",
+      "lineRange": [
+        93,
+        99
+      ],
+      "summary": "Custom hook for accessing AuthContext value.",
+      "tags": [
+        "function",
+        "hook",
+        "authentication"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:getPresetTasks",
+      "type": "function",
+      "name": "getPresetTasks",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        15,
+        31
+      ],
+      "summary": "Fetches preset tasks from database ordered by display order.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "tasks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:getPregnancyStages",
+      "type": "function",
+      "name": "getPregnancyStages",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        34,
+        41
+      ],
+      "summary": "Fetches pregnancy stages configuration from database.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:getTasks",
+      "type": "function",
+      "name": "getTasks",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        44,
+        52
+      ],
+      "summary": "Fetches all tasks for a specific user ordered by creation date.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "tasks",
+        "user"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:createTask",
+      "type": "function",
+      "name": "createTask",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        54,
+        62
+      ],
+      "summary": "Creates a new task in the database and returns the created record.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "create",
+        "tasks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:updateTask",
+      "type": "function",
+      "name": "updateTask",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        64,
+        73
+      ],
+      "summary": "Updates an existing task by ID and returns the updated record.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "update",
+        "tasks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:deleteTask",
+      "type": "function",
+      "name": "deleteTask",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        75,
+        78
+      ],
+      "summary": "Deletes a task by ID from the database.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "delete",
+        "tasks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:toggleTaskComplete",
+      "type": "function",
+      "name": "toggleTaskComplete",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        80,
+        89
+      ],
+      "summary": "Toggles task completion status and sets completion timestamp.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "tasks",
+        "completion"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:incrementDailyCount",
+      "type": "function",
+      "name": "incrementDailyCount",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        92,
+        102
+      ],
+      "summary": "Increments the daily count for a task and updates the daily date tracking.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "tasks",
+        "tracking"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:getRecords",
+      "type": "function",
+      "name": "getRecords",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        105,
+        113
+      ],
+      "summary": "Fetches all records for a specific user ordered by creation date.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "records",
+        "user"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:createRecord",
+      "type": "function",
+      "name": "createRecord",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        115,
+        123
+      ],
+      "summary": "Creates a new record in the database and returns the created record.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "create",
+        "records"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:deleteRecord",
+      "type": "function",
+      "name": "deleteRecord",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        125,
+        128
+      ],
+      "summary": "Deletes a record by ID from the database.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "delete",
+        "records"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/api.ts:getCommunityPosts",
+      "type": "function",
+      "name": "getCommunityPosts",
+      "filePath": "src/lib/api.ts",
+      "lineRange": [
+        131,
+        144
+      ],
+      "summary": "Fetches community posts with optional category filtering.",
+      "tags": [
+        "function",
+        "api",
+        "database",
+        "community",
+        "posts"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:app/(tabs)/community.tsx",
+      "type": "file",
+      "name": "community.tsx",
+      "filePath": "app/(tabs)/community.tsx",
+      "summary": "社区页面，展示热门知识和爸爸经验，支持分类浏览和搜索功能。",
+      "tags": [
+        "entry-point",
+        "community",
+        "ui-screen"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:app/(tabs)/profile.tsx",
+      "type": "file",
+      "name": "profile.tsx",
+      "filePath": "app/(tabs)/profile.tsx",
+      "summary": "用户个人资料页面，显示用户信息、管理员标识，提供账号设置和退出登录功能。",
+      "tags": [
+        "entry-point",
+        "user-profile",
+        "ui-screen"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/atoms/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/components/atoms/index.ts",
+      "summary": "原子组件桶导出文件，统一导出Card、Button、Tag、Avatar、Badge、Progress等基础UI组件。",
+      "tags": [
+        "barrel",
+        "exports",
+        "ui-components"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/molecules/PostCard.tsx",
+      "type": "file",
+      "name": "PostCard.tsx",
+      "filePath": "src/components/molecules/PostCard.tsx",
+      "summary": "社区帖子卡片组件，展示作者信息、分类标签、内容摘要和互动按钮（点赞、评论）。",
+      "tags": [
+        "component",
+        "card",
+        "social"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/molecules/TaskCard.tsx",
+      "type": "file",
+      "name": "TaskCard.tsx",
+      "filePath": "src/components/molecules/TaskCard.tsx",
+      "summary": "任务卡片组件，支持产检、日常、自定义和日打卡四种类型，显示完成状态和连续/计数信息。",
+      "tags": [
+        "component",
+        "card",
+        "task-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:app/(tabs)/community.tsx:CommunityScreen",
+      "type": "function",
+      "name": "CommunityScreen",
+      "filePath": "app/(tabs)/community.tsx",
+      "lineRange": [
+        17,
+        114
+      ],
+      "summary": "社区主屏幕组件，加载社区帖子，支持分类切换和搜索功能。",
+      "tags": [
+        "component",
+        "screen",
+        "community"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:app/(tabs)/profile.tsx:ProfileScreen",
+      "type": "function",
+      "name": "ProfileScreen",
+      "filePath": "app/(tabs)/profile.tsx",
+      "lineRange": [
+        19,
+        80
+      ],
+      "summary": "个人资料屏幕组件，显示用户信息、提供账号设置入口和处理退出登录。",
+      "tags": [
+        "component",
+        "screen",
+        "user-profile"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/components/molecules/PostCard.tsx:PostCard",
+      "type": "function",
+      "name": "PostCard",
+      "filePath": "src/components/molecules/PostCard.tsx",
+      "lineRange": [
+        17,
+        50
+      ],
+      "summary": "帖子卡片组件，渲染作者头像、名称、元信息、分类标签、内容和互动操作。",
+      "tags": [
+        "component",
+        "card",
+        "social"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/components/molecules/TaskCard.tsx:TaskCard",
+      "type": "function",
+      "name": "TaskCard",
+      "filePath": "src/components/molecules/TaskCard.tsx",
+      "lineRange": [
+        34,
+        99
+      ],
+      "summary": "任务卡片组件，根据类型渲染不同的交互控件（复选框/计数圆/连续天数圆），支持完成状态切换。",
+      "tags": [
+        "component",
+        "card",
+        "task"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:app/(tabs)/records.tsx",
+      "type": "file",
+      "name": "records.tsx",
+      "filePath": "app/(tabs)/records.tsx",
+      "summary": "Records screen component for viewing and creating personal health records with filter and modal functionality.",
+      "tags": [
+        "entry-point",
+        "screen",
+        "records",
+        "api-handler"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "React Native screen component with local state management for filtering and modal control."
+    },
+    {
+      "id": "function:app/(tabs)/records.tsx:RecordsScreen",
+      "type": "function",
+      "name": "RecordsScreen",
+      "filePath": "app/(tabs)/records.tsx",
+      "lineRange": [
+        10,
+        149
+      ],
+      "summary": "Main records screen component that displays filtered records list, handles creation modal, and manages record filtering by type.",
+      "tags": [
+        "screen",
+        "records",
+        "component"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:app/(tabs)/tasks.tsx",
+      "type": "file",
+      "name": "tasks.tsx",
+      "filePath": "app/(tabs)/tasks.tsx",
+      "summary": "Tasks screen component for managing prenatal and daily tasks with preset task loading, task creation, editing, and deletion.",
+      "tags": [
+        "entry-point",
+        "screen",
+        "task-management",
+        "api-handler"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Comprehensive task management screen with preset task integration, multiple task types (daily, prenatal, check-in), and edit/delete operations."
+    },
+    {
+      "id": "function:app/(tabs)/tasks.tsx:TasksScreen",
+      "type": "function",
+      "name": "TasksScreen",
+      "filePath": "app/(tabs)/tasks.tsx",
+      "lineRange": [
+        23,
+        467
+      ],
+      "summary": "Main tasks screen with preset task loading, task filtering by pregnancy stage, and CRUD operations for custom tasks.",
+      "tags": [
+        "screen",
+        "tasks",
+        "component"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/components/molecules/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/components/molecules/index.ts",
+      "summary": "Barrel file exporting molecule-level UI components: StageTabs, TaskCard, RecordEntry, PostCard, KnowledgeCard, SearchBar.",
+      "tags": [
+        "barrel",
+        "molecules",
+        "exports"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/organisms/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/components/organisms/index.ts",
+      "summary": "Barrel file exporting organism-level UI components: TabBar, SegmentControl, CollapsibleGroup.",
+      "tags": [
+        "barrel",
+        "organisms",
+        "exports"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:app.json",
+      "type": "config",
+      "name": "app.json",
+      "filePath": "app.json",
+      "summary": "Expo应用配置文件，定义应用名称、版本、图标、启动画面以及iOS/Android/Web平台特定配置，包含expo-router插件配置。",
+      "tags": [
+        "configuration",
+        "expo",
+        "mobile-config"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "npm包管理配置，定义应用入口为expo-router/entry，包含React Native、Expo SDK及导航相关依赖。",
+      "tags": [
+        "configuration",
+        "npm",
+        "dependencies"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tsconfig.json",
+      "type": "config",
+      "name": "tsconfig.json",
+      "filePath": "tsconfig.json",
+      "summary": "TypeScript编译配置，继承expo/tsconfig.base并启用strict模式。",
+      "tags": [
+        "configuration",
+        "typescript",
+        "build-system"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:preset_tasks.sql:preset_tasks",
+      "type": "table",
+      "name": "preset_tasks",
+      "filePath": "preset_tasks.sql",
+      "summary": "预设任务表，存储从备孕到产后各阶段的孕期推荐待办事项，包含产检、日常、自定义和打卡四种类型任务。",
+      "tags": [
+        "database",
+        "migration",
+        "data-seed"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "table:update_tasks_table.sql:tasks",
+      "type": "table",
+      "name": "tasks",
+      "filePath": "update_tasks_table.sql",
+      "summary": "更新tasks表结构，增加task_subtype（one_time/recurring）、daily_count和daily_date字段，支持重复任务和每日计数功能。",
+      "tags": [
+        "database",
+        "migration",
+        "schema-evolution"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.understand-anything/.understandignore",
+      "type": "document",
+      "name": ".understandignore",
+      "filePath": ".understand-anything/.understandignore",
+      "summary": "Git ignore patterns for the understand-anything plugin, specifying files and directories to exclude from code analysis.",
+      "tags": [
+        "configuration",
+        "documentation",
+        "exclude-patterns"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/hooks/useTheme.ts",
+      "type": "file",
+      "name": "useTheme.ts",
+      "filePath": "src/hooks/useTheme.ts",
+      "summary": "Custom React hook that returns the current theme object by accessing the theme context.",
+      "tags": [
+        "hook",
+        "react",
+        "theme"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/theme/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/theme/index.ts",
+      "summary": "Central theme configuration file exporting design tokens (colors, typography, spacing, borderRadius, shadows) and a composed theme object for consistent UI styling.",
+      "tags": [
+        "configuration",
+        "theme",
+        "design-tokens",
+        "barrel"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/components/atoms/Avatar.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/atoms/Badge.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/atoms/Button.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/atoms/Card.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/atoms/Progress.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/atoms/Progress.tsx",
+      "target": "function:src/components/atoms/Progress.tsx:ProgressBar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/components/atoms/Progress.tsx",
+      "target": "function:src/components/atoms/Progress.tsx:ProgressRing",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/components/atoms/Progress.tsx",
+      "target": "function:src/components/atoms/Progress.tsx:ProgressBar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/components/atoms/Progress.tsx",
+      "target": "function:src/components/atoms/Progress.tsx:ProgressRing",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/components/atoms/Tag.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/KnowledgeCard.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/RecordEntry.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/SearchBar.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/StageTabs.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/organisms/CollapsibleGroup.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/organisms/SegmentControl.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/organisms/TabBar.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/_layout.tsx",
+      "target": "file:src/components/AuthGuard.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/_layout.tsx",
+      "target": "function:app/(tabs)/_layout.tsx:TabLayout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/(tabs)/_layout.tsx",
+      "target": "function:app/(tabs)/_layout.tsx:TabLayout",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/components/molecules/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/context/AppContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "function:app/(tabs)/index.tsx:HomeScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "function:app/(tabs)/index.tsx:HomeScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/_layout.tsx",
+      "target": "file:src/context/AppContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/_layout.tsx",
+      "target": "file:src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/_layout.tsx",
+      "target": "function:app/_layout.tsx:AuthRedirector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/_layout.tsx",
+      "target": "function:app/_layout.tsx:RootLayout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/_layout.tsx",
+      "target": "function:app/_layout.tsx:RootLayout",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/login.tsx",
+      "target": "file:src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/login.tsx",
+      "target": "function:app/login.tsx:LoginScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/login.tsx",
+      "target": "function:app/login.tsx:LoginScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/components/AuthGuard.tsx",
+      "target": "file:src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/AuthGuard.tsx",
+      "target": "function:src/components/AuthGuard.tsx:AuthGuard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/components/AuthGuard.tsx",
+      "target": "function:src/components/AuthGuard.tsx:AuthGuard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "file:src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "file:src/lib/api.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "file:src/lib/supabase.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/context/AppContext.tsx:reducer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/context/AppContext.tsx:AppProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/context/AppContext.tsx:useApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/context/AppContext.tsx:AppProvider",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/context/AppContext.tsx:useApp",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:getTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:getRecords",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:getCommunityPosts",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:createTask",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:deleteTask",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:createRecord",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:deleteRecord",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AppContext.tsx",
+      "target": "function:src/lib/api.ts:incrementDailyCount",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AuthContext.tsx",
+      "target": "file:src/lib/supabase.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/context/AuthContext.tsx",
+      "target": "function:src/context/AuthContext.tsx:AuthProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/context/AuthContext.tsx",
+      "target": "function:src/context/AuthContext.tsx:useAuth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/context/AuthContext.tsx",
+      "target": "function:src/context/AuthContext.tsx:AuthProvider",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/context/AuthContext.tsx",
+      "target": "function:src/context/AuthContext.tsx:useAuth",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "file:src/lib/supabase.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getPresetTasks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getPregnancyStages",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getTasks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:createTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:updateTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:deleteTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:toggleTaskComplete",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:incrementDailyCount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getRecords",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:createRecord",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:deleteRecord",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getCommunityPosts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getPresetTasks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getPregnancyStages",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getTasks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:createTask",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:updateTask",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:deleteTask",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:toggleTaskComplete",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:incrementDailyCount",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getRecords",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:createRecord",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:deleteRecord",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/api.ts",
+      "target": "function:src/lib/api.ts:getCommunityPosts",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "file:src/components/molecules/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "file:src/context/AppContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/profile.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/profile.tsx",
+      "target": "file:src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/profile.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/PostCard.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/PostCard.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/TaskCard.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/components/molecules/TaskCard.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "function:app/(tabs)/community.tsx:CommunityScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/(tabs)/profile.tsx",
+      "target": "function:app/(tabs)/profile.tsx:ProfileScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/components/molecules/PostCard.tsx",
+      "target": "function:src/components/molecules/PostCard.tsx:PostCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/components/molecules/TaskCard.tsx",
+      "target": "function:src/components/molecules/TaskCard.tsx:TaskCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:app/(tabs)/community.tsx:CommunityScreen",
+      "target": "function:src/components/molecules/PostCard.tsx:PostCard",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "function:src/components/molecules/PostCard.tsx:PostCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/community.tsx",
+      "target": "function:src/components/molecules/TaskCard.tsx:TaskCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/components/atoms/index.ts",
+      "target": "function:src/components/molecules/PostCard.tsx:PostCard",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:src/components/atoms/index.ts",
+      "target": "function:src/components/molecules/TaskCard.tsx:TaskCard",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "file:src/components/molecules/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "file:src/components/organisms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "file:src/context/AppContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "file:src/components/atoms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "file:src/components/molecules/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "file:src/components/organisms/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "file:src/context/AppContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "file:src/lib/api.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "file:src/styles/tokens.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "function:app/(tabs)/records.tsx:RecordsScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "function:app/(tabs)/records.tsx:RecordsScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "function:app/(tabs)/tasks.tsx:TasksScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "function:app/(tabs)/tasks.tsx:TasksScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "function:src/lib/api.ts:getPresetTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "table:preset_tasks.sql:preset_tasks",
+      "target": "table:update_tasks_table.sql:tasks",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:src/hooks/useTheme.ts",
+      "target": "file:src/theme/index.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/supabase.ts",
+      "target": "function:src/lib/supabase.ts:supabase",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/components/atoms/Card.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/components/atoms/Button.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/components/molecules/StageTabs.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/index.tsx",
+      "target": "file:src/components/molecules/TaskCard.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "function:src/context/AppContext.tsx:AppProvider",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "function:src/context/AppContext.tsx:AppProvider",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "function:src/components/molecules/TaskCard.tsx:TaskCard",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:app/(tabs)/records.tsx",
+      "target": "function:src/components/molecules/RecordEntry.tsx:RecordEntry",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "function:src/components/molecules/TaskCard.tsx:TaskCard",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:app/(tabs)/tasks.tsx",
+      "target": "function:src/components/molecules/StageTabs.tsx:StageTabs",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:presentation",
+      "name": "Presentation Layer",
+      "description": "Expo Router screens and navigation layouts - entry points for user interactions in this family knowledge sharing app",
+      "nodeIds": [
+        "file:app/(tabs)/community.tsx",
+        "file:app/(tabs)/profile.tsx",
+        "file:app/(tabs)/records.tsx",
+        "file:app/(tabs)/tasks.tsx",
+        "file:app/(tabs)/_layout.tsx",
+        "file:app/(tabs)/index.tsx",
+        "file:app/_layout.tsx",
+        "file:app/login.tsx"
+      ]
+    },
+    {
+      "id": "layer:ui",
+      "name": "UI Components Layer",
+      "description": "Reusable UI components following atomic design - atoms, molecules, and organisms for the family knowledge app",
+      "nodeIds": [
+        "file:src/components/atoms/Avatar.tsx",
+        "file:src/components/atoms/Badge.tsx",
+        "file:src/components/atoms/Button.tsx",
+        "file:src/components/atoms/Card.tsx",
+        "file:src/components/atoms/Progress.tsx",
+        "file:src/components/atoms/Tag.tsx",
+        "file:src/components/atoms/index.ts",
+        "file:src/components/molecules/KnowledgeCard.tsx",
+        "file:src/components/molecules/PostCard.tsx",
+        "file:src/components/molecules/RecordEntry.tsx",
+        "file:src/components/molecules/SearchBar.tsx",
+        "file:src/components/molecules/StageTabs.tsx",
+        "file:src/components/molecules/TaskCard.tsx",
+        "file:src/components/molecules/index.ts",
+        "file:src/components/organisms/CollapsibleGroup.tsx",
+        "file:src/components/organisms/SegmentControl.tsx",
+        "file:src/components/organisms/TabBar.tsx",
+        "file:src/components/organisms/index.ts",
+        "file:src/components/AuthGuard.tsx"
+      ]
+    },
+    {
+      "id": "layer:state",
+      "name": "State Management Layer",
+      "description": "React Context providers for app-wide state and authentication in the family knowledge sharing app",
+      "nodeIds": [
+        "file:src/context/AppContext.tsx",
+        "file:src/context/AuthContext.tsx"
+      ]
+    },
+    {
+      "id": "layer:data",
+      "name": "Data Layer",
+      "description": "Supabase API client and database schema for persisting family knowledge content and user data",
+      "nodeIds": [
+        "file:src/lib/api.ts",
+        "file:src/lib/supabase.ts",
+        "file:preset_tasks.sql",
+        "file:update_tasks_table.sql"
+      ]
+    },
+    {
+      "id": "layer:design-system",
+      "name": "Design System Layer",
+      "description": "Design tokens and theme configuration for consistent styling across the mobile app",
+      "nodeIds": [
+        "file:src/styles/tokens.ts",
+        "file:src/theme/index.ts"
+      ]
+    },
+    {
+      "id": "layer:hooks",
+      "name": "Hooks Layer",
+      "description": "Custom React hooks for theme and other reusable logic",
+      "nodeIds": [
+        "file:src/hooks/useTheme.ts"
+      ]
+    },
+    {
+      "id": "layer:config",
+      "name": "Configuration Layer",
+      "description": "Project configuration files for Expo, TypeScript, and npm dependencies",
+      "nodeIds": [
+        "file:app.json",
+        "file:package.json",
+        "file:tsconfig.json"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Application Entry Point",
+      "description": "The root layout file bootstraps the entire Expo/React Native application by wrapping the app with AppProvider and AuthProvider context providers. This is the starting point that initializes global state management before any screen renders.",
+      "nodeIds": [
+        "file:app/_layout.tsx"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Data Layer - Supabase Client",
+      "description": "The Supabase client initialization connects the app to the backend database. This file configures the Supabase SDK with project credentials, providing the foundation for all data operations throughout the app.",
+      "nodeIds": [
+        "file:src/lib/supabase.ts"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Data Layer - API Wrapper",
+      "description": "The API wrapper provides a clean CRUD interface on top of Supabase, abstracting database operations into convenient methods. All data-dependent components import from this module rather than calling Supabase directly.",
+      "nodeIds": [
+        "file:src/lib/api.ts"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "State Layer - Authentication Context",
+      "description": "The authentication context provider manages user authentication state using Supabase Auth, exposing login, logout, and session state to the entire app. It depends on the Supabase client from the data layer.",
+      "nodeIds": [
+        "file:src/context/AuthContext.tsx"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "State Layer - App Context",
+      "description": "The app-wide state management provider handles global application state including theme preferences. It imports both the API wrapper and the theme hook to coordinate data fetching with UI theming.",
+      "nodeIds": [
+        "file:src/context/AppContext.tsx"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Design System - Design Tokens",
+      "description": "Design tokens define the visual foundation of the app: colors, typography, and spacing values. With the highest fan-in ranking (8 dependencies), nearly every component imports from this file, making it the most critical shared resource in the design system.",
+      "nodeIds": [
+        "file:src/styles/tokens.ts"
+      ],
+      "languageLesson": "TypeScript 的 const 对象声明配合 as const 语法可以创建完全类型化的设计令牌，避免字符串拼接错误并启用 IDE 自动补全。"
+    },
+    {
+      "order": 7,
+      "title": "Design System - Theme Configuration",
+      "description": "Theme configuration builds on design tokens to create a cohesive visual language. The useTheme hook imports from both this file and tokens.ts to provide theme-aware styling throughout the app.",
+      "nodeIds": [
+        "file:src/theme/index.ts",
+        "file:src/hooks/useTheme.ts"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "UI Layer - Atomic Components (Atoms)",
+      "description": "The atomic design layer starts with fundamental UI building blocks: Avatar, Badge, Button, Card, Progress, and Tag. These components are purely presentational and import design tokens for styling. The barrel export file (index.ts) provides a clean import surface for downstream molecules.",
+      "nodeIds": [
+        "file:src/components/atoms/Avatar.tsx",
+        "file:src/components/atoms/Card.tsx",
+        "file:src/components/atoms/Button.tsx",
+        "file:src/components/atoms/Progress.tsx",
+        "file:src/components/atoms/index.ts"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "UI Layer - Molecular Components",
+      "description": "Molecules compose atoms into functional units: TaskCard combines Card, Button, and Progress; KnowledgeCard combines Card and Tag; PostCard combines Card, Avatar, and Badge. These components understand domain concepts (tasks, posts, knowledge) while delegating pure visuals to atoms.",
+      "nodeIds": [
+        "file:src/components/molecules/TaskCard.tsx",
+        "file:src/components/molecules/KnowledgeCard.tsx",
+        "file:src/components/molecules/PostCard.tsx",
+        "file:src/components/molecules/index.ts"
+      ]
+    },
+    {
+      "order": 10,
+      "title": "UI Layer - Organisms and Auth Guard",
+      "description": "Organisms compose molecules into complex UI structures: CollapsibleGroup wraps TaskCard items in collapsible sections; SegmentControl provides filtering controls; TabBar displays navigation. AuthGuard is a standalone component that protects routes requiring authentication.",
+      "nodeIds": [
+        "file:src/components/organisms/CollapsibleGroup.tsx",
+        "file:src/components/organisms/TabBar.tsx",
+        "file:src/components/AuthGuard.tsx",
+        "file:src/components/organisms/index.ts"
+      ]
+    },
+    {
+      "order": 11,
+      "title": "Presentation Layer - Tab Navigation",
+      "description": "The tab navigator layout wraps the five main screens (Home, Tasks, Records, Community, Profile) with AuthGuard protection and a custom TabBar. It uses Expo Router's file-based navigation conventions to structure the app's primary user flows.",
+      "nodeIds": [
+        "file:app/(tabs)/_layout.tsx",
+        "file:src/components/organisms/TabBar.tsx"
+      ]
+    },
+    {
+      "order": 12,
+      "title": "Presentation Layer - Screens",
+      "description": "The five main screens implement the app's features: Home displays StageTabs and KnowledgeCards; Tasks manages preset and custom tasks with CollapsibleGroup and SegmentControl; Records tracks daily entries; Community shows posts and search; Profile displays user settings. Each screen imports domain-specific molecules and organisms.",
+      "nodeIds": [
+        "file:app/(tabs)/index.tsx",
+        "file:app/(tabs)/tasks.tsx",
+        "file:app/(tabs)/records.tsx",
+        "file:app/(tabs)/community.tsx",
+        "file:app/(tabs)/profile.tsx"
+      ]
+    },
+    {
+      "order": 13,
+      "title": "Configuration",
+      "description": "Project configuration files establish the development environment: app.json defines Expo settings (name, slug, plugins), package.json declares npm dependencies, and tsconfig.json configures TypeScript compilation. These files are essential for build tooling but rarely edited during feature development.",
+      "nodeIds": [
+        "file:app.json",
+        "file:package.json",
+        "file:tsconfig.json"
+      ]
+    },
+    {
+      "order": 14,
+      "title": "Database Schema",
+      "description": "SQL files define the database structure: preset_tasks.sql seeds the database with pregnancy stage tasks, while update_tasks_table.sql defines the tasks table schema. These represent the data model that the API layer interacts with.",
+      "nodeIds": [
+        "file:preset_tasks.sql",
+        "file:update_tasks_table.sql"
+      ],
+      "languageLesson": "SQL 迁移文件应包含在版本控制中以保持团队数据库同步。Idempotent（幂等）迁移可以安全地重复运行而不会造成数据损坏。"
+    }
+  ]
+}

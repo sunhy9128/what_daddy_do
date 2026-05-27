@@ -5,14 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../src/context/AuthContext';
 
 const colors = {
-  bg: '#faf5f0',
-  surface: '#ffffff',
-  surfaceSecondary: '#f5f1ed',
-  fg: '#2d2d2d',
-  fgSecondary: '#6b6b6b',
-  muted: '#a3a3a3',
-  border: '#e8e8e8',
-  accent: '#007aff',
+  bg: '#F5F0E8',
+  surface: '#FCFAF5',
+  surfaceSecondary: '#F0ECE4',
+  fg: '#1A1A2E',
+  fgSecondary: '#5A5A6E',
+  muted: '#8A8A9A',
+  border: '#E8E4D9',
+  accent: '#2C3E6B',
 };
 
 const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 40 };

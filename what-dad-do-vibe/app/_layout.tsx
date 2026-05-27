@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { AppProvider } from '../src/context/AppContext';
+import { WebScrollbarStyle } from '../src/components/WebScrollbarStyle';
 
 function AuthRedirector() {
   const { session, loading } = useAuth();
@@ -35,9 +36,11 @@ export default function RootLayout() {
           <Suspense fallback={null}>
             <AuthRedirector />
           </Suspense>
+          <WebScrollbarStyle />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="baby-info" />
           </Stack>
         </AppProvider>
       </AuthProvider>

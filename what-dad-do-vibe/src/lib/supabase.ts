@@ -12,6 +12,15 @@ export interface User {
   created_at: string;
 }
 
+export interface Baby {
+  id: string;
+  user_id: string;
+  due_date: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PregnancyStage {
   id: string;
   name: string;
@@ -24,7 +33,7 @@ export interface Task {
   user_id: string;
   title: string;
   description: string | null;
-  stage: 'preconception' | 'first' | 'second' | 'third';
+  stage: 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
   type: 'prenatal' | 'daily' | 'custom' | 'checkin';
   task_subtype: 'one_time' | 'recurring';
   due_date: string | null;
@@ -43,6 +52,30 @@ export interface Record {
   title: string;
   content: string;
   is_private: boolean;
+  created_at: string;
+}
+
+export interface UrgentNote {
+  id: string;
+  user_id: string;
+  content: string;
+  is_active: boolean;
+  created_at: string;
+  dismissed_at: string | null;
+}
+
+export interface PostLike {
+  id: string;
+  post_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface PostComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
   created_at: string;
 }
 

@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
+import { useApp } from '../../src/context/AppContext';
 import { Card } from '../../src/components/atoms';
 import { colors, spacing, typography } from '../../src/styles/tokens';
 
@@ -20,13 +22,19 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, signOut, isAdmin } = useAuth();
+  const { state } = useApp();
 
+  const [signingOut, setSigningOut] = useState(false);
   const handleLogout = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
     try {
       await signOut();
       router.replace('/login');
     } catch (error) {
       Alert.alert('退出失败', '请重试');
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -45,6 +53,14 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>账号</Text>
+          <Card style={styles.menuItem}>
+            <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/baby-info')}>
+              <Text style={styles.menuText}>怀孕信息</Text>
+              {state.babies.length > 0 && (
+                <Text style={styles.menuBadge}>{state.babies[0].dueDate}</Text>
+              )}
+            </TouchableOpacity>
+          </Card>
           <Card style={styles.menuItem}>
             <TouchableOpacity style={styles.menuRow}>
               <Text style={styles.menuText}>个人资料</Text>
@@ -132,10 +148,18 @@ const styles = StyleSheet.create({
   },
   menuRow: {
     padding: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   menuText: {
     fontSize: 16,
     color: theme.textPrimary,
+  },
+  menuBadge: {
+    fontSize: 12,
+    color: theme.accent,
+    marginTop: spacing.xs,
   },
   logoutButton: {
     marginTop: spacing.xl,

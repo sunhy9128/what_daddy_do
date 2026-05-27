@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../../src/context/AppContext';
-import { Card, Button } from '../../src/components/atoms';
+import { Card } from '../../src/components/atoms';
 import { RecordEntry } from '../../src/components/molecules';
 import { SegmentControl } from '../../src/components/organisms';
 import { colors, spacing, typography } from '../../src/styles/tokens';
@@ -10,22 +11,26 @@ import { colors, spacing, typography } from '../../src/styles/tokens';
 export default function RecordsScreen() {
   const insets = useSafeAreaInsets();
   const { state, addRecord, removeRecord } = useApp();
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [filter, setFilter] = useState('all');
+  const postingRef = useRef(false);
 
-  const handleCreate = async () => {
-    if (!newTitle.trim()) {
-      Alert.alert('错误', '请填写标题');
+  // 快速发布：直接保存 inline 内容，自动用首段文字做标题
+  const handleQuickPost = async () => {
+    if (postingRef.current) return;
+    if (!newContent.trim()) {
+      Alert.alert('提示', '请输入内容');
       return;
     }
-    await addRecord({ title: newTitle.trim(), content: newContent.trim(), isPrivate });
-    setNewTitle('');
-    setNewContent('');
-    setIsPrivate(false);
-    setShowNewModal(false);
+    postingRef.current = true;
+    try {
+      const title = newContent.trim().split('\n')[0].slice(0, 30) || '随手记';
+      await addRecord({ title, content: newContent.trim(), isPrivate });
+      setNewContent('');
+    } finally {
+      postingRef.current = false;
+    }
   };
 
   const filteredRecords = state.records.filter(r => {
@@ -66,10 +71,10 @@ export default function RecordsScreen() {
           <View style={styles.newPostFooter}>
             <View style={styles.postTools}>
               <TouchableOpacity style={styles.toolBtn} onPress={() => setIsPrivate(!isPrivate)}>
-                <Text style={styles.toolIcon}>{isPrivate ? '🔒' : '🌍'}</Text>
+                <Ionicons name={isPrivate ? 'lock-closed' : 'globe-outline'} size={22} color={isPrivate ? colors.accent : colors.muted} />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.postBtn} onPress={() => setShowNewModal(true)}>
+            <TouchableOpacity style={styles.postBtn} onPress={handleQuickPost}>
               <Text style={styles.postBtnText}>发布</Text>
             </TouchableOpacity>
           </View>
@@ -91,6 +96,7 @@ export default function RecordsScreen() {
               content={record.content}
               time={record.createdAt}
               isPrivate={record.isPrivate}
+              onDelete={() => removeRecord(record.id)}
             />
           ))}
           {filteredRecords.length === 0 && (
@@ -100,50 +106,6 @@ export default function RecordsScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
-
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowNewModal(true)}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      {/* New Record Modal */}
-      <Modal visible={showNewModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>新建记录</Text>
-              <TouchableOpacity onPress={() => setShowNewModal(false)}>
-                <Text style={styles.modalCancel}>取消</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TextInput
-              style={styles.modalInput}
-              placeholder="标题"
-              placeholderTextColor={colors.muted}
-              value={newTitle}
-              onChangeText={setNewTitle}
-            />
-
-            <TextInput
-              style={[styles.modalInput, styles.modalTextArea]}
-              placeholder="内容"
-              placeholderTextColor={colors.muted}
-              value={newContent}
-              onChangeText={setNewContent}
-              multiline
-              numberOfLines={6}
-            />
-
-            <TouchableOpacity style={styles.privacyToggle} onPress={() => setIsPrivate(!isPrivate)}>
-              <Text style={styles.privacyIcon}>{isPrivate ? '🔒' : '🌍'}</Text>
-              <Text style={styles.privacyLabel}>{isPrivate ? '私密' : '公开'}</Text>
-            </TouchableOpacity>
-
-            <Button title="保存" variant="primary" onPress={handleCreate} />
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -170,7 +132,7 @@ const styles = StyleSheet.create({
   },
   postTools: { flexDirection: 'row', gap: spacing.md },
   toolBtn: { padding: spacing.xs },
-  toolIcon: { fontSize: 20 },
+
   postBtn: {
     backgroundColor: colors.accent,
     paddingVertical: spacing.sm,
@@ -183,52 +145,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabIcon: { fontSize: 28, color: colors.surface },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: spacing.xl,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  modalTitle: { ...typography.title3, fontWeight: '600' },
-  modalCancel: { ...typography.callout, color: colors.accent },
-  modalInput: {
-    ...typography.callout,
-    color: colors.fg,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 10,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  modalTextArea: { minHeight: 120, textAlignVertical: 'top' },
-  privacyToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  privacyIcon: { fontSize: 20 },
-  privacyLabel: { ...typography.callout },
 });
