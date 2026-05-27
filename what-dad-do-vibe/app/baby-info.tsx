@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
+import { updateBaby as updateBabyInDb } from '../src/lib/api';
 import { Card } from '../src/components/atoms';
 import { colors, spacing, typography } from '../src/styles/tokens';
 
@@ -46,7 +47,13 @@ export default function BabyInfoScreen() {
 
     setSaving(true);
     try {
-      await addBaby(dueDate);
+      if (existingBaby) {
+        // 更新已有宝宝的预产期（保留性别）
+        await updateBabyInDb(existingBaby.id, { due_date: dueDate });
+      } else {
+        // 新建宝宝记录
+        await addBaby(dueDate);
+      }
       Alert.alert('保存成功', '孕期信息已保存，将自动计算当前孕周和阶段', [
         { text: '好的', onPress: () => router.back() },
       ]);
@@ -60,7 +67,7 @@ export default function BabyInfoScreen() {
   const stageInfo = existingBaby ? (() => {
     const s = state.stage;
     const labels: Record<string, string> = {
-      preconception: '备孕期',
+      preconception: '备孕',
       first: '孕早期',
       second: '孕中期',
       third: '孕晚期',

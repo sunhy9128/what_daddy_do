@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useApp, PregnancyStage, Task } from '../../src/context/AppContext';
+import { useApp, Task } from '../../src/context/AppContext';
+import { PregnancyStage, STAGES, STAGE_LABELS } from '../../src/lib/stages';
 import { getPresetTasks, PresetTask } from '../../src/lib/api';
 import { Card, ProgressBar, Tag, Button } from '../../src/components/atoms';
 import { TaskCard } from '../../src/components/molecules';
 import { StageTabs } from '../../src/components/molecules';
 import { CollapsibleGroup } from '../../src/components/organisms';
 import { colors, radius, spacing, shadows, typography } from '../../src/styles/tokens';
+
+// 阶段标签列表（供 StageTabs 使用）
+const STAGE_LABEL_LIST: string[] = Object.values(STAGE_LABELS);
 
 // 阶段映射
 const STAGE_MAP: Record<string, PregnancyStage> = {
@@ -18,20 +22,12 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
   '产后': 'postpartum',
 };
 
-const STAGES = ['备孕', '孕早期', '孕中期', '孕晚期', '产后'];
 
-const KEY_TO_LABEL: Record<PregnancyStage, string> = {
-  preconception: '备孕',
-  first: '孕早期',
-  second: '孕中期',
-  third: '孕晚期',
-  postpartum: '产后',
-};
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
   const { state, toggleTask, addTask, removeTask, updateTask } = useApp();
-  const [selectedStage, setSelectedStage] = useState(KEY_TO_LABEL[state.stage] || '孕晚期');
+  const [selectedStage, setSelectedStage] = useState(STAGE_LABELS[state.stage] || '孕晚期');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskType, setNewTaskType] = useState<'custom' | 'checkin' | 'prenatal' | 'daily'>('custom');
@@ -60,7 +56,7 @@ export default function TasksScreen() {
 
   // 当自动计算的孕期变化时，同步切换
   useEffect(() => {
-    const label = KEY_TO_LABEL[state.stage];
+    const label = STAGE_LABELS[state.stage];
     if (label) {
       setSelectedStage(label);
     }
@@ -225,7 +221,7 @@ export default function TasksScreen() {
 
         {/* Stage Tabs */}
         <StageTabs
-          stages={STAGES}
+          stages={STAGE_LABEL_LIST}
           activeStage={selectedStage}
           onStageChange={setSelectedStage}
         />

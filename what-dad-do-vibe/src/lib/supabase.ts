@@ -17,6 +17,7 @@ export interface Baby {
   user_id: string;
   due_date: string;
   name: string;
+  gender: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +78,28 @@ export interface PostComment {
   user_id: string;
   content: string;
   created_at: string;
+}
+
+export interface KnowledgeArticle {
+  id: number;
+  emoji: string;
+  title: string;
+  content: string;
+  read_time: string;
+  category: string;
+  stage: string | null;
+  source: string | null;
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeRead {
+  id: string;
+  user_id: string;
+  article_id: number;
+  read_at: string;
 }
 
 export interface CommunityPost {

@@ -41,6 +41,7 @@ export default function RootLayout() {
             <Stack.Screen name="login" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="baby-info" />
+            <Stack.Screen name="congratulations" />
           </Stack>
         </AppProvider>
       </AuthProvider>

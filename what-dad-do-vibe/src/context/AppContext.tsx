@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { getTasks, createTask, toggleTaskComplete, deleteTask, updateTask as updateTaskInDb, getRecords, createRecord, deleteRecord, getCommunityPosts, getUrgentNotes, dismissUrgentNote as dismissUrgentNoteInDb, createUrgentNote as createUrgentNoteInDb, getBabies, createBaby as createBabyInDb, updateBaby as updateBabyInDb, calculateStageFromDueDate, StageKey } from '../lib/api';
+import { getTasks, createTask, toggleTaskComplete, deleteTask, updateTask as updateTaskInDb, getRecords, createRecord, deleteRecord, getCommunityPosts, getUrgentNotes, dismissUrgentNote as dismissUrgentNoteInDb, createUrgentNote as createUrgentNoteInDb, getBabies, createBaby as createBabyInDb, updateBaby as updateBabyInDb } from '../lib/api';
+import { PregnancyStage, calculateStageFromDueDate } from '../lib/stages';
 import { supabase } from '../lib/supabase';
 
 // Types
-export type PregnancyStage = 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
+
 
 export interface Task {
   id: string;
@@ -41,6 +42,7 @@ export interface Baby {
   id: string;
   dueDate: string;
   name: string;
+  gender?: string;
 }
 
 export interface CommunityPost {
@@ -160,6 +162,7 @@ const AppContext = createContext<{
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
   addBaby: (dueDate: string, name?: string) => Promise<void>;
+  updateBabyGender: (babyId: string, gender: string, dueDate?: string) => Promise<void>;
 } | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -579,6 +582,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_STAGE', payload: calc.stage });
   }, [user]);
 
+  const updateBabyGender = useCallback(async (babyId: string, gender: string, dueDate?: string) => {
+    await updateBabyInDb(babyId, { gender, ...(dueDate ? { due_date: dueDate } : {}) });
+    const today = dueDate || new Date().toISOString().split('T')[0];
+    const calc = calculateStageFromDueDate(today);
+    dispatch({
+      type: 'SET_BABIES',
+      payload: {
+        babies: state.babies.map(b => b.id === babyId ? { ...b, gender, dueDate: today } : b),
+        stage: calc.stage,
+        weeksPregnant: calc.weeksPregnant,
+      },
+    });
+    dispatch({ type: 'SET_STAGE', payload: calc.stage });
+  }, [state.babies, state.stage, state.weeksPregnant]);
+
   return (
     <AppContext.Provider
       value={{
@@ -594,6 +612,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addUrgentNote,
         dismissUrgentNote,
         addBaby,
+        updateBabyGender,
       }}
     >
       {children}

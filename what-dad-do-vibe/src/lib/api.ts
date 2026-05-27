@@ -1,4 +1,4 @@
-import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostLike, PostComment, PregnancyStage } from '../lib/supabase';
+import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostLike, PostComment, KnowledgeArticle, KnowledgeRead, PregnancyStage } from '../lib/supabase';
 
 // 预设任务类型
 export interface PresetTask {
@@ -208,42 +208,8 @@ export async function updateBaby(id: string, updates: Partial<Baby>): Promise<Ba
 }
 
 // 孕期阶段计算
-export type StageKey = 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
-
-export function calculateStageFromDueDate(dueDate: string): {
-  stage: StageKey;
-  weeksPregnant: number;
-  stageLabel: string;
-} {
-  const today = new Date();
-  const due = new Date(dueDate);
-  const diffMs = due.getTime() - today.getTime();
-  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  const weeksPregnant = Math.max(0, Math.floor((280 - daysLeft) / 7));
-
-  let stage: StageKey;
-  let stageLabel: string;
-
-  if (daysLeft > 280) {
-    // 距离预产期超过40周，还没到孕早期
-    stage = 'preconception';
-    stageLabel = '备孕';
-  } else if (weeksPregnant <= 12) {
-    stage = 'first';
-    stageLabel = '孕早期';
-  } else if (weeksPregnant <= 27) {
-    stage = 'second';
-    stageLabel = '孕中期';
-  } else if (weeksPregnant <= 40) {
-    stage = 'third';
-    stageLabel = '孕晚期';
-  } else {
-    stage = 'postpartum';
-    stageLabel = '产后';
-  }
-
-  return { stage, weeksPregnant, stageLabel };
-}
+import { calculateStageFromDueDate } from './stages';
+export { calculateStageFromDueDate };
 
 // 帖子互动
 export async function toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
@@ -312,4 +278,40 @@ export async function addComment(postId: string, userId: string, content: string
     .eq('post_id', postId);
   await supabase.from('community_posts').update({ comments: count || 0 }).eq('id', postId);
   return data;
+}
+
+// 知识文章
+export async function getKnowledgeArticles(): Promise<KnowledgeArticle[]> {
+  const { data, error } = await supabase
+    .from('knowledge_articles')
+    .select('*')
+    .eq('is_published', true)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getReadKnowledgeIds(userId: string): Promise<Set<number>> {
+  const { data, error } = await supabase
+    .from('user_knowledge_reads')
+    .select('article_id')
+    .eq('user_id', userId);
+  if (error) console.error('getReadKnowledgeIds error:', error.message);
+  return new Set((data || []).map(r => r.article_id));
+}
+
+export async function markKnowledgeRead(userId: string, articleId: number): Promise<void> {
+  // 先查是否存在，避免重复
+  const { data: existing } = await supabase
+    .from('user_knowledge_reads')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('article_id', articleId)
+    .maybeSingle();
+  if (existing) return; // 已读，跳过
+
+  const { error } = await supabase
+    .from('user_knowledge_reads')
+    .insert({ user_id: userId, article_id: articleId, read_at: new Date().toISOString() });
+  if (error) console.error('markKnowledgeRead error:', error.message);
 }

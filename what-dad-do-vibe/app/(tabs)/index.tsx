@@ -1,30 +1,48 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { useApp } from '../../src/context/AppContext';
+import { Toolbar } from '../../src/components/tools/Toolbar';
+import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
 import { useAuth } from '../../src/context/AuthContext';
-import { Card, ProgressBar } from '../../src/components/atoms';
-import { TaskCard, KnowledgeCard, RecordEntry } from '../../src/components/molecules';
+
 import { colors, spacing, typography } from '../../src/styles/tokens';
 
-const STAGES = [
-  { key: 'preconception', label: '备孕', weeks: '0-4周' },
-  { key: 'first', label: '孕早期', weeks: '1-12周' },
-  { key: 'second', label: '孕中期', weeks: '13-27周' },
-  { key: 'third', label: '孕晚期', weeks: '28-40周' },
-] as const;
+import { STAGES } from '../../src/lib/stages';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { state, dismissUrgentNote, addUrgentNote } = useApp();
+  const { session, loading: authLoading, user } = useAuth();
   const router = useRouter();
-  const { state, toggleTask, dismissUrgentNote } = useApp();
-  const { session, loading: authLoading } = useAuth();
 
-  // 进度只统计一次性任务（排除日常/打卡等重复任务）
-  const oneTimeTasks = state.tasks.filter(t => t.type !== 'daily' && t.type !== 'checkin' && t.taskSubtype !== 'recurring');
-  const totalTasks = oneTimeTasks.length;
-  const completedTasks = oneTimeTasks.filter(t => t.isCompleted).length;
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // 开发阶段：每次进入首页都检测是否显示恭喜页面
+  useEffect(() => {
+    if (!session || !state.babies[0]) return;
+    const baby = state.babies[0];
+    if (baby.gender) return; // 已确认性别，跳过
+    router.replace('/congratulations');
+  }, [session, state.babies]);
+
+  const [showUrgentModal, setShowUrgentModal] = useState(false);
+  const [urgentText, setUrgentText] = useState('');
+  const nextToolId = useRef(1);
+  const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
+
+  // 加载/保存工具配置
+  useEffect(() => {
+    if (!user) return;
+    loadActiveTools(user.id).then(tools => {
+      setActiveTools(tools);
+      nextToolId.current = tools.length + 1;
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || activeTools.length === 0) return;
+    saveActiveTools(user.id, activeTools);
+  }, [activeTools, user]);
 
   if (authLoading || state.loading) {
     return (
@@ -46,9 +64,6 @@ export default function HomeScreen() {
   }
 
   const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
-  const incompleteTasks = state.tasks.filter(t => !t.isCompleted);
-  const todayTasks = incompleteTasks.slice(0, 3);
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -64,106 +79,97 @@ export default function HomeScreen() {
         </View>
 
         {/* 紧急关注 */}
-        {state.urgentNotes.length > 0 && (
-          <View style={styles.urgentSection}>
-            {state.urgentNotes.map(note => (
-              <View key={note.id} style={styles.urgentCard}>
-                <View style={styles.urgentBody}>
-                  <View style={styles.urgentDot} />
-                  <Text style={styles.urgentText}>{note.content}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.urgentClose}
-                  onPress={() => {
-                    if (Platform.OS === 'web') {
-                      if (window.confirm('关闭后将不再展示，确定要关闭吗？')) {
-                        dismissUrgentNote(note.id);
-                      }
-                    } else {
-                      Alert.alert(
-                        '关闭提醒',
-                        '关闭后将不再展示，确定要关闭吗？',
-                        [
-                          { text: '取消', style: 'cancel' },
-                          { text: '确定关闭', style: 'destructive', onPress: () => dismissUrgentNote(note.id) },
-                        ]
-                      );
+        <View style={styles.urgentSection}>
+          {state.urgentNotes.map(note => (
+            <View key={note.id} style={styles.urgentCard}>
+              <View style={styles.urgentBody}>
+                <View style={styles.urgentDot} />
+                <Text style={styles.urgentText}>{note.content}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.urgentClose}
+                onPress={() => {
+                  if (Platform.OS === 'web') {
+                    if (window.confirm('关闭后将不再展示，确定要关闭吗？')) {
+                      dismissUrgentNote(note.id);
                     }
-                  }}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.urgentCloseText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Progress Ring */}
-        <Card style={styles.progressCard}>
-          <View style={styles.progressRow}>
-            <View style={styles.ringContainer}>
-              <View style={styles.ring}>
-                <Text style={styles.ringText}>{progress}%</Text>
-              </View>
+                  } else {
+                    Alert.alert(
+                      '关闭提醒',
+                      '关闭后将不再展示，确定要关闭吗？',
+                      [
+                        { text: '取消', style: 'cancel' },
+                        { text: '确定关闭', style: 'destructive', onPress: () => dismissUrgentNote(note.id) },
+                      ]
+                    );
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.urgentCloseText}>✕</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.progressInfo}>
-              <Text style={styles.progressTitle}>本周任务完成度</Text>
-              <Text style={styles.progressSubtitle}>
-                {incompleteTasks.length > 0 ? `还需完成${incompleteTasks.length}项任务` : '太棒了，全部完成！'}
-              </Text>
-            </View>
-          </View>
-          <ProgressBar value={progress} />
-        </Card>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.quickAction} onPress={() => router.push('/(tabs)/tasks')}>
-            <View style={[styles.quickIcon, { backgroundColor: '#e0f2fe' }]}>
-              <Text style={styles.quickIconText}>✓</Text>
-            </View>
-            <Text style={styles.quickLabel}>查看任务</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => router.push('/(tabs)/records')}>
-            <View style={[styles.quickIcon, { backgroundColor: '#fef3c7' }]}>
-              <Text style={styles.quickIconText}>✎</Text>
-            </View>
-            <Text style={styles.quickLabel}>写记录</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Knowledge Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>本周需要</Text>
-        </View>
-        <Card>
-          <KnowledgeCard emoji="🫁" title="孕26-28周该做什么" readTime="3分钟阅读" />
-          <KnowledgeCard emoji="👶" title="宝宝胎动怎么数？" readTime="5分钟阅读" />
-          <KnowledgeCard emoji="🏥" title="待产包清单" readTime="4分钟阅读" />
-        </Card>
-
-        {/* Records Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>最近记录</Text>
-        </View>
-        <Card>
-          {state.records.slice(0, 2).map(record => (
-            <RecordEntry
-              key={record.id}
-              title={record.title}
-              content={record.content}
-              time={record.createdAt}
-              isPrivate={record.isPrivate}
-            />
           ))}
-          {state.records.length === 0 && (
-            <Text style={styles.emptyText}>暂无记录，去记录页创建</Text>
-          )}
-        </Card>
+          {/* 新增按钮 */}
+          <TouchableOpacity style={styles.urgentAddBtn} onPress={() => { setUrgentText(''); setShowUrgentModal(true); }}>
+            <Text style={styles.urgentAddIcon}>+</Text>
+            <Text style={styles.urgentAddText}>新增紧急关注</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 工具栏 */}
+        <Toolbar
+          activeTools={activeTools}
+          userId={user?.id || ''}
+          babyGender={state.babies[0]?.gender}
+          onAddTool={(toolId) => {
+            if (activeTools.some(t => t.toolId === toolId)) return;
+            setActiveTools(prev => [...prev, { instanceId: `tool-${nextToolId.current++}`, toolId }]);
+          }}
+          onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
+          onReorder={(tools) => setActiveTools(tools)}
+        />
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* 新增紧急关注弹窗 */}
+      <Modal visible={showUrgentModal} animationType="fade" transparent>
+        <View style={styles.urgentModalOverlay}>
+          <View style={styles.urgentModalContent}>
+            <Text style={styles.urgentModalTitle}>新增紧急关注</Text>
+            <TextInput
+              style={styles.urgentModalInput}
+              placeholder="如：观察明天是否还有红疹"
+              placeholderTextColor={colors.muted}
+              value={urgentText}
+              onChangeText={setUrgentText}
+              multiline
+              autoFocus
+            />
+            <View style={styles.urgentModalActions}>
+              <TouchableOpacity
+                style={styles.urgentModalCancel}
+                onPress={() => setShowUrgentModal(false)}
+              >
+                <Text style={styles.urgentModalCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.urgentModalSave, !urgentText.trim() && styles.urgentModalSaveDisabled]}
+                onPress={async () => {
+                  if (!urgentText.trim()) return;
+                  await addUrgentNote(urgentText.trim());
+                  setUrgentText('');
+                  setShowUrgentModal(false);
+                }}
+                disabled={!urgentText.trim()}
+              >
+                <Text style={styles.urgentModalSaveText}>保存</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -181,44 +187,6 @@ const styles = StyleSheet.create({
   stageText: { ...typography.title1, fontWeight: '700' },
   stageRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   weekText: { ...typography.callout, color: colors.accent, fontWeight: '500' },
-
-  // Progress
-  progressCard: { marginTop: 0 },
-  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
-  ringContainer: { marginRight: spacing.md },
-  ring: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 5,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringText: { ...typography.title3, fontWeight: '600' },
-  progressInfo: { flex: 1 },
-  progressTitle: { ...typography.callout, fontWeight: '600', marginBottom: spacing.xs },
-  progressSubtitle: { ...typography.footnote, color: colors.muted },
-
-  // Quick Actions
-  quickActions: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, marginBottom: spacing.lg },
-  quickAction: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  quickIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  quickIconText: { fontSize: 16, color: colors.accent },
-  quickLabel: { ...typography.footnote, fontWeight: '500' },
 
   // 紧急关注
   urgentSection: {
@@ -269,9 +237,87 @@ const styles = StyleSheet.create({
     color: '#D97706',
     fontWeight: '400',
   },
+  urgentAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderStyle: 'dashed',
+  },
+  urgentAddIcon: {
+    fontSize: 18,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  urgentAddText: {
+    ...typography.footnote,
+    color: colors.accent,
+    fontWeight: '500',
+  },
 
-  // Section
-  sectionHeader: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  sectionTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, textTransform: 'uppercase' },
-  emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+  // 紧急关注弹窗
+  urgentModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  urgentModalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  urgentModalTitle: {
+    ...typography.title3,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  urgentModalInput: {
+    ...typography.callout,
+    color: colors.fg,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 10,
+    padding: spacing.md,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  urgentModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  urgentModalCancel: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 8,
+  },
+  urgentModalCancelText: {
+    ...typography.callout,
+    color: colors.muted,
+  },
+  urgentModalSave: {
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 8,
+  },
+  urgentModalSaveDisabled: {
+    opacity: 0.5,
+  },
+  urgentModalSaveText: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
 });
