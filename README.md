@@ -119,3 +119,9 @@ npm run web      # Web
 MIT — 可以自由使用这个项目。
 
 **愿每一对准爸妈的旅程，少一些慌张，多一些期待。**
+
+---
+
+## 在线预览
+
+访问 [landing.html](./landing.html) 查看完整的 App 介绍页面（含 UI 预览）。
