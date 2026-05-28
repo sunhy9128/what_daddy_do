@@ -1,133 +1,125 @@
-# 爸爸去哪了 — What Dad Do Vibe
+# 爸爸去哪了
 
-孕产期跟踪助手 App，覆盖备孕、孕早期/中期/晚期、产后各阶段的任务管理、孕育记录与社区功能。
+**一款给准爸爸和新手爸爸的孕产期陪伴工具。**
 
-[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-blue)](#)
+---
 
-## 功能亮点
+## 我为什么做了这个 App
 
-- **孕期阶段自动追踪** — 基于预产期推算当前阶段（备孕 → 孕早/中/晚期 → 产后），动态适配任务模板
-- **智能任务管理** — 各阶段预设任务 + 自定义任务，完成状态本地/服务端同步
-- **孕育工具箱** — 喂养计时器、生长图表（WHO 标准）、疫苗追踪与日历
-- **成长里程碑祝贺页** — 达到新阶段时自动触发 confetti 动画庆祝
-- **社区知识库** — 孕育知识文章阅读、点赞、评论，已读状态跨设备同步
+老婆怀孕的那一刻，我既兴奋又慌张。
 
-## 技术栈
+兴奋的是我们要当爸妈了。慌张的是——我该做些什么？
 
-| 层级 | 技术 |
-|------|------|
+网上查的、群里问的、医院发的……信息多且杂，我记不住。产检时间、准备物品、注意事项，每次都临时抱佛脚。作为爸爸，我能做的事好像不多，但，我不想只是"陪伴"。
+
+我想要**真正参与**这件事。
+
+所以我做了「爸爸去哪了」——一个帮助准爸爸从备孕到产后全程参与的助手 app。它会告诉你每个阶段该做什么、该准备什么，让你不那么慌，不那么迷茫。
+
+**陪她，更是在陪她一起迎接新生命。**
+
+---
+
+## 这个 App 解决什么问题
+
+| 场景 | 没有 App | 有「爸爸去哪了」 |
+|------|---------|-----------------|
+| 不知道下次产检是什么时候 | 翻聊天记录 / 问她 | 首页直接显示倒计时 |
+| 不知道该准备什么待产包 | 网上搜、手忙脚乱 | 各阶段任务清单清晰列出 |
+| 宝宝出生后喂养不规律 | 记不住几点喂的奶 | 喂养计时器帮你记录 |
+| 不知道疫苗什么时候打 | 翻疫苗本 / 问邻居 | 疫苗日历自动提醒 |
+| 错过宝宝成长的重要时刻 | 事后才知道 | 阶段里程碑自动庆祝（还有彩纸特效 🎉）|
+
+---
+
+## 适用人群
+
+- **正在备孕的夫妻** — 一起了解孕前该做什么准备
+- **准妈妈** — 和老公共享信息，让他知道你需要什么支持
+- **准爸爸** — 不知道该干嘛的时候，打开 app，它会告诉你
+- **新手爸妈** — 产后第一个月最手忙脚乱，这些工具能帮你
+
+> 本应用同时支持 iOS、Android 和 Web，一个账号，多端同步。
+
+---
+
+## 功能概览
+
+### 📋 任务清单 — 每个阶段该做的事
+
+根据当前孕期阶段，自动适配任务列表。备孕做什么、孕早期注意什么、孕晚期准备什么、产后怎么照顾……清晰列表，不会漏。
+
+### 📅 产检倒计时 — 下次产检是什么时候
+
+输入预产期，自动计算当前孕周和下次产检日期。一眼看清时间节点，不再临时翻聊天记录。
+
+### 🍼 喂养计时器 — 几点喂的奶？
+
+新手爸妈最常问的问题之一：上次喂奶是什么时候？喂养计时器帮你记住，还能记录喂养方式（母乳/奶粉/混合）。
+
+### 📈 生长图表 — 宝宝长得好不好
+
+根据 WHO 标准生长曲线，在家就能记录和观察宝宝的身高体重发育情况。
+
+### 💉 疫苗追踪 — 什么时候打什么疫苗
+
+输入疫苗接种计划，日历视图清晰展示。带宝宝去打疫苗不再靠提醒，而是心中有数。
+
+### 🎉 里程碑庆祝 — 你到达了新的阶段
+
+从备孕到产后，每个新阶段到来时，应用会送上祝贺页面和彩纸动画。**你不是在旁观，你在参与。**
+
+### 📖 知识社区 — 科学的孕育知识
+
+精选的孕育知识文章，已读状态自动同步。还有社区功能，可以和其他爸妈交流。
+
+---
+
+## 背后的故事
+
+这个 app 的名字叫「爸爸去哪了」——这个问题可能很多准妈妈在孕期某个时刻会问。
+
+我想通过这个 app 让这个问题变成：
+
+> "爸爸在！爸爸知道该做什么！"
+
+---
+
+## 技术细节（给开发者）
+
+| 层级 | 技术选型 |
+|------|---------|
 | 语言 | TypeScript 5.9 + strict mode |
-| 框架 | Expo SDK 54 + expo-router（文件路由） |
-| UI | React Native 0.81 + react-native-web |
-| 后端 | Supabase（Auth + PostgreSQL + REST API） |
-| 状态 | useReducer + Context（无外部状态库） |
-| 图标 | @expo/vector-icons (Ionicons) |
+| 框架 | Expo SDK 54 + expo-router |
+| 跨平台 | iOS / Android / Web |
+| 后端 | Supabase（Auth + PostgreSQL） |
+| 状态管理 | React Context + useReducer |
 
-## 项目结构
+如需本地运行或参与开发，请参考下方快速开始。
 
-```
-what-dad-do-vibe/
-├── app/                          # expo-router 页面
-│   ├── _layout.tsx               # 根布局
-│   ├── (tabs)/                   # 底部 Tab 导航
-│   │   ├── index.tsx             # 首页（阶段概览 + 工具入口）
-│   │   ├── tasks.tsx             # 任务列表
-│   │   ├── records.tsx           # 孕育记录
-│   │   ├── community.tsx         # 社区
-│   │   └── profile.tsx           # 个人中心
-│   ├── login.tsx                 # 登录页
-│   ├── baby-info.tsx             # 宝宝信息配置
-│   └── congratulations.tsx        # 里程碑祝贺页
-├── src/
-│   ├── components/
-│   │   ├── atoms/                 # 原子组件（Button, Card, Avatar, Badge…）
-│   │   ├── molecules/            # 复合组件（PostCard, TaskCard, RecordEntry…）
-│   │   ├── organisms/             # 组合组件（TabBar, CollapsibleGroup…）
-│   │   └── tools/                # 工具组件（FeedingTimer, GrowthChart, VaccineTracker…）
-│   ├── context/
-│   │   ├── AppContext.tsx         # 全局状态（tasks, records, communityPosts, babies…）
-│   │   └── AuthContext.tsx        # 认证状态
-│   ├── lib/
-│   │   ├── supabase.ts           # Supabase 客户端
-│   │   ├── api.ts                # 所有 DB CRUD 操作
-│   │   ├── stages.ts             # 孕期阶段计算
-│   │   └── time.ts               # 时间格式化工具
-│   └── styles/
-│       └── tokens.ts             # 设计 tokens（colors, spacing, typography）
-├── supabase/migrations/          # Raw SQL 数据库迁移
-├── scripts/                      # 构建 APK、种子数据、Excel 导入工具
-└── assets/                       # 应用图标 & 启动图
-```
+---
 
 ## 快速开始
 
-### 环境要求
-
-- Node.js 18+
-- Expo CLI (`npm install -g expo-cli`)
-- iOS 模拟器 / Android 模拟器 / Web 浏览器
-
-### 安装与运行
-
 ```bash
-cd what-dad-do-vibe
+# 安装依赖
 npm install
 
-# 开发服务器（默认）
+# 启动开发服务器
 npm start
 
-# 指定平台
-npm run ios      # iOS 模拟器
+# 指定平台运行
+npm run ios      # iOS
 npm run android  # Android
-npm run web      # Web 浏览器
+npm run web      # Web
 ```
 
-### 类型检查
+---
 
-```bash
-npx tsc --noEmit
-```
+## 一起参与
 
-### 构建 APK（Android）
+如果你也想让更多准爸爸不再迷茫，欢迎 Star、Fork、提 Issue 或提交 Pull Request。
 
-```bash
-npx eas build -p android --profile preview --non-interactive
-```
+MIT License — 可以自由使用这个项目。
 
-> 需要在 `.env` 中配置 `EXPO_TOKEN`（从 Expo Dashboard 获取）
-
-## 数据库
-
-数据存储在 Supabase PostgreSQL，主要表结构：
-
-| 表名 | 用途 |
-|------|------|
-| `babies` | 宝宝信息（预产期/出生日期） |
-| `preset_tasks` | 各阶段预设任务模板 |
-| `tasks` | 用户任务（关联宝宝与阶段） |
-| `records` | 孕育记录（体检、体重等） |
-| `community_posts` | 社区帖子/知识文章 |
-| `post_likes` / `post_comments` | 互动数据 |
-| `vaccines` | 疫苗时间表 |
-| `vaccine_records` | 疫苗接种记录 |
-| `user_knowledge_reads` | 文章已读状态 |
-
-更多细节请参考 [REASONIX.md](./REASONIX.md)。
-
-## 设计规范
-
-- **Atomic Design 分层** — atoms → molecules → organisms → tools
-- **命名导出** — 所有组件均使用 named export + default export
-- **设计 Tokens** — 所有颜色/间距/字体从 `src/styles/tokens.ts` 引入，禁止硬编码
-- **API 封装** — 所有 DB 操作通过 `src/lib/api.ts`，页面不直接调用 supabase 客户端
-
-## 注意事项
-
-- **Supabase RLS** — seed 脚本无法通过匿名 key 绕过 RLS，请通过 Dashboard SQL Editor 执行迁移
-- **Web Alert 限制** — React Native Web 的 Alert 不支持按钮回调，Web 环境使用 `window.confirm()` 替代
-- **生长图表** — 纯 View 实现，无 `react-native-svg` 依赖（因原生兼容性问题已移除）
-- **工具排序** — 通过 AsyncStorage 持久化，▲/▼ 按钮交互（`react-native-draggable-flatlist` 与当前环境不兼容）
-
-## License
-
-MIT
+**愿每一对准爸妈的旅程，少一些慌张，多一些期待。**
