@@ -1,8 +1,7 @@
 {
   "cli": {
     "version": ">= 14.0.0",
-    "requireCommit": false,
-    "appVersionSource": "local"
+    "requireCommit": false
   },
   "build": {
     "preview": {
@@ -13,7 +12,8 @@
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       }
     }
   },

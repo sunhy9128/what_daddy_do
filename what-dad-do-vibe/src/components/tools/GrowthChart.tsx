@@ -3,14 +3,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { GrowthDataPoint, BOY_GROWTH, GIRL_GROWTH } from '../../lib/growth-chart-data';
 import { colors, spacing, typography } from '../../styles/tokens';
 
-const CHART_W = 300;
-const PANEL_H = 130;
-const TOTAL_H = PANEL_H * 2 + 24;
-const PAD_L = 32;
-const PAD_R = 8;
-const PAD_T = 16;
-const PAD_B = 4;
-const PLOT_W = CHART_W - PAD_L - PAD_R;
+const W = 300, PANEL_H = 140, GAP = 2;
+const TOTAL_H = PANEL_H * 2 + GAP;
+const PAD_L = 32, PAD_R = 4, PAD_T = 16, PAD_B = 6;
+const PLOT_W = W - PAD_L - PAD_R;
 const PLOT_H = PANEL_H - PAD_T - PAD_B;
 
 interface Record { month: number; height: number; weight: number; }
@@ -28,103 +24,75 @@ function interp(data: GrowthDataPoint[], month: number, key: keyof GrowthDataPoi
   return data[data.length - 1][key];
 }
 
-function ChartPanel({
-  data, yMin, yMax, yStep, unit, colorP, colorM, band1, band2, records, top,
-}: {
-  data: GrowthDataPoint[];
-  yMin: number; yMax: number; yStep: number;
-  unit: string; colorP: string; colorM: string;
-  band1: string; band2: string;
-  records: { month: number; value: number }[];
-  top: number;
-}) {
+function drawPanel(
+  data: GrowthDataPoint[],
+  yMin: number, yMax: number, yStep: number,
+  colorP: string, colorM: string, band1: string, band2: string,
+  records: { month: number; value: number }[],
+  topOffset: number,
+) {
   const x = (m: number) => PAD_L + (m / 36) * PLOT_W;
-  const y = (v: number) => top + PAD_T + ((yMax - v) / (yMax - yMin)) * PLOT_H;
+  const yPos = (v: number) => topOffset + PAD_T + ((yMax - v) / (yMax - yMin)) * PLOT_H;
 
-  // 色带 + 网格线 + Y 标签一次性生成
-  const elements: React.ReactElement[] = [];
+  const els: React.ReactElement[] = [];
 
-  // 色带 — 用竖条拼
+  // 水平网格线
+  for (let v = yMin; v <= yMax; v += yStep) {
+    const yy = yPos(v);
+    els.push(<View key={`hg-${v}`} style={[s.grid, { top: yy, left: PAD_L, width: PLOT_W }]} />);
+    els.push(<Text key={`yl-${v}`} style={[s.yLbl, { top: yy - 5 }]}>{v}</Text>);
+  }
+
+  // 色带
   for (let i = 0; i <= 72; i++) {
     const m = (i / 72) * 36;
     const cx = x(m);
-    const p3 = y(interp(data, m, 'p3'));
-    const p15 = y(interp(data, m, 'p15'));
-    const p85 = y(interp(data, m, 'p85'));
-    const p97 = y(interp(data, m, 'p97'));
-    elements.push(
-      <React.Fragment key={`b-${i}`}>
-        <View style={[s.bar, { left: cx, top: p3, height: Math.max(1, p15 - p3), backgroundColor: band1 }]} />
-        <View style={[s.bar, { left: cx, top: p15, height: Math.max(1, p85 - p15), backgroundColor: band2 }]} />
-        <View style={[s.bar, { left: cx, top: p85, height: Math.max(1, p97 - p85), backgroundColor: band1 }]} />
-      </React.Fragment>
-    );
+    const p3 = yPos(interp(data, m, 'p3'));
+    const p15 = yPos(interp(data, m, 'p15'));
+    const p85 = yPos(interp(data, m, 'p85'));
+    const p97 = yPos(interp(data, m, 'p97'));
+    els.push(<View key={`b3-${i}`} style={[s.bar, { left: cx, top: p3, height: Math.max(1, p15 - p3), backgroundColor: band1 }]} />);
+    els.push(<View key={`bm-${i}`} style={[s.bar, { left: cx, top: p15, height: Math.max(1, p85 - p15), backgroundColor: band2 }]} />);
+    els.push(<View key={`b7-${i}`} style={[s.bar, { left: cx, top: p85, height: Math.max(1, p97 - p85), backgroundColor: band1 }]} />);
   }
 
-  // 网格线 + Y 标签
-  const yCount = Math.floor((yMax - yMin) / yStep);
-  for (let i = 0; i <= yCount; i++) {
-    const val = yMin + i * yStep;
-    const yy = y(val);
-    elements.push(
-      <React.Fragment key={`g-${i}`}>
-        <View style={[s.grid, { top: yy, left: PAD_L, width: PLOT_W }]} />
-        <Text style={[s.yLbl, { top: yy - 5 }]}>{val}</Text>
-      </React.Fragment>
-    );
-  }
-
-  // 曲线采样点（每 0.5 月）
-  const pts = (key: keyof GrowthDataPoint): { x: number; y: number }[] => {
-    const out: { x: number; y: number }[] = [];
-    for (let i = 0; i <= 72; i++) {
-      const m = (i / 72) * 36;
-      out.push({ x: x(m), y: y(interp(data, m, key)) });
-    }
-    return out;
-  };
-
-  const curveP3 = pts('p3');
-  const curveP50 = pts('p50');
-  const curveP97 = pts('p97');
-
-  // 曲线点
-  for (let i = 0; i < curveP97.length; i++) {
-    elements.push(<View key={`p97-${i}`} style={[s.dot, { left: curveP97[i].x, top: curveP97[i].y - 0.75, width: 1.5, height: 1.5, borderRadius: 0.75, backgroundColor: colorP }]} />);
-  }
-  for (let i = 0; i < curveP50.length; i++) {
-    elements.push(<View key={`p50-${i}`} style={[s.dot, { left: curveP50[i].x, top: curveP50[i].y - 1, width: 2, height: 2, borderRadius: 1, backgroundColor: colorM }]} />);
-  }
-  for (let i = 0; i < curveP3.length; i++) {
-    elements.push(<View key={`p3-${i}`} style={[s.dot, { left: curveP3[i].x, top: curveP3[i].y - 0.75, width: 1.5, height: 1.5, borderRadius: 0.75, backgroundColor: colorP }]} />);
+  // 曲线
+  for (let i = 0; i <= 72; i++) {
+    const m = (i / 72) * 36;
+    const cx = x(m);
+    const addDot = (key: keyof GrowthDataPoint, color: string, size: number) => {
+      const yy = yPos(interp(data, m, key));
+      els.push(<View key={`c-${key}-${i}`} style={[s.dot, { left: cx - size / 2, top: yy - size / 2, width: size, height: size, borderRadius: size / 2, backgroundColor: color }]} />);
+    };
+    addDot('p97', colorP, 1.5);
+    addDot('p50', colorM, 2);
+    addDot('p3', colorP, 1.5);
   }
 
   // 数据点
   for (let i = 0; i < records.length; i++) {
     const r = records[i];
+    if (r.value <= 0) continue;
     const px = x(r.month);
-    const py = y(r.value);
-    if (isNaN(py) || py < top || py > top + PANEL_H) continue;
+    const py = yPos(r.value);
+    if (py < topOffset || py > topOffset + PANEL_H) continue;
     const v15 = interp(data, r.month, 'p15');
     const v85 = interp(data, r.month, 'p85');
     const dc = (r.value < v15 || r.value > v85) ? colorP : colorM;
-    elements.push(<View key={`d-${i}`} style={[s.dataPt, { left: px - 4, top: py - 4, backgroundColor: dc }]} />);
+    els.push(<View key={`dp-${i}`} style={[s.dataPt, { left: px - 4, top: py - 4, borderColor: dc }]} />);
   }
 
-  // 单位标签
-  elements.push(<Text key="unit" style={[s.unit, { top: top + 2, left: PAD_L - 2 }]}>{unit}</Text>);
-
-  return <>{elements}</>;
+  return els;
 }
 
 export function GrowthChart({ gender, records }: Props) {
-  const lenData = (gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH).length;
-  const wtData = (gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH).weight;
+  const ds = gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH;
+  const lenData = ds.length;
+  const wtData = ds.weight;
 
   const lv = lenData.flatMap(d => [d.p3, d.p97]);
   const lenMin = Math.floor(Math.min(...lv) / 5) * 5;
   const lenMax = Math.ceil(Math.max(...lv) / 5) * 5;
-
   const wv = wtData.flatMap(d => [d.p3, d.p97]);
   const wtMin = 0;
   const wtMax = Math.ceil(Math.max(...wv) / 2) * 2;
@@ -134,31 +102,33 @@ export function GrowthChart({ gender, records }: Props) {
   return (
     <View style={s.wrapper}>
       <Text style={s.title}>生长曲线</Text>
-      <View style={{ width: CHART_W, height: TOTAL_H }}>
-        {/* 背景 */}
-        <View style={{ position: 'absolute', left: 0, top: 0, width: CHART_W, height: TOTAL_H, backgroundColor: '#FCFAF5', borderRadius: 8 }} />
+      <View style={{ width: W, height: TOTAL_H }}>
+        <View style={{ position: 'absolute', left: 0, top: 0, width: W, height: TOTAL_H, backgroundColor: '#FCFAF5', borderRadius: 8 }} />
 
         {/* 上半：身长 */}
-        <ChartPanel data={lenData} yMin={lenMin} yMax={lenMax} yStep={5} unit="cm" colorP="#D06060" colorM="#CC4444" band1="#FFE0E0" band2="#E8FFE8" records={records.map(r => ({ month: r.month, value: r.height }))} top={0} />
+        {drawPanel(lenData, lenMin, lenMax, 5, '#D06060', '#CC4444', '#FFE0E0', '#E8FFE8', records.map(r => ({ month: r.month, value: r.height })), 0)}
 
         {/* 分隔线 */}
-        <View style={{ position: 'absolute', left: PAD_L, top: PANEL_H + 1, width: PLOT_W, height: 0.5, backgroundColor: colors.border }} />
+        <View style={{ position: 'absolute', left: PAD_L, top: PANEL_H, width: PLOT_W, height: 0.5, backgroundColor: colors.border }} />
 
         {/* 下半：体重 */}
-        <ChartPanel data={wtData} yMin={wtMin} yMax={wtMax} yStep={2} unit="kg" colorP="#6080C0" colorM="#4466CC" band1="#E0ECFF" band2="#E8FFF0" records={records.map(r => ({ month: r.month, value: r.weight }))} top={PANEL_H + 2} />
+        {drawPanel(wtData, wtMin, wtMax, 2, '#6080C0', '#4466CC', '#E0ECFF', '#E8FFF0', records.map(r => ({ month: r.month, value: r.weight })), PANEL_H + GAP)}
 
-        {/* X 轴刻度 */}
+        {/* X 轴 */}
         {[0, 6, 12, 18, 24, 30, 36].map(m => (
           <Text key={m} style={[s.xLbl, { left: xFn(m) - 6, top: TOTAL_H - 14 }]}>{m}</Text>
         ))}
-        <Text style={[s.xLbl, { left: CHART_W / 2 - 10, top: TOTAL_H - 14, fontWeight: '600' }]}>月龄</Text>
+        <Text style={[s.xLbl, { left: W / 2 - 10, top: TOTAL_H - 14, fontWeight: '600' }]}>月龄</Text>
+
+        {/* 轴标题 */}
+        <Text style={[s.axisTitle, { left: PAD_L - 2, top: 2, color: '#CC4444' }]}>身长 cm</Text>
+        <Text style={[s.axisTitle, { left: PAD_L - 2, top: PANEL_H + GAP + 2, color: '#4466CC' }]}>体重 kg</Text>
       </View>
 
-      {/* 图例 */}
       <View style={s.legend}>
         <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#CC4444' }]} /><Text style={s.legTxt}>身长</Text></View>
         <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#4466CC' }]} /><Text style={s.legTxt}>体重</Text></View>
-        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#666', width: 8, height: 8, borderRadius: 4 }]} /><Text style={s.legTxt}>记录</Text></View>
+        <View style={s.legIt}><View style={[s.legDot, { width: 8, height: 8, borderRadius: 4, backgroundColor: '#666' }]} /><Text style={s.legTxt}>记录</Text></View>
       </View>
     </View>
   );
@@ -170,10 +140,10 @@ const s = StyleSheet.create({
   bar: { position: 'absolute', opacity: 0.35 },
   grid: { position: 'absolute', height: 0.5, backgroundColor: '#E8E4D9' },
   yLbl: { position: 'absolute', left: 2, fontSize: 8, color: '#8A8A9A', width: 26, textAlign: 'right' },
-  xLbl: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 12, textAlign: 'center' },
-  unit: { position: 'absolute', fontSize: 8, fontWeight: '600', color: '#666' },
+  xLbl: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 14, textAlign: 'center' },
+  axisTitle: { position: 'absolute', fontSize: 8, fontWeight: '600' },
   dot: { position: 'absolute', opacity: 0.7 },
-  dataPt: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: '#fff' },
+  dataPt: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 2, backgroundColor: '#fff' },
   legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   legIt: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legDot: { width: 10, height: 10, borderRadius: 5 },

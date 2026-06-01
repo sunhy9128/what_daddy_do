@@ -95,14 +95,10 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
         );
       })}
 
-      {/* 底部操作栏：排序 + 添加工具 */}
+      {/* 底部操作栏 */}
       <View style={styles.footerRow}>
-
-        <TouchableOpacity
-          style={[styles.footerBtn, activeTools.length <= 1 && styles.footerBtnFull]}
-          onPress={() => setShowPicker(true)}
-        >
-          <Text style={styles.footerBtnAddIcon}>+</Text>
+        <TouchableOpacity style={styles.footerBtnAdd} onPress={() => setShowPicker(true)}>
+          <Ionicons name="add" size={18} color={colors.accent} />
           <Text style={styles.footerBtnText}>添加工具</Text>
         </TouchableOpacity>
         {activeTools.length > 1 && (
@@ -116,7 +112,7 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
               color={reordering ? '#fff' : colors.accent}
             />
             <Text style={[styles.footerBtnText, reordering && styles.footerBtnTextActive]}>
-              {reordering ? '完成编辑' : '编辑'}
+              {reordering ? '完成' : '排序'}
             </Text>
           </TouchableOpacity>
         )}
@@ -153,7 +149,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 4,
-    paddingVertical: spacing.sm + 2,
+    height: 40,
     borderRadius: 10,
     borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -161,17 +157,21 @@ const styles = StyleSheet.create({
   footerBtnActive: {
     backgroundColor: colors.accent, borderColor: colors.accent,
   },
-  footerBtnFull: {
-    flex: 0, flexGrow: 0,
+  footerBtnAdd: {
+    flex: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 4,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1, borderColor: colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: colors.surface,
   },
   footerBtnText: {
     ...typography.footnote, color: colors.accent, fontWeight: '500',
   },
   footerBtnTextActive: {
     color: '#fff',
-  },
-  footerBtnAddIcon: {
-    fontSize: 18, color: colors.accent, fontWeight: '600',
   },
   toolItem: { marginBottom: spacing.sm },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },

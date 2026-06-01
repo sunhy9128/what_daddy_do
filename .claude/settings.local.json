@@ -1,10 +1,11 @@
 {
-  "enabledPlugins": {
-    "understand-anything@understand-anything": true
-  },
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(./node_modules/.bin/tsc --noEmit)"
     ]
+  },
+  "enabledPlugins": {
+    "understand-anything@understand-anything": true
   }
 }

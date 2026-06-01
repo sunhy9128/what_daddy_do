@@ -40,15 +40,24 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
     saveGrowthRecords(userId, newRecords);
   };
 
+  const canSave = (() => {
+    const m = parseInt(month, 10);
+    const h = parseFloat(height);
+    const w = parseFloat(weight);
+    const monthOk = !isNaN(m) && m >= 0 && m <= 36 && month.length > 0;
+    const hasHeight = !isNaN(h) && h > 0;
+    const hasWeight = !isNaN(w) && w > 0;
+    return monthOk && (hasHeight || hasWeight);
+  })();
+
   const handleAdd = () => {
     const m = parseInt(month, 10);
     const h = parseFloat(height);
     const w = parseFloat(weight);
-    if (isNaN(m) || m < 0 || m > 36) return;
-    if (isNaN(h) || h <= 0) return;
-    if (isNaN(w) || w <= 0) return;
+    const hasHeight = !isNaN(h) && h > 0;
+    const hasWeight = !isNaN(w) && w > 0;
 
-    const newRecord: GrowthRecord = { month: m, height: h, weight: w };
+    const newRecord: GrowthRecord = { month: m, height: hasHeight ? h : 0, weight: hasWeight ? w : 0 };
     const newRecords = [newRecord, ...records];
     setRecords(newRecords);
     persistRecords(newRecords);
@@ -80,8 +89,8 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
           <Text style={styles.inputLabel}>体重(kg)</Text>
           <TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="3.3" placeholderTextColor={colors.muted} />
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
-          <Text style={styles.addBtnText}>记录</Text>
+        <TouchableOpacity style={[styles.addBtn, !canSave && styles.addBtnDisabled]} onPress={handleAdd} disabled={!canSave}>
+          <Text style={[styles.addBtnText, !canSave && styles.addBtnTextDisabled]}>记录</Text>
         </TouchableOpacity>
       </View>
 
@@ -139,12 +148,14 @@ const styles = StyleSheet.create({
   genderText: { ...typography.footnote, fontWeight: '500', color: colors.muted },
   genderTextActive: { color: '#fff' },
   genderDisplay: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  inputRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'flex-end', marginBottom: spacing.md },
+  inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end', marginBottom: spacing.md },
   inputField: { flex: 1 },
-  inputLabel: { ...typography.caption1, color: colors.muted, marginBottom: 2 },
-  input: { ...typography.footnote, color: colors.fg, backgroundColor: colors.surfaceSecondary, borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, borderWidth: 1, borderColor: colors.border, textAlign: 'center' },
-  addBtn: { backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  addBtnText: { ...typography.footnote, fontWeight: '600', color: '#fff' },
+  inputLabel: { ...typography.caption2, color: colors.muted, marginBottom: 4, fontWeight: '500' },
+  input: { ...typography.callout, color: colors.fg, backgroundColor: colors.surfaceSecondary, borderRadius: 10, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border, textAlign: 'center', height: 42 },
+  addBtn: { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: spacing.lg, height: 42, alignItems: 'center', justifyContent: 'center' },
+  addBtnDisabled: { backgroundColor: colors.border },
+  addBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
+  addBtnTextDisabled: { color: colors.muted },
   historySection: { marginTop: spacing.md },
   historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, marginBottom: spacing.xs },
   historyTable: {
