@@ -1,0 +1,857 @@
+$ git diff
+[exit 0]
+diff --git i/what-dad-do-vibe/README.md w/what-dad-do-vibe/README.md
+deleted file mode 100644
+index b591d76..0000000
+--- i/what-dad-do-vibe/README.md
++++ /dev/null
+@@ -1,133 +0,0 @@
+-# 爸爸去哪了 — What Dad Do Vibe
+-
+-孕产期跟踪助手 App，覆盖备孕、孕早期/中期/晚期、产后各阶段的任务管理、孕育记录与社区功能。
+-
+-[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-blue)](#)
+-
+-## 功能亮点
+-
+-- **孕期阶段自动追踪** — 基于预产期推算当前阶段（备孕 → 孕早/中/晚期 → 产后），动态适配任务模板
+-- **智能任务管理** — 各阶段预设任务 + 自定义任务，完成状态本地/服务端同步
+-- **孕育工具箱** — 喂养计时器、生长图表（WHO 标准）、疫苗追踪与日历
+-- **成长里程碑祝贺页** — 达到新阶段时自动触发 confetti 动画庆祝
+-- **社区知识库** — 孕育知识文章阅读、点赞、评论，已读状态跨设备同步
+-
+-## 技术栈
+-
+-| 层级 | 技术 |
+-|------|------|
+-| 语言 | TypeScript 5.9 + strict mode |
+-| 框架 | Expo SDK 54 + expo-router（文件路由） |
+-| UI | React Native 0.81 + react-native-web |
+-| 后端 | Supabase（Auth + PostgreSQL + REST API） |
+-| 状态 | useReducer + Context（无外部状态库） |
+-| 图标 | @expo/vector-icons (Ionicons) |
+-
+-## 项目结构
+-
+-```
+-what-dad-do-vibe/
+-├── app/                          # expo-router 页面
+-│   ├── _layout.tsx               # 根布局
+-│   ├── (tabs)/                   # 底部 Tab 导航
+-│   │   ├── index.tsx             # 首页（阶段概览 + 工具入口）
+-│   │   ├── tasks.tsx             # 任务列表
+-│   │   ├── records.tsx           # 孕育记录
+-│   │   ├── community.tsx         # 社区
+-│   │   └── profile.tsx           # 个人中心
+-│   ├── login.tsx                 # 登录页
+-│   ├── baby-info.tsx             # 宝宝信息配置
+-│   └── congratulations.tsx        # 里程碑祝贺页
+-├── src/
+-│   ├── components/
+-│   │   ├── atoms/                 # 原子组件（Button, Card, Avatar, Badge…）
+-│   │   ├── molecules/            # 复合组件（PostCard, TaskCard, RecordEntry…）
+-│   │   ├── organisms/             # 组合组件（TabBar, CollapsibleGroup…）
+-│   │   └── tools/                # 工具组件（FeedingTimer, GrowthChart, VaccineTracker…）
+-│   ├── context/
+-│   │   ├── AppContext.tsx         # 全局状态（tasks, records, communityPosts, babies…）
+-│   │   └── AuthContext.tsx        # 认证状态
+-│   ├── lib/
+-│   │   ├── supabase.ts           # Supabase 客户端
+-│   │   ├── api.ts                # 所有 DB CRUD 操作
+-│   │   ├── stages.ts             # 孕期阶段计算
+-│   │   └── time.ts               # 时间格式化工具
+-│   └── styles/
+-│       └── tokens.ts             # 设计 tokens（colors, spacing, typography）
+-├── supabase/migrations/          # Raw SQL 数据库迁移
+-├── scripts/                      # 构建 APK、种子数据、Excel 导入工具
+-└── assets/                       # 应用图标 & 启动图
+-```
+-
+-## 快速开始
+-
+-### 环境要求
+-
+-- Node.js 18+
+-- Expo CLI (`npm install -g expo-cli`)
+-- iOS 模拟器 / Android 模拟器 / Web 浏览器
+-
+-### 安装与运行
+-
+-```bash
+-cd what-dad-do-vibe
+-npm install
+-
+-# 开发服务器（默认）
+-npm start
+-
+-# 指定平台
+-npm run ios      # iOS 模拟器
+-npm run android  # Android
+-npm run web      # Web 浏览器
+-```
+-
+-### 类型检查
+-
+-```bash
+-npx tsc --noEmit
+-```
+-
+-### 构建 APK（Android）
+-
+-```bash
+-npx eas build -p android --profile preview --non-interactive
+-```
+-
+-> 需要在 `.env` 中配置 `EXPO_TOKEN`（从 Expo Dashboard 获取）
+-
+-## 数据库
+-
+-数据存储在 Supabase PostgreSQL，主要表结构：
+-
+-| 表名 | 用途 |
+-|------|------|
+-| `babies` | 宝宝信息（预产期/出生日期） |
+-| `preset_tasks` | 各阶段预设任务模板 |
+-| `tasks` | 用户任务（关联宝宝与阶段） |
+-| `records` | 孕育记录（体检、体重等） |
+-| `community_posts` | 社区帖子/知识文章 |
+-| `post_likes` / `post_comments` | 互动数据 |
+-| `vaccines` | 疫苗时间表 |
+-| `vaccine_records` | 疫苗接种记录 |
+-| `user_knowledge_reads` | 文章已读状态 |
+-
+-更多细节请参考 [REASONIX.md](./REASONIX.md)。
+-
+-## 设计规范
+-
+-- **Atomic Design 分层** — atoms → molecules → organisms → tools
+-- **命名导出** — 所有组件均使用 named export + default export
+-- **设计 Tokens** — 所有颜色/间距/字体从 `src/styles/tokens.ts` 引入，禁止硬编码
+-- **API 封装** — 所有 DB 操作通过 `src/lib/api.ts`，页面不直接调用 supabase 客户端
+-
+-## 注意事项
+-
+-- **Supabase RLS** — seed 脚本无法通过匿名 key 绕过 RLS，请通过 Dashboard SQL Editor 执行迁移
+-- **Web Alert 限制** — React Native Web 的 Alert 不支持按钮回调，Web 环境使用 `window.confirm()` 替代
+-- **生长图表** — 纯 View 实现，无 `react-native-svg` 依赖（因原生兼容性问题已移除）
+-- **工具排序** — 通过 AsyncStorage 持久化，▲/▼ 按钮交互（`react-native-draggable-flatlist` 与当前环境不兼容）
+-
+-## License
+-
+-MIT
+\ No newline at end of file
+diff --git i/what-dad-do-vibe/REASONIX.md w/what-dad-do-vibe/REASONIX.md
+index 4724abd..4f15043 100644
+--- i/what-dad-do-vibe/REASONIX.md
++++ w/what-dad-do-vibe/REASONIX.md
+@@ -8,7 +8,6 @@
+ - **Icons** — @expo/vector-icons (Ionicons)
+ - **Backend** — Supabase (auth + PostgreSQL + REST API)
+ - **State** — useReducer + context (no external state lib)
+-- **Design tokens** — custom `src/styles/tokens.ts` (Kami theme: warm parchment, ink-blue accent)
+ 
+ ## Layout
+ 
+@@ -16,12 +15,11 @@
+ - `src/components/atoms/` — atomic UI primitives (Button, Card, Avatar, Badge…)
+ - `src/components/molecules/` — compound components (PostCard, TaskCard, RecordEntry…)
+ - `src/components/organisms/` — composite widgets (TabBar, CollapsibleGroup, SegmentControl)
+-- `src/components/tools/` — Toolbar system + tool components (FeedingTimer, ToolBase…)
++- `src/components/tools/` — Toolbar system + tool components (FeedingTimer, GrowthTracker/Chart, VaccineTracker/Calendar)
+ - `src/context/` — AppContext (all app state) + AuthContext (auth flow)
+-- `src/lib/` — `supabase.ts` (client), `api.ts` (all DB CRUD), `time.ts` (formatRelativeTime)
+-- `src/styles/tokens.ts` — design tokens shared by all components
+-- `supabase/migrations/` — raw SQL migrations for Supabase (run via Dashboard)
+-- `scripts/` — utility scripts (build-apk, seed data)
++- `src/lib/` — `supabase.ts` (client), `api.ts` (all DB CRUD), `stages.ts` (pregnancy stage calc), `storage.ts` (AsyncStorage), `growth-chart-data.ts` (WHO data), `time.ts` (formatRelativeTime)
++- `supabase/migrations/` — raw SQL migrations (run via Supabase Dashboard)
++- `scripts/` — build-apk, seed data, read-xlsx utility
+ 
+ ## Commands
+ 
+@@ -32,19 +30,21 @@
+ | `npm run ios` | Start Expo with iOS target |
+ | `npm run android` | Start Expo with Android target |
+ 
+-No test/lint/format scripts exist. Typecheck manually: `npx tsc --noEmit`.
++No test/lint/format scripts. Typecheck: `npx tsc --noEmit`. APK build via EAS: `npx eas build -p android --profile preview --non-interactive` (requires EXPO_TOKEN).
+ 
+ ## Conventions
+ 
+ - **Named exports** — all components use named export + default export
+ - **File-based routing** — `app/(tabs)/index.tsx` → route `/`, `app/baby-info.tsx` → route `/baby-info`
+-- **Design tokens** — every component imports `colors`, `spacing`, `typography` from `src/styles/tokens.ts`; no raw color/font values
+-- **Supabase CRUD** — all DB operations go through `src/lib/api.ts` (one function per table operation); no direct supabase calls in pages
+-- **Async guard** — API-triggering handlers use `useRef` guard pattern to prevent double-submit (togglingRef, taskBusy, postingRef, likingRef)
++- **Design tokens** — all components import `colors`, `spacing`, `typography` from `src/styles/tokens.ts`
++- **Supabase CRUD** — all DB ops through `src/lib/api.ts`; no direct supabase calls in pages
++- **Async guard** — API-triggering handlers use `useRef` guard to prevent double-submit
+ 
+ ## Watch out for
+ 
+-- **RLS blocks script inserts** — seed scripts can't bypass Supabase RLS with the anon key; run `supabase/migrations/` SQL via Dashboard SQL Editor
+-- **No test suite** — there are zero tests; verify changes by running the dev server and manual testing
+-- **Alert.alert on web** — React Native Web's Alert doesn't support button callbacks; web handlers use `window.confirm()` instead
+-- **Modal close flash** — post detail modal uses `lastPostRef` to cache the last selected post, preventing empty-content flash during fade-out animation
++- **RLS blocks script inserts** — seed scripts can't bypass Supabase RLS with anon key; run migrations via Dashboard SQL Editor
++- **Alert.alert on web** — RN Web's Alert doesn't support button callbacks; web handlers use `window.confirm()` instead
++- **Modal close flash** — post detail modal uses `lastPostRef` cache to prevent empty-content flash during fade-out
++- **Confetti animation** — uses `translateY` transform (not `top`), required by native animated module's `useNativeDriver`
++- **Growth chart** — pure View-based rendering, no `react-native-svg` dependency (was removed due to native compat issues)
++- **Tool reorder** — ▲/▼ buttons with AsyncStorage persistence; drag lib (`react-native-draggable-flatlist`) was incompatible with current environment
+diff --git i/what-dad-do-vibe/app/(tabs)/_layout.tsx w/what-dad-do-vibe/app/(tabs)/_layout.tsx
+index d05c569..b415d9a 100644
+--- i/what-dad-do-vibe/app/(tabs)/_layout.tsx
++++ w/what-dad-do-vibe/app/(tabs)/_layout.tsx
+@@ -7,7 +7,6 @@ import { colors } from '../../src/styles/tokens';
+ const tabIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+   index: 'home',
+   tasks: 'list',
+-  records: 'time',
+   community: 'people',
+   profile: 'person',
+ };
+@@ -33,7 +32,6 @@ export default function TabLayout() {
+       })}>
+         <Tabs.Screen name="index" options={{ title: '首页' }} />
+         <Tabs.Screen name="tasks" options={{ title: '任务' }} />
+-        <Tabs.Screen name="records" options={{ title: '记录' }} />
+         <Tabs.Screen name="community" options={{ title: '社区' }} />
+         <Tabs.Screen name="profile" options={{ title: '我的' }} />
+       </Tabs>
+diff --git i/what-dad-do-vibe/app/(tabs)/index.tsx w/what-dad-do-vibe/app/(tabs)/index.tsx
+index 018a391..6b6f17e 100644
+--- i/what-dad-do-vibe/app/(tabs)/index.tsx
++++ w/what-dad-do-vibe/app/(tabs)/index.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useRef, useEffect } from 'react';
++import { useState, useEffect } from 'react';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import { Link, useRouter } from 'expo-router';
+@@ -27,16 +27,12 @@ export default function HomeScreen() {
+ 
+   const [showUrgentModal, setShowUrgentModal] = useState(false);
+   const [urgentText, setUrgentText] = useState('');
+-  const nextToolId = useRef(1);
+   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
+ 
+   // 加载/保存工具配置
+   useEffect(() => {
+     if (!user) return;
+-    loadActiveTools(user.id).then(tools => {
+-      setActiveTools(tools);
+-      nextToolId.current = tools.length + 1;
+-    });
++    loadActiveTools(user.id).then(tools => setActiveTools(tools));
+   }, [user]);
+ 
+   useEffect(() => {
+@@ -73,7 +69,9 @@ export default function HomeScreen() {
+           <View style={styles.stageRow}>
+             <Text style={styles.stageText}>{stageLabel}</Text>
+             {state.babies.length > 0 && (
+-              <Text style={styles.weekText}>第 {state.weeksPregnant} 周</Text>
++              <Text style={styles.weekText}>
++                {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
++              </Text>
+             )}
+           </View>
+         </View>
+@@ -124,7 +122,7 @@ export default function HomeScreen() {
+           babyGender={state.babies[0]?.gender}
+           onAddTool={(toolId) => {
+             if (activeTools.some(t => t.toolId === toolId)) return;
+-            setActiveTools(prev => [...prev, { instanceId: `tool-${nextToolId.current++}`, toolId }]);
++            setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
+           }}
+           onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
+           onReorder={(tools) => setActiveTools(tools)}
+diff --git i/what-dad-do-vibe/app/(tabs)/profile.tsx w/what-dad-do-vibe/app/(tabs)/profile.tsx
+index dcd7ebd..9f6783a 100644
+--- i/what-dad-do-vibe/app/(tabs)/profile.tsx
++++ w/what-dad-do-vibe/app/(tabs)/profile.tsx
+@@ -21,7 +21,7 @@ const theme = {
+ export default function ProfileScreen() {
+   const insets = useSafeAreaInsets();
+   const router = useRouter();
+-  const { user, signOut, isAdmin } = useAuth();
++  const { user, signOut } = useAuth();
+   const { state } = useApp();
+ 
+   const [signingOut, setSigningOut] = useState(false);
+@@ -48,7 +48,6 @@ export default function ProfileScreen() {
+             </Text>
+           </View>
+           <Text style={styles.email}>{user?.email || '未登录'}</Text>
+-          {isAdmin && <Text style={styles.adminBadge}>管理员</Text>}
+         </View>
+ 
+         <View style={styles.section}>
+@@ -125,15 +124,7 @@ const styles = StyleSheet.create({
+     fontSize: 16,
+     color: theme.textPrimary,
+   },
+-  adminBadge: {
+-    marginTop: spacing.xs,
+-    fontSize: 12,
+-    color: theme.accent,
+-    backgroundColor: theme.accentLight,
+-    paddingHorizontal: spacing.sm,
+-    paddingVertical: spacing.xs,
+-    borderRadius: 12,
+-  },
++
+   section: {
+     marginTop: spacing.lg,
+   },
+diff --git i/what-dad-do-vibe/app/(tabs)/tasks.tsx w/what-dad-do-vibe/app/(tabs)/tasks.tsx
+index cdeee2f..eb4e20d 100644
+--- i/what-dad-do-vibe/app/(tabs)/tasks.tsx
++++ w/what-dad-do-vibe/app/(tabs)/tasks.tsx
+@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import { useApp, Task } from '../../src/context/AppContext';
++import { useAuth } from '../../src/context/AuthContext';
+ import { PregnancyStage, STAGES, STAGE_LABELS } from '../../src/lib/stages';
+-import { getPresetTasks, PresetTask } from '../../src/lib/api';
++import { getPresetTasks, PresetTask, getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
++import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
+ import { Card, ProgressBar, Tag, Button } from '../../src/components/atoms';
+ import { TaskCard } from '../../src/components/molecules';
+ import { StageTabs } from '../../src/components/molecules';
+@@ -22,11 +24,29 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
+   '产后': 'postpartum',
+ };
+ 
++// 将孕期阶段映射到物品准备/心理支持的 period
++function getPeriodsForStage(stage: PregnancyStage, dueDate?: string): string[] {
++  if (stage !== 'postpartum') {
++    return [stage];
++  }
++  if (!dueDate) return ['postpartum_0_3m', 'postpartum_3_12m', 'postpartum_1_3y'];
++
++  const today = new Date();
++  const due = new Date(dueDate);
++  const monthsSinceBirth = (today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
++
++  if (monthsSinceBirth < 0) return ['postpartum_0_3m'];
++  if (monthsSinceBirth < 3) return ['postpartum_0_3m'];
++  if (monthsSinceBirth < 12) return ['postpartum_3_12m'];
++  return ['postpartum_1_3y'];
++}
++
+ 
+ 
+ export default function TasksScreen() {
+   const insets = useSafeAreaInsets();
+   const { state, toggleTask, addTask, removeTask, updateTask } = useApp();
++  const { user } = useAuth();
+   const [selectedStage, setSelectedStage] = useState(STAGE_LABELS[state.stage] || '孕晚期');
+   const [showAddModal, setShowAddModal] = useState(false);
+   const [newTaskTitle, setNewTaskTitle] = useState('');
+@@ -42,6 +62,15 @@ export default function TasksScreen() {
+   const [showPresets, setShowPresets] = useState(false);
+   const taskBusy = useRef(false);
+ 
++  // 物品准备状态
++  const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
++  const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
++  const [loadingItems, setLoadingItems] = useState(false);
++
++  // 心理支持状态
++  const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
++  const [loadingSupport, setLoadingSupport] = useState(false);
++
+   const TASK_TYPE_OPTIONS = [
+     { value: 'custom', label: '自定义任务', color: '#f5c65d' },
+     { value: 'checkin', label: '每日打卡', color: '#34c759' },
+@@ -67,6 +96,54 @@ export default function TasksScreen() {
+     loadPresetTasks();
+   }, []);
+ 
++  // 加载物品准备和心理支持（切换阶段时重新加载）
++  useEffect(() => {
++    loadItemsAndSupport();
++  }, [selectedStage, state.babies]);
++
++  async function loadItemsAndSupport() {
++    const stageKey = currentStageKey;
++    const periods = getPeriodsForStage(stageKey, state.babies[0]?.dueDate);
++
++    setLoadingItems(true);
++    setLoadingSupport(true);
++    try {
++      const [items, support] = await Promise.all([
++        getPresetItemsByPeriods(periods),
++        getPsychologicalSupportByPeriods(periods),
++      ]);
++      setPresetItems(items);
++      setSupportTips(support);
++
++      if (user) {
++        const preps = await getUserPreparations(user.id);
++        setUserPreparations(preps);
++      }
++    } catch (error) {
++      console.error('Failed to load items/support:', error);
++    } finally {
++      setLoadingItems(false);
++      setLoadingSupport(false);
++    }
++  }
++
++  const handleToggleItem = async (itemId: string) => {
++    if (!user) return;
++    const existing = userPreparations.find(p => p.item_id === itemId);
++    const currentStatus = existing?.status || 'not_prepared';
++    const newStatus = currentStatus === 'prepared' ? 'not_prepared' : 'prepared';
++
++    try {
++      const updated = await setUserPreparation(user.id, itemId, newStatus);
++      setUserPreparations(prev => {
++        const filtered = prev.filter(p => p.item_id !== itemId);
++        return [...filtered, updated];
++      });
++    } catch (error) {
++      console.error('Failed to update item status:', error);
++    }
++  };
++
+   async function loadPresetTasks() {
+     setLoadingPresets(true);
+     try {
+@@ -320,6 +397,84 @@ export default function TasksScreen() {
+           )}
+         </CollapsibleGroup>
+ 
++        {/* ===== 物品准备 ===== */}
++        <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
++          {loadingItems ? (
++            <ActivityIndicator size="small" color={colors.accent} style={{ paddingVertical: spacing.lg }} />
++          ) : presetItems.length > 0 ? (
++            presetItems.map(item => {
++              const prep = userPreparations.find(p => p.item_id === item.id);
++              const isPrepared = prep?.status === 'prepared';
++              const essentialLabel = item.essential_level === 'essential' ? '必需' : item.essential_level === 'recommended' ? '推荐' : '可选';
++              const essentialColor = item.essential_level === 'essential' ? '#e74c3c' : item.essential_level === 'recommended' ? '#3498db' : '#95a5a6';
++
++              return (
++                <TouchableOpacity
++                  key={item.id}
++                  style={styles.prepItem}
++                  onPress={() => handleToggleItem(item.id)}
++                  activeOpacity={0.7}
++                >
++                  <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
++                    {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
++                  </View>
++                  <View style={styles.prepInfo}>
++                    <View style={styles.prepNameRow}>
++                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]}>{item.name}</Text>
++                      <Text style={[styles.prepEssential, { color: essentialColor }]}>{essentialLabel}</Text>
++                    </View>
++                    {item.description && (
++                      <Text style={styles.prepDesc}>{item.description}</Text>
++                    )}
++                    <View style={styles.prepMeta}>
++                      <Text style={styles.prepMetaText}>{item.category}</Text>
++                      {item.quantity_suggestion && (
++                        <Text style={styles.prepMetaText}>· {item.quantity_suggestion}</Text>
++                      )}
++                    </View>
++                  </View>
++                </TouchableOpacity>
++              );
++            })
++          ) : (
++            <Text style={styles.emptyText}>该阶段暂无物品准备建议</Text>
++          )}
++        </CollapsibleGroup>
++
++        {/* ===== 心理支持 ===== */}
++        <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
++          {loadingSupport ? (
++            <ActivityIndicator size="small" color={colors.accent} style={{ paddingVertical: spacing.lg }} />
++          ) : supportTips.length > 0 ? (
++            supportTips.map(tip => {
++              const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
++              const typeColor = tip.support_type === 'emotion' ? '#e74c3c' : tip.support_type === 'communication' ? '#9b59b6' : tip.support_type === 'action' ? '#27ae60' : '#3498db';
++
++              return (
++                <View key={tip.id} style={styles.supportCard}>
++                  <View style={styles.supportHeader}>
++                    <Text style={styles.supportTitle}>{tip.title}</Text>
++                    <Text style={[styles.supportTypeBadge, { backgroundColor: typeColor }]}>{typeLabel}</Text>
++                  </View>
++                  <Text style={styles.supportContent}>{tip.content}</Text>
++                  {tip.tips && tip.tips.length > 0 && (
++                    <View style={styles.supportTips}>
++                      {tip.tips.map((t: string, i: number) => (
++                        <View key={i} style={styles.supportTipRow}>
++                          <Text style={styles.supportTipDot}>•</Text>
++                          <Text style={styles.supportTipText}>{t}</Text>
++                        </View>
++                      ))}
++                    </View>
++                  )}
++                </View>
++              );
++            })
++          ) : (
++            <Text style={styles.emptyText}>该阶段暂无心理支持建议</Text>
++          )}
++        </CollapsibleGroup>
++
+         {/* 可添加的预设任务 — 默认折叠 */}
+         <View style={styles.presetGroup}>
+           <TouchableOpacity style={styles.presetGroupHeader} onPress={() => setShowPresets(!showPresets)} activeOpacity={0.7}>
+@@ -726,4 +881,128 @@ const styles = StyleSheet.create({
+   flexButton: { flex: 1, minHeight: 48 },
+   deleteButton: { backgroundColor: colors.error },
+   actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
++
++  // 物品准备样式
++  prepItem: {
++    flexDirection: 'row',
++    alignItems: 'flex-start',
++    paddingVertical: spacing.md,
++    paddingHorizontal: spacing.md,
++    borderBottomWidth: 0.5,
++    borderBottomColor: colors.border,
++  },
++  prepCheckbox: {
++    width: 22,
++    height: 22,
++    borderRadius: 11,
++    borderWidth: 2,
++    borderColor: colors.border,
++    alignItems: 'center',
++    justifyContent: 'center',
++    marginRight: spacing.md,
++    marginTop: 2,
++  },
++  prepCheckboxActive: {
++    backgroundColor: colors.accent,
++    borderColor: colors.accent,
++  },
++  prepCheckmark: {
++    color: '#fff',
++    fontSize: 13,
++    fontWeight: '700',
++  },
++  prepInfo: {
++    flex: 1,
++  },
++  prepNameRow: {
++    flexDirection: 'row',
++    alignItems: 'center',
++    gap: spacing.sm,
++    marginBottom: spacing.xs,
++  },
++  prepName: {
++    ...typography.callout,
++    fontWeight: '600',
++    color: colors.fg,
++  },
++  prepNameDone: {
++    color: colors.muted,
++    textDecorationLine: 'line-through',
++  },
++  prepEssential: {
++    ...typography.caption1,
++    fontSize: 11,
++    fontWeight: '600',
++  },
++  prepDesc: {
++    ...typography.footnote,
++    color: colors.fgSecondary,
++    marginBottom: spacing.xs,
++    lineHeight: 18,
++  },
++  prepMeta: {
++    flexDirection: 'row',
++    gap: spacing.xs,
++  },
++  prepMetaText: {
++    ...typography.caption1,
++    fontSize: 11,
++    color: colors.muted,
++  },
++
++  // 心理支持样式
++  supportCard: {
++    paddingVertical: spacing.md,
++    paddingHorizontal: spacing.md,
++    borderBottomWidth: 0.5,
++    borderBottomColor: colors.border,
++  },
++  supportHeader: {
++    flexDirection: 'row',
++    justifyContent: 'space-between',
++    alignItems: 'flex-start',
++    marginBottom: spacing.sm,
++  },
++  supportTitle: {
++    ...typography.callout,
++    fontWeight: '600',
++    color: colors.fg,
++    flex: 1,
++    marginRight: spacing.sm,
++  },
++  supportTypeBadge: {
++    ...typography.caption1,
++    fontSize: 11,
++    fontWeight: '600',
++    color: '#fff',
++    paddingHorizontal: spacing.sm,
++    paddingVertical: 2,
++    borderRadius: 6,
++    overflow: 'hidden',
++  },
++  supportContent: {
++    ...typography.footnote,
++    color: colors.fgSecondary,
++    lineHeight: 20,
++    marginBottom: spacing.sm,
++  },
++  supportTips: {
++    gap: spacing.xs,
++  },
++  supportTipRow: {
++    flexDirection: 'row',
++    gap: spacing.xs,
++    paddingRight: spacing.md,
++  },
++  supportTipDot: {
++    ...typography.footnote,
++    color: colors.accent,
++    width: 12,
++  },
++  supportTipText: {
++    ...typography.footnote,
++    color: colors.fgSecondary,
++    lineHeight: 20,
++    flex: 1,
++  },
+ });
+\ No newline at end of file
+diff --git i/what-dad-do-vibe/app/baby-info.tsx w/what-dad-do-vibe/app/baby-info.tsx
+index 2688c5d..b77f79e 100644
+--- i/what-dad-do-vibe/app/baby-info.tsx
++++ w/what-dad-do-vibe/app/baby-info.tsx
+@@ -1,16 +1,16 @@
+ import { useState } from 'react';
+-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
++import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import { useRouter } from 'expo-router';
+ import { useApp } from '../src/context/AppContext';
+-import { updateBaby as updateBabyInDb } from '../src/lib/api';
++
+ import { Card } from '../src/components/atoms';
+ import { colors, spacing, typography } from '../src/styles/tokens';
+ 
+ export default function BabyInfoScreen() {
+   const insets = useSafeAreaInsets();
+   const router = useRouter();
+-  const { state, addBaby } = useApp();
++  const { state, addBaby, updateBabyGender } = useApp();
+ 
+   const existingBaby = state.babies[0];
+   const [year, setYear] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[0] : '');
+@@ -48,8 +48,8 @@ export default function BabyInfoScreen() {
+     setSaving(true);
+     try {
+       if (existingBaby) {
+-        // 更新已有宝宝的预产期（保留性别）
+-        await updateBabyInDb(existingBaby.id, { due_date: dueDate });
++        // 更新已有宝宝的预产期（保留性别，同步 context）
++        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate);
+       } else {
+         // 新建宝宝记录
+         await addBaby(dueDate);
+@@ -97,10 +97,17 @@ export default function BabyInfoScreen() {
+               <Text style={styles.infoLabel}>孕期阶段</Text>
+               <Text style={styles.infoValue}>{stageInfo?.stage || '未知'}</Text>
+             </View>
+-            <View style={styles.infoRow}>
+-              <Text style={styles.infoLabel}>当前孕周</Text>
+-              <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
+-            </View>
++            {state.stage === 'postpartum' ? (
++              <View style={styles.infoRow}>
++                <Text style={styles.infoLabel}>宝宝出生后</Text>
++                <Text style={styles.infoValue}>{state.birthAgeLabel}</Text>
++              </View>
++            ) : (
++              <View style={styles.infoRow}>
++                <Text style={styles.infoLabel}>当前孕周</Text>
++                <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
++              </View>
++            )}
+             <View style={styles.infoRow}>
+               <Text style={styles.infoLabel}>预产期</Text>
+               <Text style={styles.infoValue}>{existingBaby.dueDate}</Text>
+diff --git i/what-dad-do-vibe/app/login.tsx w/what-dad-do-vibe/app/login.tsx
+index a9fac2e..d688f4d 100644
+--- i/what-dad-do-vibe/app/login.tsx
++++ w/what-dad-do-vibe/app/login.tsx
+@@ -62,18 +62,6 @@ export default function LoginScreen() {
+     }
+   };
+ 
+-  const handleAdminLogin = async () => {
+-    setLoading(true);
+-    try {
+-      await signIn('admin', 'admin123');
+-      router.replace('/(tabs)');
+-    } catch (error: any) {
+-      Alert.alert('错误', error.message);
+-    } finally {
+-      setLoading(false);
+-    }
+-  };
+-
+   return (
+     <KeyboardAvoidingView
+       style={[styles.container, { paddingTop: insets.top }]}
+@@ -124,15 +112,7 @@ export default function LoginScreen() {
+             </TouchableOpacity>
+           </View>
+ 
+-          <TouchableOpacity style={styles.divider}>
+-            <View style={styles.dividerLine} />
+-            <Text style={styles.dividerText}>或</Text>
+-            <View style={styles.dividerLine} />
+-          </TouchableOpacity>
+ 
+-          <TouchableOpacity style={styles.adminButton} onPress={handleAdminLogin}>
+-            <Text style={styles.adminText}>超级管理员登录</Text>
+-          </TouchableOpacity>
+         </View>
+       </View>
+     </KeyboardAvoidingView>
+@@ -212,29 +192,5 @@ const styles = StyleSheet.create({
+     fontWeight: '600',
+     marginLeft: spacing.xs,
+   },
+-  divider: {
+-    flexDirection: 'row',
+-    alignItems: 'center',
+-    marginVertical: spacing.lg,
+-  },
+-  dividerLine: {
+-    flex: 1,
+-    height: 0.5,
+-    backgroundColor: colors.border,
+-  },
+-  dividerText: {
+-    fontSize: 13,
+-    color: colors.muted,
+-    marginHorizontal: spacing.md,
+-  },
+-  adminButton: {
+-    alignItems: 'center',
+-    paddingVertical: spacing.md,
+-    marginTop: spacing.sm,
+-  },
+-  adminText: {
+-    fontSize: 15,
+-    color: colors.fgSecondary,
+-    fontWeight: '500',
+-  },
++
+ });
+\ No newline at end of file
+diff --git i/what-dad-do-vibe/assets/adaptive-icon.png w/what-dad-do-vibe/assets/adaptive-icon.png
+index 03d6f6b..e10697d 100644
+Binary files i/what-dad-do-vibe/assets/adaptive-icon.png and w/what-dad-do-vibe/assets/adaptive-icon.png differ
+diff --git i/what-dad-do-vibe/assets/favicon.png w/what-dad-do-vibe/assets/favicon.png
+index e75f697..5e5014b 100644
+Binary files i/what-dad-do-vibe/assets/favicon.png and w/what-dad-do-vibe/assets/favicon.png differ
+diff --git i/what-dad-do-vibe/assets/icon.png w/what-dad-do-vibe/assets/icon.png
+index a0b1526..e10697d 100644
+Binary files i/what-dad-do-vibe/assets/icon.png and w/what-dad-do-vibe/assets/icon.png differ
+diff --git i/what-dad-do-vibe/assets/splash-icon.png w/what-dad-do-vibe/assets/splash-icon.png
+index 03d6f6b..e10697d 100644
+Binary files i/what-dad-do-vibe/assets/splash-icon.png and w/what-dad-do-vibe/assets/splash-icon.png differ
+diff --git i/what-dad-do-vibe/landing.html w/what-dad-do-vibe/landing.html
+deleted file mode 100644
+index 842d03f..0000000
+--- i/what-dad-do-vibe/landing.html
++++ /dev/null
+@@ -1,1033 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="zh-CN">
+-<head>
+-  <meta charset="UTF-8">
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-  <title>爸爸去哪了 — 孕产期全程陪伴助手</title>
+-  <style>
+-    /* Design Tokens */
+-    :root {
+-      --accent: #2C3E6B;
+-      --accent-light: #E8ECF4;
+-      --accent-dark: #1A2745;
+-      --bg: #F5F0E8;
+-      --surface: #FCFAF5;
+-      --surface-secondary: #F0ECE4;
+-      --fg: #1A1A2E;
+-      --fg-secondary: #5A5A6E;
+-      --muted: #8A8A9A;
+-      --border: #E8E4D9;
+-      --divider: #F0ECE4;
+-      --success: #4A7C5E;
+-      --warning: #B8963E;
+-      --error: #B84A4A;
+-      --info: #4A6B8A;
+-      --radius-sm: 10px;
+-      --radius-md: 14px;
+-      --radius-lg: 20px;
+-      --radius-xl: 28px;
+-      --shadow-sm: 0 1px 3px rgba(26,26,46,0.04);
+-      --shadow-md: 0 4px 12px rgba(26,26,46,0.06);
+-      --shadow-lg: 0 6px 20px rgba(26,26,46,0.08);
+-    }
+-
+-    * {
+-      margin: 0;
+-      padding: 0;
+-      box-sizing: border-box;
+-    }
+-
+-    html {
+-      scroll-behavior: smooth;
+-    }
+-
+-    body {
+-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+-      background-color: var(--bg);
+-      color: var(--fg);
+-      line-height: 1.6;
+-      -webkit-font-smoothing: antialiased;
+-    }
+-
+-    .container {
+-      max-width: 1200px;
+-      margin: 0 auto;
+-      padding: 0 24px;
+-    }
+-
+-    /* Navigation */
+-    .nav {
+-      position: fixed;
+-      top: 0;
+-      left: 0;
+-      right: 0;
+-      z-index: 100;
+-      background: rgba(245, 240, 232, 0.9);
+-      backdrop-filter: blur(20px);
+-      border-bottom: 1px solid var(--border);
+-    }
+-
+-    .nav-inn
+
+[… truncated 80099 chars …]

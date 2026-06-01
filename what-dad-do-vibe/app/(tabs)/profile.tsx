@@ -21,7 +21,7 @@ const theme = {
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut } = useAuth();
   const { state } = useApp();
 
   const [signingOut, setSigningOut] = useState(false);
@@ -48,7 +48,6 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Text style={styles.email}>{user?.email || '未登录'}</Text>
-          {isAdmin && <Text style={styles.adminBadge}>管理员</Text>}
         </View>
 
         <View style={styles.section}>
@@ -125,15 +124,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.textPrimary,
   },
-  adminBadge: {
-    marginTop: spacing.xs,
-    fontSize: 12,
-    color: theme.accent,
-    backgroundColor: theme.accentLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 12,
-  },
+
   section: {
     marginTop: spacing.lg,
   },

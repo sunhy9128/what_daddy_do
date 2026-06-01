@@ -1,0 +1,774 @@
+$ git diff -- app/(tabs)/index.tsx app/(tabs)/tasks.tsx app/(tabs)/_layout.tsx app/(tabs)/profile.tsx app/login.tsx app/baby-info.tsx
+[exit 0]
+diff --git i/what-dad-do-vibe/app/(tabs)/_layout.tsx w/what-dad-do-vibe/app/(tabs)/_layout.tsx
+index d05c569..b415d9a 100644
+--- i/what-dad-do-vibe/app/(tabs)/_layout.tsx
++++ w/what-dad-do-vibe/app/(tabs)/_layout.tsx
+@@ -7,7 +7,6 @@ import { colors } from '../../src/styles/tokens';
+ const tabIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+   index: 'home',
+   tasks: 'list',
+-  records: 'time',
+   community: 'people',
+   profile: 'person',
+ };
+@@ -33,7 +32,6 @@ export default function TabLayout() {
+       })}>
+         <Tabs.Screen name="index" options={{ title: '首页' }} />
+         <Tabs.Screen name="tasks" options={{ title: '任务' }} />
+-        <Tabs.Screen name="records" options={{ title: '记录' }} />
+         <Tabs.Screen name="community" options={{ title: '社区' }} />
+         <Tabs.Screen name="profile" options={{ title: '我的' }} />
+       </Tabs>
+diff --git i/what-dad-do-vibe/app/(tabs)/index.tsx w/what-dad-do-vibe/app/(tabs)/index.tsx
+index 018a391..212d918 100644
+--- i/what-dad-do-vibe/app/(tabs)/index.tsx
++++ w/what-dad-do-vibe/app/(tabs)/index.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useRef, useEffect } from 'react';
++import { useState, useEffect } from 'react';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import { Link, useRouter } from 'expo-router';
+@@ -6,6 +6,9 @@ import { useApp } from '../../src/context/AppContext';
+ import { Toolbar } from '../../src/components/tools/Toolbar';
+ import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
+ import { useAuth } from '../../src/context/AuthContext';
++import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
++import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
++import { CollapsibleGroup } from '../../src/components/organisms';
+ 
+ import { colors, spacing, typography } from '../../src/styles/tokens';
+ 
+@@ -27,16 +30,58 @@ export default function HomeScreen() {
+ 
+   const [showUrgentModal, setShowUrgentModal] = useState(false);
+   const [urgentText, setUrgentText] = useState('');
+-  const nextToolId = useRef(1);
+   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
+ 
++  // 物品准备 + 心理支持
++  const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
++  const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
++  const [loadingItems, setLoadingItems] = useState(false);
++  const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
++  const [loadingSupport, setLoadingSupport] = useState(false);
++
++  const periods = [state.stage];
++  useEffect(() => {
++    if (!user) return;
++    (async () => {
++      setLoadingItems(true);
++      setLoadingSupport(true);
++      try {
++        const [items, support, preps] = await Promise.all([
++          getPresetItemsByPeriods(periods),
++          getPsychologicalSupportByPeriods(periods),
++          getUserPreparations(user.id),
++        ]);
++        setPresetItems(items);
++        setSupportTips(support);
++        setUserPreparations(preps);
++      } catch (e) {
++        console.error('Failed to load items/support:', e);
++      } finally {
++        setLoadingItems(false);
++        setLoadingSupport(false);
++      }
++    })();
++  }, [user, state.stage]);
++
++  const handleToggleItem = async (itemId: string) => {
++    if (!user) return;
++    const existing = userPreparations.find(p => p.item_id === itemId);
++    const newStatus = existing?.status === 'prepared' ? 'not_prepared' : 'prepared';
++    try {
++      const updated = await setUserPreparation(user.id, itemId, newStatus);
++      setUserPreparations(prev => {
++        const filtered = prev.filter(p => p.item_id !== itemId);
++        return [...filtered, updated];
++      });
++    } catch (e) {
++      console.error('Failed to update item:', e);
++    }
++  };
++
+   // 加载/保存工具配置
+   useEffect(() => {
+     if (!user) return;
+-    loadActiveTools(user.id).then(tools => {
+-      setActiveTools(tools);
+-      nextToolId.current = tools.length + 1;
+-    });
++    loadActiveTools(user.id).then(tools => setActiveTools(tools));
+   }, [user]);
+ 
+   useEffect(() => {
+@@ -73,7 +118,9 @@ export default function HomeScreen() {
+           <View style={styles.stageRow}>
+             <Text style={styles.stageText}>{stageLabel}</Text>
+             {state.babies.length > 0 && (
+-              <Text style={styles.weekText}>第 {state.weeksPregnant} 周</Text>
++              <Text style={styles.weekText}>
++                {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
++              </Text>
+             )}
+           </View>
+         </View>
+@@ -117,6 +164,69 @@ export default function HomeScreen() {
+           </TouchableOpacity>
+         </View>
+ 
++        {/* ===== 物品准备 ===== */}
++        {presetItems.length > 0 && (
++          <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
++            {presetItems.map(item => {
++              const prep = userPreparations.find(p => p.item_id === item.id);
++              const isPrepared = prep?.status === 'prepared';
++
++              return (
++                <TouchableOpacity
++                  key={item.id}
++                  style={styles.prepItem}
++                  onPress={() => handleToggleItem(item.id)}
++                  activeOpacity={0.7}
++                >
++                  <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
++                    {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
++                  </View>
++                  <View style={styles.prepInfo}>
++                    <View style={styles.prepNameRow}>
++                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]}>{item.name}</Text>
++                      <Text style={styles.prepEssential}>{item.essential_level === 'essential' ? '必需' : item.essential_level === 'recommended' ? '推荐' : '可选'}</Text>
++                    </View>
++                    {item.description && <Text style={styles.prepDesc}>{item.description}</Text>}
++                    <View style={styles.prepMeta}>
++                      <Text style={styles.prepMetaText}>{item.category}</Text>
++                      {item.quantity_suggestion && <Text style={styles.prepMetaText}>· {item.quantity_suggestion}</Text>}
++                    </View>
++                  </View>
++                </TouchableOpacity>
++              );
++            })}
++          </CollapsibleGroup>
++        )}
++
++        {/* ===== 心理支持 ===== */}
++        {supportTips.length > 0 && (
++          <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
++            {supportTips.map(tip => {
++              const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
++
++              return (
++                <View key={tip.id} style={styles.supportCard}>
++                  <View style={styles.supportHeader}>
++                    <Text style={styles.supportTitle}>{tip.title}</Text>
++                    <Text style={styles.supportTypeBadge}>{typeLabel}</Text>
++                  </View>
++                  <Text style={styles.supportContent}>{tip.content}</Text>
++                  {tip.tips && tip.tips.length > 0 && (
++                    <View style={styles.supportTips}>
++                      {tip.tips.map((t, i) => (
++                        <View key={i} style={styles.supportTipRow}>
++                          <Text style={styles.supportTipDot}>•</Text>
++                          <Text style={styles.supportTipText}>{t}</Text>
++                        </View>
++                      ))}
++                    </View>
++                  )}
++                </View>
++              );
++            })}
++          </CollapsibleGroup>
++        )}
++
+         {/* 工具栏 */}
+         <Toolbar
+           activeTools={activeTools}
+@@ -124,7 +234,7 @@ export default function HomeScreen() {
+           babyGender={state.babies[0]?.gender}
+           onAddTool={(toolId) => {
+             if (activeTools.some(t => t.toolId === toolId)) return;
+-            setActiveTools(prev => [...prev, { instanceId: `tool-${nextToolId.current++}`, toolId }]);
++            setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
+           }}
+           onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
+           onReorder={(tools) => setActiveTools(tools)}
+@@ -320,4 +430,78 @@ const styles = StyleSheet.create({
+     color: '#fff',
+   },
+ 
++  // ===== 物品准备样式 =====
++  prepItem: {
++    flexDirection: 'row',
++    alignItems: 'flex-start',
++    paddingVertical: spacing.md,
++    paddingHorizontal: spacing.md,
++    borderBottomWidth: 0.5,
++    borderBottomColor: colors.border,
++  },
++  prepCheckbox: {
++    width: 22,
++    height: 22,
++    borderRadius: 11,
++    borderWidth: 2,
++    borderColor: colors.border,
++    alignItems: 'center',
++    justifyContent: 'center',
++    marginRight: spacing.md,
++    marginTop: 2,
++  },
++  prepCheckboxActive: {
++    backgroundColor: colors.accent,
++    borderColor: colors.accent,
++  },
++  prepCheckmark: {
++    color: '#fff',
++    fontSize: 13,
++    fontWeight: '700',
++  },
++  prepInfo: { flex: 1 },
++  prepNameRow: {
++    flexDirection: 'row',
++    alignItems: 'center',
++    gap: spacing.sm,
++    marginBottom: spacing.xs,
++  },
++  prepName: { ...typography.callout, fontWeight: '600', color: colors.fg },
++  prepNameDone: { color: colors.muted, textDecorationLine: 'line-through' },
++  prepEssential: { ...typography.caption1, fontSize: 11, fontWeight: '600', color: colors.accent },
++  prepDesc: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.xs, lineHeight: 18 },
++  prepMeta: { flexDirection: 'row', gap: spacing.xs },
++  prepMetaText: { ...typography.caption1, fontSize: 11, color: colors.muted },
++
++  // ===== 心理支持样式 =====
++  supportCard: {
++    paddingVertical: spacing.md,
++    paddingHorizontal: spacing.md,
++    borderBottomWidth: 0.5,
++    borderBottomColor: colors.border,
++  },
++  supportHeader: {
++    flexDirection: 'row',
++    justifyContent: 'space-between',
++    alignItems: 'flex-start',
++    marginBottom: spacing.sm,
++  },
++  supportTitle: { ...typography.callout, fontWeight: '600', color: colors.fg, flex: 1, marginRight: spacing.sm },
++  supportTypeBadge: {
++    ...typography.caption1,
++    fontSize: 11,
++    fontWeight: '600',
++    color: '#fff',
++    backgroundColor: colors.accent,
++    paddingHorizontal: spacing.sm,
++    paddingVertical: 2,
++    borderRadius: 6,
++    overflow: 'hidden',
++  },
++  supportContent: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 20, marginBottom: spacing.sm },
++  supportTips: { gap: spacing.xs },
++  supportTipRow: { flexDirection: 'row', gap: spacing.xs, paddingRight: spacing.md },
++  supportTipDot: { ...typography.footnote, color: colors.accent, width: 12 },
++  supportTipText: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 20, flex: 1 },
++
+ });
+\ No newline at end of file
+diff --git i/what-dad-do-vibe/app/(tabs)/profile.tsx w/what-dad-do-vibe/app/(tabs)/profile.tsx
+index dcd7ebd..9f6783a 100644
+--- i/what-dad-do-vibe/app/(tabs)/profile.tsx
++++ w/what-dad-do-vibe/app/(tabs)/profile.tsx
+@@ -21,7 +21,7 @@ const theme = {
+ export default function ProfileScreen() {
+   const insets = useSafeAreaInsets();
+   const router = useRouter();
+-  const { user, signOut, isAdmin } = useAuth();
++  const { user, signOut } = useAuth();
+   const { state } = useApp();
+ 
+   const [signingOut, setSigningOut] = useState(false);
+@@ -48,7 +48,6 @@ export default function ProfileScreen() {
+             </Text>
+           </View>
+           <Text style={styles.email}>{user?.email || '未登录'}</Text>
+-          {isAdmin && <Text style={styles.adminBadge}>管理员</Text>}
+         </View>
+ 
+         <View style={styles.section}>
+@@ -125,15 +124,7 @@ const styles = StyleSheet.create({
+     fontSize: 16,
+     color: theme.textPrimary,
+   },
+-  adminBadge: {
+-    marginTop: spacing.xs,
+-    fontSize: 12,
+-    color: theme.accent,
+-    backgroundColor: theme.accentLight,
+-    paddingHorizontal: spacing.sm,
+-    paddingVertical: spacing.xs,
+-    borderRadius: 12,
+-  },
++
+   section: {
+     marginTop: spacing.lg,
+   },
+diff --git i/what-dad-do-vibe/app/(tabs)/tasks.tsx w/what-dad-do-vibe/app/(tabs)/tasks.tsx
+index cdeee2f..c0e3f40 100644
+--- i/what-dad-do-vibe/app/(tabs)/tasks.tsx
++++ w/what-dad-do-vibe/app/(tabs)/tasks.tsx
+@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from 'react';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import { useApp, Task } from '../../src/context/AppContext';
++import { useAuth } from '../../src/context/AuthContext';
+ import { PregnancyStage, STAGES, STAGE_LABELS } from '../../src/lib/stages';
+ import { getPresetTasks, PresetTask } from '../../src/lib/api';
++
+ import { Card, ProgressBar, Tag, Button } from '../../src/components/atoms';
+ import { TaskCard } from '../../src/components/molecules';
+ import { StageTabs } from '../../src/components/molecules';
+ import { CollapsibleGroup } from '../../src/components/organisms';
++// 物品准备/心理支持已迁移到首页（index.tsx）
+ import { colors, radius, spacing, shadows, typography } from '../../src/styles/tokens';
+ 
+ // 阶段标签列表（供 StageTabs 使用）
+@@ -22,28 +25,45 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
+   '产后': 'postpartum',
+ };
+ 
++// 物品准备/心理支持已迁移到首页（index.tsx）
++
+ 
+ 
+ export default function TasksScreen() {
+   const insets = useSafeAreaInsets();
+   const { state, toggleTask, addTask, removeTask, updateTask } = useApp();
++  const { user } = useAuth();
+   const [selectedStage, setSelectedStage] = useState(STAGE_LABELS[state.stage] || '孕晚期');
+   const [showAddModal, setShowAddModal] = useState(false);
+   const [newTaskTitle, setNewTaskTitle] = useState('');
+-  const [newTaskType, setNewTaskType] = useState<'custom' | 'checkin' | 'prenatal' | 'daily'>('custom');
++  const [newTaskType, setNewTaskType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
+   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+   const [showInfoModal, setShowInfoModal] = useState(false);
+   const [isEditMode, setIsEditMode] = useState(false);
+   const [editTitle, setEditTitle] = useState('');
+-  const [editType, setEditType] = useState<'custom' | 'checkin' | 'prenatal' | 'daily'>('custom');
++  const [editType, setEditType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
+   const [presetTasks, setPresetTasks] = useState<PresetTask[]>([]);
+   const [loadingPresets, setLoadingPresets] = useState(true);
+   const [savingTask, setSavingTask] = useState(false);
+   const [showPresets, setShowPresets] = useState(false);
+   const taskBusy = useRef(false);
+ 
++
++
++  // 根据任务标题自动分类（产后阶段不返回 prenatal）
++  const detectTaskType = (title: string): 'prenatal' | 'daily' | 'checkin' => {
++    const prenatalKeywords = ['产检', '检查', '筛查', 'B超', '胎心', '唐筛', '糖耐', '四维', 'NT', '彩超', '大排畸', '小排畸', '血常规', '尿常规'];
++    const checkinKeywords = ['打卡'];
++    const dailyKeywords = ['每天', '每日', '运动', '散步', '喝水', '体重', '血压', '血糖', '测', '量', '记录'];
++    if (currentStageKey !== 'postpartum') {
++      for (const kw of prenatalKeywords) { if (title.includes(kw)) return 'prenatal'; }
++    }
++    for (const kw of checkinKeywords) { if (title.includes(kw)) return 'checkin'; }
++    for (const kw of dailyKeywords) { if (title.includes(kw)) return 'daily'; }
++    return 'daily';
++  };
++
+   const TASK_TYPE_OPTIONS = [
+-    { value: 'custom', label: '自定义任务', color: '#f5c65d' },
+     { value: 'checkin', label: '每日打卡', color: '#34c759' },
+     { value: 'prenatal', label: '产检任务', color: '#007aff' },
+     { value: 'daily', label: '日常任务', color: '#5dd79f' },
+@@ -67,6 +87,8 @@ export default function TasksScreen() {
+     loadPresetTasks();
+   }, []);
+ 
++
++
+   async function loadPresetTasks() {
+     setLoadingPresets(true);
+     try {
+@@ -95,12 +117,22 @@ export default function TasksScreen() {
+   // 当前阶段的日常任务（重复任务）
+   const dailyTasks = filteredTasks.filter(t => t.type === 'daily');
+ 
+-  // 当前阶段的自定义任务
+-  const customTasks = filteredTasks.filter(t => t.type === 'custom');
++  // 自定义任务分组已合并到日常/产检/打卡中
+ 
+   // 当前阶段的日打卡任务
+   const checkinTasks = filteredTasks.filter(t => t.type === 'checkin');
+ 
++  // 各列表是否可见（无待办时隐藏）
++  const showPrenatal = currentStageKey !== 'postpartum' && prenatalTasks.length > 0;
++  const showCheckin = checkinTasks.length > 0;
++  const showDaily = dailyTasks.length > 0;
++  // 排在前面的有实际内容的列表默认展开
++  const firstVisible =
++    (showPrenatal && 'prenatal') ||
++    (showCheckin && 'checkin') ||
++    (showDaily && 'daily') ||
++    null;
++
+   // 获取当前阶段的预设任务（去重）
+   const presetsForStage = presetTasks.filter(p => p.stage === currentStageKey);
+   const existingTitles = filteredTasks.map(t => t.title);
+@@ -131,16 +163,17 @@ export default function TasksScreen() {
+       return;
+     }
+     setSavingTask(true);
++    const detectedType = detectTaskType(newTaskTitle.trim());
+     try {
+       await addTask({
+         title: newTaskTitle.trim(),
+         stage: currentStageKey,
+-        type: newTaskType,
++        type: detectedType,
+       });
+       setNewTaskTitle('');
+-      setNewTaskType('custom');
+       setShowAddModal(false);
+-      Alert.alert('成功', '任务已添加');
++      const typeLabelMap: Record<string, string> = { prenatal: '产检', daily: '日常', checkin: '打卡' };
++      Alert.alert('成功', `任务已添加（${typeLabelMap[detectedType] || '日常'}）`);
+     } catch (error: any) {
+       Alert.alert('错误', error.message);
+     } finally {
+@@ -171,7 +204,7 @@ export default function TasksScreen() {
+   const handleEditTask = () => {
+     if (selectedTask) {
+       setEditTitle(selectedTask.title);
+-      setEditType(selectedTask.type as 'custom' | 'checkin' | 'prenatal' | 'daily');
++      setEditType(selectedTask.type as 'checkin' | 'prenatal' | 'daily');
+       setIsEditMode(true);
+     }
+   };
+@@ -198,7 +231,7 @@ export default function TasksScreen() {
+   const TASK_TYPE_LABELS: Record<string, string> = {
+     prenatal: '产检任务',
+     daily: '日常任务',
+-    custom: '自定义任务',
++    // custom 已合并到日常/产检/打卡中
+     checkin: '每日打卡',
+   };
+ 
+@@ -215,7 +248,7 @@ export default function TasksScreen() {
+       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+         {/* Header */}
+         <View style={styles.header}>
+-          <Text style={styles.title}>任务清单</Text>
++          <Text style={styles.title}>待办清单</Text>
+           <Text style={styles.subtitle}>当前阶段：{selectedStage}</Text>
+         </View>
+ 
+@@ -235,10 +268,10 @@ export default function TasksScreen() {
+           <ProgressBar value={progress} />
+         </Card>
+ 
+-        {/* 产检任务 — 默认展开 */}
+-        <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded>
+-          {prenatalTasks.length > 0 ? (
+-            prenatalTasks.map(task => (
++        {/* 产检任务 — 产后阶段不显示；无待办时隐藏 */}
++        {currentStageKey !== 'postpartum' && prenatalTasks.length > 0 && (
++          <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
++            {prenatalTasks.map(task => (
+               <TaskCard
+                 key={task.id}
+                 title={task.title}
+@@ -250,16 +283,14 @@ export default function TasksScreen() {
+                 onInfo={() => handleInfoPress(task)}
+                 onDelete={() => handleDeleteTask(task.id)}
+               />
+-            ))
+-          ) : (
+-            <Text style={styles.emptyText}>暂无产检任务，点击下方添加</Text>
+-          )}
+-        </CollapsibleGroup>
++            ))}
++          </CollapsibleGroup>
++        )}
+ 
+-        {/* 每日打卡 — 默认折叠 */}
+-        <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={false}>
+-          {checkinTasks.length > 0 ? (
+-            checkinTasks.map(task => (
++        {/* 每日打卡 — 无待办时隐藏 */}
++        {checkinTasks.length > 0 && (
++          <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={firstVisible === 'checkin'}>
++            {checkinTasks.map(task => (
+               <TaskCard
+                 key={task.id}
+                 title={task.title}
+@@ -272,16 +303,14 @@ export default function TasksScreen() {
+                 onInfo={() => handleInfoPress(task)}
+                 onDelete={() => handleDeleteTask(task.id)}
+               />
+-            ))
+-          ) : (
+-            <Text style={styles.emptyText}>暂无日打卡任务</Text>
+-          )}
+-        </CollapsibleGroup>
++            ))}
++          </CollapsibleGroup>
++        )}
+ 
+-        {/* 日常任务 — 默认折叠 */}
+-        <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={false}>
+-          {dailyTasks.length > 0 ? (
+-            dailyTasks.map(task => (
++        {/* 日常任务 — 无待办时隐藏 */}
++        {dailyTasks.length > 0 && (
++          <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={firstVisible === 'daily'}>
++            {dailyTasks.map(task => (
+               <TaskCard
+                 key={task.id}
+                 title={task.title}
+@@ -293,34 +322,16 @@ export default function TasksScreen() {
+                 onInfo={() => handleInfoPress(task)}
+                 onDelete={() => handleDeleteTask(task.id)}
+               />
+-            ))
+-          ) : (
+-            <Text style={styles.emptyText}>暂无日常任务</Text>
+-          )}
+-        </CollapsibleGroup>
++            ))}
++          </CollapsibleGroup>
++        )}
+ 
+-        {/* 自定义任务 — 默认折叠 */}
+-        <CollapsibleGroup title="自定义任务" count={customTasks.length} defaultExpanded={false}>
+-          {customTasks.length > 0 ? (
+-            customTasks.map(task => (
+-              <TaskCard
+-                key={task.id}
+-                title={task.title}
+-                type={task.type}
+-                dueDate={task.dueDate}
+-                isCompleted={task.isCompleted}
+-                dailyCount={0}
+-                onToggle={() => toggleTask(task.id)}
+-                onInfo={() => handleInfoPress(task)}
+-                onDelete={() => handleDeleteTask(task.id)}
+-              />
+-            ))
+-          ) : (
+-            <Text style={styles.emptyText}>暂无自定义任务</Text>
+-          )}
+-        </CollapsibleGroup>
+ 
+-        {/* 可添加的预设任务 — 默认折叠 */}
++
++
++
++        {/* 可添加的预设任务 — 无可添加时隐藏 */}
++        {availablePresets.length > 0 && (
+         <View style={styles.presetGroup}>
+           <TouchableOpacity style={styles.presetGroupHeader} onPress={() => setShowPresets(!showPresets)} activeOpacity={0.7}>
+             <View style={styles.presetGroupTitleRow}>
+@@ -347,24 +358,22 @@ export default function TasksScreen() {
+                     <Text style={styles.presetTitle}>{task.title}</Text>
+                     <Text style={styles.presetDesc}>{task.description}</Text>
+                     <Tag
+-                      label={task.type === 'prenatal' ? '产检' : task.type === 'daily' ? '日常' : task.type === 'checkin' ? '日打卡' : '自建'}
+-                      variant={task.type === 'prenatal' ? 'short' : task.type === 'daily' ? 'long' : task.type === 'checkin' ? 'long' : 'custom'}
++                      label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
++                      variant={task.type === 'prenatal' ? 'short' : 'long'}
+                     />
+                   </View>
+                 </TouchableOpacity>
+               ))}
+-              {availablePresets.length === 0 && (
+-                <Text style={styles.emptyText}>该阶段暂无预设任务</Text>
+-              )}
+             </View>
+           )}
+ 
+         </View>
++        )}
+ 
+         <View style={{ height: 100 }} />
+       </ScrollView>
+ 
+-      {/* FAB — 添加自定义任务 */}
++      {/* FAB — 添加任务 */}
+       <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
+         <Text style={styles.fabIcon}>+</Text>
+       </TouchableOpacity>
+@@ -375,7 +384,7 @@ export default function TasksScreen() {
+           <View style={styles.modalContent}>
+             {/* 头部 */}
+             <View style={styles.modalHeader}>
+-              <Text style={styles.modalTitle}>添加自定义任务</Text>
++              <Text style={styles.modalTitle}>添加任务</Text>
+               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowAddModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                 <Text style={styles.modalCloseIcon}>✕</Text>
+               </TouchableOpacity>
+@@ -395,7 +404,9 @@ export default function TasksScreen() {
+             {/* 任务类型选择 */}
+             <Text style={[styles.modalLabel, { marginTop: spacing.md }]}>任务类型</Text>
+             <View style={styles.typeSelector}>
+-              {TASK_TYPE_OPTIONS.map((option) => (
++              {TASK_TYPE_OPTIONS
++                .filter(opt => !(currentStageKey === 'postpartum' && opt.value === 'prenatal'))
++                .map((option) => (
+                 <TouchableOpacity
+                   key={option.value}
+                   style={[
+@@ -450,14 +461,16 @@ export default function TasksScreen() {
+                       onChangeText={setEditTitle}
+                     />
+                     <View style={styles.typeSelector}>
+-                      {TASK_TYPE_OPTIONS.map((option) => (
++                      {TASK_TYPE_OPTIONS
++                        .filter(opt => !(currentStageKey === 'postpartum' && opt.value === 'prenatal'))
++                        .map((option) => (
+                         <TouchableOpacity
+                           key={option.value}
+                           style={[
+                             styles.typeOption,
+                             editType === option.value && { backgroundColor: option.color },
+                           ]}
+-                          onPress={() => setEditType(option.value as 'custom' | 'checkin' | 'prenatal' | 'daily')}
++                          onPress={() => setEditType(option.value as 'checkin' | 'prenatal' | 'daily')}
+                         >
+                           <Text
+                             style={[
+@@ -726,4 +739,5 @@ const styles = StyleSheet.create({
+   flexButton: { flex: 1, minHeight: 48 },
+   deleteButton: { backgroundColor: colors.error },
+   actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
++
+ });
+\ No newline at end of file
+diff --git i/what-dad-do-vibe/app/baby-info.tsx w/what-dad-do-vibe/app/baby-info.tsx
+index 2688c5d..b77f79e 100644
+--- i/what-dad-do-vibe/app/baby-info.tsx
++++ w/what-dad-do-vibe/app/baby-info.tsx
+@@ -1,16 +1,16 @@
+ import { useState } from 'react';
+-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
++import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import { useRouter } from 'expo-router';
+ import { useApp } from '../src/context/AppContext';
+-import { updateBaby as updateBabyInDb } from '../src/lib/api';
++
+ import { Card } from '../src/components/atoms';
+ import { colors, spacing, typography } from '../src/styles/tokens';
+ 
+ export default function BabyInfoScreen() {
+   const insets = useSafeAreaInsets();
+   const router = useRouter();
+-  const { state, addBaby } = useApp();
++  const { state, addBaby, updateBabyGender } = useApp();
+ 
+   const existingBaby = state.babies[0];
+   const [year, setYear] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[0] : '');
+@@ -48,8 +48,8 @@ export default function BabyInfoScreen() {
+     setSaving(true);
+     try {
+       if (existingBaby) {
+-        // 更新已有宝宝的预产期（保留性别）
+-        await updateBabyInDb(existingBaby.id, { due_date: dueDate });
++        // 更新已有宝宝的预产期（保留性别，同步 context）
++        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate);
+       } else {
+         // 新建宝宝记录
+         await addBaby(dueDate);
+@@ -97,10 +97,17 @@ export default function BabyInfoScreen() {
+               <Text style={styles.infoLabel}>孕期阶段</Text>
+               <Text style={styles.infoValue}>{stageInfo?.stage || '未知'}</Text>
+             </View>
+-            <View style={styles.infoRow}>
+-              <Text style={styles.infoLabel}>当前孕周</Text>
+-              <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
+-            </View>
++            {state.stage === 'postpartum' ? (
++              <View style={styles.infoRow}>
++                <Text style={styles.infoLabel}>宝宝出生后</Text>
++                <Text style={styles.infoValue}>{state.birthAgeLabel}</Text>
++              </View>
++            ) : (
++              <View style={styles.infoRow}>
++                <Text style={styles.infoLabel}>当前孕周</Text>
++                <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
++              </View>
++            )}
+             <View style={styles.infoRow}>
+               <Text style={styles.infoLabel}>预产期</Text>
+               <Text style={styles.infoValue}>{existingBaby.dueDate}</Text>
+diff --git i/what-dad-do-vibe/app/login.tsx w/what-dad-do-vibe/app/login.tsx
+index a9fac2e..d688f4d 100644
+--- i/what-dad-do-vibe/app/login.tsx
++++ w/what-dad-do-vibe/app/login.tsx
+@@ -62,18 +62,6 @@ export default function LoginScreen() {
+     }
+   };
+ 
+-  const handleAdminLogin = async () => {
+-    setLoading(true);
+-    try {
+-      await signIn('admin', 'admin123');
+-      router.replace('/(tabs)');
+-    } catch (error: any) {
+-      Alert.alert('错误', error.message);
+-    } finally {
+-      setLoading(false);
+-    }
+-  };
+-
+   return (
+     <KeyboardAvoidingView
+       style={[styles.container, { paddingTop: insets.top }]}
+@@ -124,15 +112,7 @@ export default function LoginScreen() {
+             </TouchableOpacity>
+           </View>
+ 
+-          <TouchableOpacity style={styles.divider}>
+-            <View style={styles.dividerLine} />
+-            <Text style={styles.dividerText}>或</Text>
+-            <View style={styles.dividerLine} />
+-          </TouchableOpacity>
+ 
+-          <TouchableOpacity style={styles.adminButton} onPress={handleAdminLogin}>
+-            <Text style={styles.adminText}>超级管理员登录</Text>
+-          </TouchableOpacity>
+         </View>
+       </View>
+     </KeyboardAvoidingView>
+@@ -212,29 +192,5 @@ const styles = StyleSheet.create({
+     fontWeight: '600',
+     marginLeft: spacing.xs,
+   },
+-  divider: {
+-    flexDirection: 'row',
+-    alignItems: 'center',
+-    marginVertical: spacing.lg,
+-  },
+-  dividerLine: {
+-    flex: 1,
+-    height: 0.5,
+-    backgroundColor: colors.border,
+-  },
+-  dividerText: {
+-    fontSize: 13,
+-    color: colors.muted,
+-    marginHorizontal: spacing.md,
+-  },
+-  adminButton: {
+-    alignItems: 'center',
+-    paddingVertical: spacing.md,
+-    marginTop: spacing.sm,
+-  },
+-  adminText: {
+-    fontSize: 15,
+-    color: colors.fgSecondary,
+-    fontWeight: '500',
+-  },
++
+ });
+\ No newline at end of file

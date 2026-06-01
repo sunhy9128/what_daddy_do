@@ -40,3 +40,6 @@ design-bundle/
 # Project-specific generated files
 src/lib/api.js
 src/lib/supabase.js
+.claude
+package.json
+package-lock.json

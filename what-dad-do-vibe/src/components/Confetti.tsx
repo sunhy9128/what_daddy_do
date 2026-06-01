@@ -7,7 +7,7 @@ const N = 50;
 
 interface Particle {
   x: number;
-  y: Animated.Value;
+  translateY: Animated.Value;
   rotate: Animated.Value;
   color: string;
   size: number;
@@ -20,7 +20,7 @@ export function Confetti() {
   if (!pRef.current) {
     pRef.current = Array.from({ length: N }, (_, i) => ({
       x: Math.random() * W,
-      y: new Animated.Value(-30),
+      translateY: new Animated.Value(-H), // 从屏幕上方外开始
       rotate: new Animated.Value(0),
       color: COLORS[i % COLORS.length],
       size: 6 + Math.random() * 10,
@@ -33,11 +33,13 @@ export function Confetti() {
   useEffect(() => {
     const anims = particles.map(p =>
       Animated.parallel([
-        Animated.timing(p.y, { toValue: H + 50, duration: p.duration, delay: p.delay, useNativeDriver: true }),
+        Animated.timing(p.translateY, { toValue: H, duration: p.duration, delay: p.delay, useNativeDriver: true }),
         Animated.timing(p.rotate, { toValue: 1, duration: p.duration, delay: p.delay, useNativeDriver: true }),
       ])
     );
-    Animated.stagger(80, anims).start();
+    const composite = Animated.stagger(80, anims);
+    composite.start();
+    return () => composite.stop();
   }, []);
 
   return (
@@ -46,12 +48,16 @@ export function Confetti() {
         <Animated.View
           key={i}
           style={[styles.p, {
-            left: p.x, top: p.y,
+            left: p.x,
+            top: -30,
             width: p.size, height: p.size * 0.6,
             backgroundColor: p.color, borderRadius: 2,
-            transform: [{ rotate: p.rotate.interpolate({
-              inputRange: [0, 1], outputRange: ['0deg', '720deg'],
-            })}],
+            transform: [
+              { translateY: p.translateY },
+              { rotate: p.rotate.interpolate({
+                inputRange: [0, 1], outputRange: ['0deg', '720deg'],
+              })},
+            ],
           }]}
         />
       ))}

@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 
 import { colors, spacing, typography } from '../../styles/tokens';
 import { GrowthChart } from './GrowthChart';
 import { loadGrowthRecords, saveGrowthRecords, GrowthRecordData } from '../../lib/storage';
+import { LoadingDot } from './ToolBase';
 
 interface GrowthRecord {
   month: number;
@@ -16,11 +17,22 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [records, setRecords] = useState<GrowthRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // 加载历史记录
   useEffect(() => {
-    if (!userId) return;
-    loadGrowthRecords(userId).then(all => setRecords(all));
+    if (!userId) { setLoading(false); return; }
+    setLoading(true);
+    (async () => {
+      try {
+        const all = await loadGrowthRecords(userId);
+        setRecords(all);
+      } catch (e) {
+        console.error('Failed to load growth records:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [userId]);
 
   const persistRecords = (newRecords: GrowthRecord[]) => {
@@ -73,31 +85,54 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
         </TouchableOpacity>
       </View>
 
-      {/* 身高曲线 */}
-      <GrowthChart gender={gender} metric="length" records={records.map(r => ({ month: r.month, value: r.height }))} />
-
-      {/* 体重曲线 */}
-      <GrowthChart gender={gender} metric="weight" records={records.map(r => ({ month: r.month, value: r.weight }))} />
-
-      {/* 历史记录 */}
-      {records.length > 0 && (
-        <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>历史记录</Text>
-          {records.slice(0, 10).map((r, i) => (
-            <View key={i} style={styles.historyItem}>
-              <Text style={styles.historyText}>{r.month}月龄</Text>
-              <Text style={styles.historyText}>{r.height}cm</Text>
-              <Text style={styles.historyText}>{r.weight}kg</Text>
-            </View>
-          ))}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingDots}>
+            <LoadingDot delay={0} />
+            <LoadingDot delay={150} />
+            <LoadingDot delay={300} />
+          </View>
+          <Text style={styles.loadingText}>正在加载生长记录…</Text>
         </View>
+      ) : (
+        <>
+          {/* 合并生长曲线（身长 + 体重双 Y 轴） */}
+          <GrowthChart gender={gender} records={records} />
+
+          {/* 历史记录 */}
+          {records.length > 0 && (
+            <View style={styles.historySection}>
+              <Text style={styles.historyTitle}>历史记录</Text>
+              <View style={styles.historyTable}>
+                <View style={styles.historyHeader}>
+                  <Text style={styles.historyHeaderText}>月龄</Text>
+                  <Text style={styles.historyHeaderText}>身高 (cm)</Text>
+                  <Text style={styles.historyHeaderText}>体重 (kg)</Text>
+                </View>
+                {records.slice(0, 10).map((r, i) => (
+                  <View key={i} style={styles.historyItem}>
+                    <View style={styles.historyCell}>
+                      <Text style={styles.historyText}>{r.month}</Text>
+                    </View>
+                    <View style={styles.historyCell}>
+                      <Text style={styles.historyText}>{r.height}</Text>
+                    </View>
+                    <View style={styles.historyCell}>
+                      <Text style={styles.historyText}>{r.weight}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </>
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { height: 520 },
+  container: { maxHeight: 540 },
   genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: 8, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
   genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
@@ -112,8 +147,49 @@ const styles = StyleSheet.create({
   addBtnText: { ...typography.footnote, fontWeight: '600', color: '#fff' },
   historySection: { marginTop: spacing.md },
   historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, marginBottom: spacing.xs },
-  historyItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  historyText: { ...typography.footnote, color: colors.fg },
+  historyTable: {
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSecondary,
+    paddingVertical: spacing.xs + 2,
+  },
+  historyHeaderText: {
+    flex: 1,
+    ...typography.caption1,
+    fontWeight: '600',
+    color: colors.muted,
+    textAlign: 'center',
+  },
+  historyItem: {
+    flexDirection: 'row',
+    borderTopWidth: 0.5,
+    borderTopColor: colors.border,
+  },
+  historyCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xs + 2,
+  },
+  historyText: { ...typography.footnote, color: colors.fg, textAlign: 'center' },
+  // 加载动画
+  loadingContainer: {
+    height: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceSecondary + '40',
+    borderRadius: 8,
+    marginTop: spacing.sm,
+  },
+  loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  loadingText: { ...typography.footnote, color: colors.muted },
 });
 
 export default GrowthTracker;

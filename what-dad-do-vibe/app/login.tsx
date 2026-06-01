@@ -62,18 +62,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleAdminLogin = async () => {
-    setLoading(true);
-    try {
-      await signIn('admin', 'admin123');
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert('错误', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top }]}
@@ -124,15 +112,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>或</Text>
-            <View style={styles.dividerLine} />
-          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.adminButton} onPress={handleAdminLogin}>
-            <Text style={styles.adminText}>超级管理员登录</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -212,29 +192,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: spacing.xs,
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing.lg,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 0.5,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    fontSize: 13,
-    color: colors.muted,
-    marginHorizontal: spacing.md,
-  },
-  adminButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginTop: spacing.sm,
-  },
-  adminText: {
-    fontSize: 15,
-    color: colors.fgSecondary,
-    fontWeight: '500',
-  },
+
 });

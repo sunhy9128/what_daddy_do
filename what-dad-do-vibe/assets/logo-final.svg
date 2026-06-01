@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Logo Design for 爸爸去哪了 (What Dad Do Vibe)
+    Theme: Warm, caring, professional pregnancy companion app
+    Colors: Deep navy #2C3E6B, Warm cream #FAF5F0, Coral accent #E85D75
+  -->
+  <defs>
+    <linearGradient id="bgMain" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF5F0"/>
+      <stop offset="100%" stop-color="#EDE7DD"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C3E6B"/>
+      <stop offset="100%" stop-color="#1A2745"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="180" fill="url(#bgMain)"/>
+
+  <!-- Icon area: father + baby embrace symbol -->
+  <g transform="translate(512, 420)">
+    <!-- Large protective circle (represents care/protection) -->
+    <circle cx="0" cy="0" r="260" fill="none" stroke="#2C3E6B" stroke-width="24"/>
+
+    <!-- Baby silhouette (small, cute) -->
+    <ellipse cx="0" cy="-60" rx="85" ry="75" fill="#2C3E6B"/>
+
+    <!-- Father arms embracing (arc from sides) -->
+    <path d="M-200 120 Q-180 -30 -60 -80 Q-20 -100 0 -100 Q20 -100 60 -80 Q180 -30 200 120"
+          fill="none" stroke="#2C3E6B" stroke-width="36" stroke-linecap="round"/>
+
+    <!-- Heart in center top (love symbol) -->
+    <path d="M0 -180 C-35 -220 -75 -200 -75 -160 C-75 -120 0 -80 0 -80 C0 -80 75 -120 75 -160 C75 -200 35 -220 0 -180"
+          fill="#E85D75"/>
+  </g>
+
+  <!-- Text -->
+  <text x="512" y="780" font-family="system-ui, -apple-system, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="180" font-weight="700" fill="#2C3E6B"
+        text-anchor="middle" dominant-baseline="middle">爸爸去哪了</text>
+</svg>

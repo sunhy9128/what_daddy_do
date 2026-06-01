@@ -3,6 +3,7 @@ import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { getFoodSafety } from '../../lib/api';
 import { FoodSafety } from '../../lib/supabase';
 import { colors, spacing, typography } from '../../styles/tokens';
+import { LoadingDot } from './ToolBase';
 
 const LEVEL_LABELS: Record<string, string> = {
   safe: '可以吃',
@@ -27,16 +28,38 @@ const PERIODS = [
   { key: 'baby_1_3y' as const, label: '婴儿1-3岁' },
 ];
 
+// 提取到组件外部，避免每次渲染重建组件类型
+function SafetyBadge({ level }: { level: string }) {
+  return (
+    <View style={[styles.badge, { backgroundColor: LEVEL_COLORS[level] + '20' }]}>
+      <Text style={[styles.badgeText, { color: LEVEL_COLORS[level] }]}>{LEVEL_LABELS[level]}</Text>
+    </View>
+  );
+}
+
 export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
   const [foods, setFoods] = useState<FoodSafety[]>([]);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getFoodSafety().then(setFoods).catch(() => {});
+    setLoading(true);
+    (async () => {
+      try {
+        const list = await getFoodSafety();
+        setFoods(list);
+      } catch (e) {
+        console.error('Failed to load food safety data:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
+  const hasSearch = search.trim().length > 0;
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return [];
+    if (!hasSearch) return [];
     const kw = search.trim().toLowerCase();
     const exact: FoodSafety[] = [];
     const fuzzy: FoodSafety[] = [];
@@ -47,16 +70,14 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
       }
     }
     return [...exact, ...fuzzy].slice(0, 30);
-  }, [foods, search]);
-
-  const Badge = ({ level }: { level: string }) => (
-    <View style={[styles.badge, { backgroundColor: LEVEL_COLORS[level] + '20' }]}>
-      <Text style={[styles.badgeText, { color: LEVEL_COLORS[level] }]}>{LEVEL_LABELS[level]}</Text>
-    </View>
-  );
+  }, [foods, search, hasSearch]);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+    <ScrollView
+      style={[styles.container, hasSearch ? styles.containerExpanded : styles.containerCollapsed]}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
+    >
       <TextInput
         style={styles.searchInput}
         placeholder="输入食物名称搜索…"
@@ -66,9 +87,20 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
         autoFocus
       />
 
-      {search.trim() && filtered.length === 0 && (
-        <Text style={styles.empty}>未找到该食物数据</Text>
-      )}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingDots}>
+            <LoadingDot delay={0} />
+            <LoadingDot delay={150} />
+            <LoadingDot delay={300} />
+          </View>
+          <Text style={styles.loadingText}>正在加载食物数据…</Text>
+        </View>
+      ) : (
+        <>
+          {hasSearch && filtered.length === 0 && (
+            <Text style={styles.empty}>未找到该食物数据</Text>
+          )}
 
       {filtered.map(food => (
         <View key={food.id} style={styles.card}>
@@ -82,18 +114,22 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
             {PERIODS.map(p => (
               <View key={p.key} style={styles.row}>
                 <Text style={styles.periodLabel}>{p.label}</Text>
-                <Badge level={food[p.key]} />
+                <SafetyBadge level={food[p.key]} />
               </View>
             ))}
           </View>
         </View>
       ))}
+        </>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { maxHeight: 540 },
+  containerCollapsed: { maxHeight: 56 },
+  containerExpanded: { maxHeight: 540 },
   searchInput: {
     ...typography.callout, color: colors.fg,
     backgroundColor: colors.surfaceSecondary,
@@ -118,6 +154,17 @@ const styles = StyleSheet.create({
   periodLabel: { ...typography.footnote, color: colors.fgSecondary, flex: 1 },
   badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6 },
   badgeText: { ...typography.caption1, fontWeight: '600', fontSize: 11 },
+  // 加载动画
+  loadingContainer: {
+    height: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceSecondary + '40',
+    borderRadius: 8,
+  },
+  loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  loadingText: { ...typography.footnote, color: colors.muted },
 });
 
 export default FoodSafetyTool;

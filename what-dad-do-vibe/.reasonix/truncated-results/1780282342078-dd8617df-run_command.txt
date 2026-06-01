@@ -1,0 +1,676 @@
+$ git diff -- src/components/Confetti.tsx src/components/atoms/Tag.tsx src/components/molecules/StageTabs.tsx src/components/molecules/TaskCard.tsx src/components/organisms/CollapsibleGroup.tsx src/components/tools/FeedingTimer.tsx src/components/tools/GrowthTracker.tsx src/components/tools/ToolBase.tsx src/components/tools/Toolbar.tsx
+[exit 0]
+diff --git i/what-dad-do-vibe/src/components/Confetti.tsx w/what-dad-do-vibe/src/components/Confetti.tsx
+index 7f656a2..53944ba 100644
+--- i/what-dad-do-vibe/src/components/Confetti.tsx
++++ w/what-dad-do-vibe/src/components/Confetti.tsx
+@@ -7,7 +7,7 @@ const N = 50;
+ 
+ interface Particle {
+   x: number;
+-  y: Animated.Value;
++  translateY: Animated.Value;
+   rotate: Animated.Value;
+   color: string;
+   size: number;
+@@ -20,7 +20,7 @@ export function Confetti() {
+   if (!pRef.current) {
+     pRef.current = Array.from({ length: N }, (_, i) => ({
+       x: Math.random() * W,
+-      y: new Animated.Value(-30),
++      translateY: new Animated.Value(-H), // 从屏幕上方外开始
+       rotate: new Animated.Value(0),
+       color: COLORS[i % COLORS.length],
+       size: 6 + Math.random() * 10,
+@@ -33,11 +33,13 @@ export function Confetti() {
+   useEffect(() => {
+     const anims = particles.map(p =>
+       Animated.parallel([
+-        Animated.timing(p.y, { toValue: H + 50, duration: p.duration, delay: p.delay, useNativeDriver: true }),
++        Animated.timing(p.translateY, { toValue: H, duration: p.duration, delay: p.delay, useNativeDriver: true }),
+         Animated.timing(p.rotate, { toValue: 1, duration: p.duration, delay: p.delay, useNativeDriver: true }),
+       ])
+     );
+-    Animated.stagger(80, anims).start();
++    const composite = Animated.stagger(80, anims);
++    composite.start();
++    return () => composite.stop();
+   }, []);
+ 
+   return (
+@@ -46,12 +48,16 @@ export function Confetti() {
+         <Animated.View
+           key={i}
+           style={[styles.p, {
+-            left: p.x, top: p.y,
++            left: p.x,
++            top: -30,
+             width: p.size, height: p.size * 0.6,
+             backgroundColor: p.color, borderRadius: 2,
+-            transform: [{ rotate: p.rotate.interpolate({
+-              inputRange: [0, 1], outputRange: ['0deg', '720deg'],
+-            })}],
++            transform: [
++              { translateY: p.translateY },
++              { rotate: p.rotate.interpolate({
++                inputRange: [0, 1], outputRange: ['0deg', '720deg'],
++              })},
++            ],
+           }]}
+         />
+       ))}
+diff --git i/what-dad-do-vibe/src/components/atoms/Tag.tsx w/what-dad-do-vibe/src/components/atoms/Tag.tsx
+index 6712d64..06c5bb6 100644
+--- i/what-dad-do-vibe/src/components/atoms/Tag.tsx
++++ w/what-dad-do-vibe/src/components/atoms/Tag.tsx
+@@ -2,7 +2,7 @@ import React from 'react';
+ import { Text, StyleSheet, View, ViewProps, TextProps } from 'react-native';
+ import { colors, radius, spacing, typography } from '../../styles/tokens';
+ 
+-type TagVariant = 'default' | 'short' | 'long' | 'custom' | 'success' | 'warning';
++type TagVariant = 'default' | 'short' | 'long' | 'success' | 'warning';
+ 
+ interface TagProps extends ViewProps {
+   variant?: TagVariant;
+@@ -13,7 +13,6 @@ const variantStyles = {
+   default: { backgroundColor: colors.bg, color: colors.fg },
+   short: { backgroundColor: '#f0f9ff', color: '#007aff' },
+   long: { backgroundColor: '#f0fdf4', color: '#34c759' },
+-  custom: { backgroundColor: '#fef3c7', color: '#d97706' },
+   success: { backgroundColor: '#f0fdf4', color: '#34c759' },
+   warning: { backgroundColor: '#fef3c7', color: '#d97706' },
+ };
+diff --git i/what-dad-do-vibe/src/components/molecules/StageTabs.tsx w/what-dad-do-vibe/src/components/molecules/StageTabs.tsx
+index 4fd0545..bf9ead0 100644
+--- i/what-dad-do-vibe/src/components/molecules/StageTabs.tsx
++++ w/what-dad-do-vibe/src/components/molecules/StageTabs.tsx
+@@ -1,5 +1,5 @@
+ import React from 'react';
+-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
++import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+ import { colors, radius, spacing, typography } from '../../styles/tokens';
+ 
+ interface StageTabsProps {
+@@ -9,41 +9,55 @@ interface StageTabsProps {
+ }
+ 
+ export function StageTabs({ stages, activeStage, onStageChange }: StageTabsProps) {
++  const { width: screenWidth } = useWindowDimensions();
++  // 左右留边距后，每个标签等宽
++  const sidePadding = spacing.xl * 2;
++  const totalGap = spacing.xs * (stages.length - 1);
++  const tabWidth = Math.floor((screenWidth - sidePadding - totalGap) / stages.length);
++
+   return (
+-    <ScrollView
+-      horizontal
+-      showsHorizontalScrollIndicator={false}
+-      contentContainerStyle={styles.container}
+-    >
++    <View style={styles.container}>
+       {stages.map((stage) => (
+         <TouchableOpacity
+           key={stage}
+-          style={[styles.tag, activeStage === stage && styles.tagActive]}
++          style={[
++            styles.tag,
++            { width: tabWidth },
++            activeStage === stage && styles.tagActive,
++          ]}
+           onPress={() => onStageChange(stage)}
+           activeOpacity={0.7}
+         >
+-          <Text style={[styles.tagText, activeStage === stage && styles.tagTextActive]}>
++          <Text
++            style={[styles.tagText, activeStage === stage && styles.tagTextActive]}
++            numberOfLines={1}
++            adjustsFontSizeToFit
++          >
+             {stage}
+           </Text>
+         </TouchableOpacity>
+       ))}
+-    </ScrollView>
++    </View>
+   );
+ }
+ 
+ const styles = StyleSheet.create({
+   container: {
++    flexDirection: 'row',
++    justifyContent: 'center',
++    alignItems: 'center',
+     paddingHorizontal: spacing.xl,
+     paddingVertical: spacing.lg,
+-    gap: spacing.sm,
++    gap: spacing.xs,
+   },
+   tag: {
+-    paddingHorizontal: spacing.lg,
+     paddingVertical: spacing.sm,
+     borderRadius: radius.lg,
+     backgroundColor: colors.bg,
+     borderWidth: 0.5,
+     borderColor: colors.border,
++    alignItems: 'center',
++    justifyContent: 'center',
+   },
+   tagActive: {
+     backgroundColor: colors.fg,
+@@ -53,6 +67,7 @@ const styles = StyleSheet.create({
+     ...typography.callout,
+     fontWeight: '500',
+     color: colors.muted,
++    textAlign: 'center',
+   },
+   tagTextActive: {
+     color: colors.surface,
+diff --git i/what-dad-do-vibe/src/components/molecules/TaskCard.tsx w/what-dad-do-vibe/src/components/molecules/TaskCard.tsx
+index 759f0df..f265c3d 100644
+--- i/what-dad-do-vibe/src/components/molecules/TaskCard.tsx
++++ w/what-dad-do-vibe/src/components/molecules/TaskCard.tsx
+@@ -1,4 +1,4 @@
+-import React from 'react';
++import React, { useRef, useState, useEffect } from 'react';
+ import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
+ import { Tag } from '../atoms';
+ import { colors, radius, spacing, typography } from '../../styles/tokens';
+@@ -6,7 +6,7 @@ import { colors, radius, spacing, typography } from '../../styles/tokens';
+ interface TaskCardProps {
+   title: string;
+   description?: string;
+-  type: 'prenatal' | 'daily' | 'custom' | 'checkin';
++  type: 'prenatal' | 'daily' | 'checkin';
+   dueDate?: string;
+   isCompleted?: boolean;
+   dailyCount?: number;
+@@ -20,14 +20,12 @@ interface TaskCardProps {
+ const typeLabels = {
+   prenatal: '产检',
+   daily: '日常',
+-  custom: '自建',
+   checkin: '日打卡',
+ };
+ 
+ const typeVariants = {
+   prenatal: 'short' as const,
+   daily: 'long' as const,
+-  custom: 'custom' as const,
+   checkin: 'long' as const,
+ };
+ 
+@@ -47,6 +45,37 @@ export function TaskCard({
+   const isDaily = type === 'daily';
+   const isCheckin = type === 'checkin';
+ 
++  // 防重复提交守卫
++  const tappingRef = useRef(false);
++  const [toggling, setToggling] = useState(false);
++
++  // 组件卸载后不再 setState
++  const mountedRef = useRef(true);
++  useEffect(() => {
++    return () => { mountedRef.current = false; };
++  }, []);
++
++  const handleToggle = () => {
++    if (tappingRef.current || toggling || !onToggle) return;
++    tappingRef.current = true;
++    setToggling(true);
++    // 调用完成后释放（有异步则等异步；onToggle 若抛出则回滚）
++    // Promise rejection 已在 AppContext 内部 catch 并 console.error，
++    // 此处 .catch() 仅阻止未处理的 rejection 传播
++    try {
++      const result = onToggle();
++      Promise.resolve(result).finally(() => {
++        tappingRef.current = false;
++        if (mountedRef.current) {
++          setToggling(false);
++        }
++      }).catch(() => {});
++    } catch {
++      tappingRef.current = false;
++      setToggling(false);
++    }
++  };
++
+   const handleInfoPress = () => {
+     if (onInfo) {
+       onInfo();
+@@ -56,18 +85,29 @@ export function TaskCard({
+   return (
+     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+       {isCheckin ? (
+-        <TouchableOpacity style={styles.streakCircle} onPress={onToggle}>
++        <TouchableOpacity
++          style={[styles.streakCircle, toggling && styles.circleDisabled]}
++          onPress={handleToggle}
++          disabled={toggling || !onToggle}
++          activeOpacity={0.6}
++        >
+           <Text style={styles.streakText}>{streakCount}</Text>
+         </TouchableOpacity>
+       ) : isDaily ? (
+-        <TouchableOpacity style={styles.countCircle} onPress={onToggle}>
++        <TouchableOpacity
++          style={[styles.countCircle, toggling && styles.circleDisabled]}
++          onPress={handleToggle}
++          disabled={toggling || !onToggle}
++          activeOpacity={0.6}
++        >
+           <Text style={styles.countText}>{dailyCount}</Text>
+         </TouchableOpacity>
+       ) : (
+         <TouchableOpacity
+-          style={[styles.checkbox, isCompleted && styles.checkboxChecked]}
+-          onPress={onToggle}
+-          disabled={!onToggle}
++          style={[styles.checkbox, isCompleted && styles.checkboxChecked, toggling && styles.checkboxDisabled]}
++          onPress={handleToggle}
++          disabled={toggling || !onToggle}
++          activeOpacity={0.6}
+         >
+           {isCompleted && (
+             <Text style={styles.checkmark}>✓</Text>
+@@ -162,6 +202,12 @@ const styles = StyleSheet.create({
+     color: colors.accent,
+     fontWeight: '600',
+   },
++  circleDisabled: {
++    opacity: 0.45,
++  },
++  checkboxDisabled: {
++    opacity: 0.45,
++  },
+   streakCircle: {
+     width: 40,
+     height: 40,
+diff --git i/what-dad-do-vibe/src/components/organisms/CollapsibleGroup.tsx w/what-dad-do-vibe/src/components/organisms/CollapsibleGroup.tsx
+index 2364f71..4067908 100644
+--- i/what-dad-do-vibe/src/components/organisms/CollapsibleGroup.tsx
++++ w/what-dad-do-vibe/src/components/organisms/CollapsibleGroup.tsx
+@@ -1,4 +1,4 @@
+-import React, { useState } from 'react';
++import React, { useState, useRef, useEffect } from 'react';
+ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+ import { colors, radius, spacing, typography } from '../../styles/tokens';
+ 
+@@ -7,10 +7,21 @@ interface CollapsibleGroupProps {
+   count: number;
+   defaultExpanded?: boolean;
+   children: React.ReactNode;
++  /** 首次展开时触发（用于懒加载） */
++  onInit?: () => void;
+ }
+ 
+-export function CollapsibleGroup({ title, count, defaultExpanded = true, children }: CollapsibleGroupProps) {
++export function CollapsibleGroup({ title, count, defaultExpanded = true, children, onInit }: CollapsibleGroupProps) {
+   const [expanded, setExpanded] = useState(defaultExpanded);
++  const initedRef = useRef(false);
++
++  // 首次展开时触发 onInit
++  useEffect(() => {
++    if (expanded && !initedRef.current) {
++      initedRef.current = true;
++      onInit?.();
++    }
++  }, [expanded, onInit]);
+ 
+   return (
+     <View style={styles.container}>
+diff --git i/what-dad-do-vibe/src/components/tools/FeedingTimer.tsx w/what-dad-do-vibe/src/components/tools/FeedingTimer.tsx
+index b5b1360..e0744c8 100644
+--- i/what-dad-do-vibe/src/components/tools/FeedingTimer.tsx
++++ w/what-dad-do-vibe/src/components/tools/FeedingTimer.tsx
+@@ -24,16 +24,21 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
+     });
+   }, [userId]);
+ 
+-  // 保存喂奶记录
++  // 保存喂奶记录（直接写入，避免读取旧数据）
++  const allRecordsRef = useRef<FeedingRecordData[]>([]);
++  useEffect(() => {
++    if (!userId) return;
++    loadFeedingRecords(userId).then(all => { allRecordsRef.current = all; });
++  }, [userId]);
+   const persistRecords = (newRecords: FeedingRecord[]) => {
+     if (!userId) return;
+-    loadFeedingRecords(userId).then(all => {
+-      const otherDays = all.filter(r => r.date !== todayStr);
+-      const todaysRecords: FeedingRecordData[] = newRecords.map(r => ({
+-        id: r.id, time: r.time, date: todayStr,
+-      }));
+-      saveFeedingRecords(userId, [...otherDays, ...todaysRecords]);
+-    });
++    const otherDays = allRecordsRef.current.filter(r => r.date !== todayStr);
++    const todaysRecords: FeedingRecordData[] = newRecords.map(r => ({
++      id: r.id, time: r.time, date: todayStr,
++    }));
++    const merged = [...otherDays, ...todaysRecords];
++    allRecordsRef.current = merged;
++    saveFeedingRecords(userId, merged);
+   };
+ 
+   const formatTime = (d: Date) => {
+@@ -43,6 +48,23 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
+     return `${h}:${m}:${s}`;
+   };
+ 
++  // 距离上次喂奶的分钟数
++  const [elapsedMin, setElapsedMin] = useState<number | null>(null);
++  useEffect(() => {
++    const calc = () => {
++      if (records.length === 0) { setElapsedMin(null); return; }
++      const last = records[0].time; // HH:MM:SS
++      const [h, m, s] = last.split(':').map(Number);
++      const now = new Date();
++      const lastDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
++      const diff = Math.floor((now.getTime() - lastDate.getTime()) / 60000);
++      setElapsedMin(diff >= 0 ? diff : 0);
++    };
++    calc();
++    const timer = setInterval(calc, 120000);
++    return () => clearInterval(timer);
++  }, [records]);
++
+   const handleFeed = () => {
+     const record: FeedingRecord = {
+       id: nextId.current++,
+@@ -65,6 +87,11 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
+           <Text style={styles.mainBtnText}>喂奶</Text>
+         </TouchableOpacity>
+         <Text style={styles.countLabel}>今日 {records.length} 次</Text>
++        {elapsedMin !== null && elapsedMin >= 0 && (
++          <Text style={styles.elapsedLabel}>
++            距上次 {elapsedMin < 60 ? `${elapsedMin}分钟` : `${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}
++          </Text>
++        )}
+       </View>
+ 
+       {/* 右侧：历史记录 */}
+@@ -122,6 +149,12 @@ const styles = StyleSheet.create({
+     color: colors.muted,
+     fontWeight: '500',
+   },
++  elapsedLabel: {
++    ...typography.caption1,
++    color: colors.accent,
++    fontWeight: '500',
++    fontSize: 10,
++  },
+   rightCol: {
+     flex: 1,
+     height: 140,
+diff --git i/what-dad-do-vibe/src/components/tools/GrowthTracker.tsx w/what-dad-do-vibe/src/components/tools/GrowthTracker.tsx
+index b16bc63..31418c2 100644
+--- i/what-dad-do-vibe/src/components/tools/GrowthTracker.tsx
++++ w/what-dad-do-vibe/src/components/tools/GrowthTracker.tsx
+@@ -46,7 +46,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
+   };
+ 
+   return (
+-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
++    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+       {/* 性别 — 有宝宝数据时自动显示 */}
+       <View style={styles.genderRow}>
+         <Text style={styles.genderDisplay}>
+@@ -97,7 +97,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
+ }
+ 
+ const styles = StyleSheet.create({
+-  container: { maxHeight: 500 },
++  container: { height: 520 },
+   genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+   genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: 8, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+   genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+diff --git i/what-dad-do-vibe/src/components/tools/ToolBase.tsx w/what-dad-do-vibe/src/components/tools/ToolBase.tsx
+index 8d0bdca..7c0c03f 100644
+--- i/what-dad-do-vibe/src/components/tools/ToolBase.tsx
++++ w/what-dad-do-vibe/src/components/tools/ToolBase.tsx
+@@ -13,25 +13,30 @@ interface ToolBaseProps {
+   tool: ToolDefinition;
+   children: React.ReactNode;
+   onRemove: (id: string) => void;
++  onDragStart?: () => void;
++  isDragging?: boolean;
++  dragHandlers?: object;
+ }
+ 
+-export function ToolBase({ tool, children, onRemove }: ToolBaseProps) {
++export function ToolBase({ tool, children, onRemove, onDragStart, isDragging: _isDragging, dragHandlers }: ToolBaseProps) {
+   const [collapsed, setCollapsed] = useState(false);
+ 
+   return (
+     <View style={styles.container}>
+-      <TouchableOpacity
++      <View
+         style={styles.header}
+-        onPress={() => setCollapsed(!collapsed)}
+-        activeOpacity={0.7}
++        {...(dragHandlers || {})}
+       >
++        <TouchableOpacity style={styles.headerPress} onPress={() => setCollapsed(!collapsed)} activeOpacity={0.7}>
+         <View style={styles.headerLeft}>
+-          <Text style={styles.dragHandle}>⠿</Text>
++          <TouchableOpacity onLongPress={onDragStart} delayLongPress={200} activeOpacity={0.6}>
++            <Text style={styles.dragHandle}>⠿</Text>
++          </TouchableOpacity>
+           <Text style={styles.toolIcon}>{tool.icon}</Text>
+           <Text style={styles.toolName}>{tool.name}</Text>
+         </View>
+         <View style={styles.headerRight}>
+-          <Text style={styles.collapseIcon}>{collapsed ? '▶' : '▼'}</Text>
++
+           <TouchableOpacity
+             style={styles.removeBtn}
+             onPress={() => onRemove(tool.id)}
+@@ -41,6 +46,7 @@ export function ToolBase({ tool, children, onRemove }: ToolBaseProps) {
+           </TouchableOpacity>
+         </View>
+       </TouchableOpacity>
++      </View>
+       {!collapsed && (
+         <View style={styles.body}>
+           {children}
+@@ -57,12 +63,14 @@ const styles = StyleSheet.create({
+     overflow: 'hidden',
+   },
+   header: {
++    backgroundColor: colors.surfaceSecondary,
++  },
++  headerPress: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     justifyContent: 'space-between',
+     paddingHorizontal: spacing.md,
+     paddingVertical: spacing.sm,
+-    backgroundColor: colors.surfaceSecondary,
+   },
+   headerLeft: {
+     flexDirection: 'row',
+@@ -79,10 +87,7 @@ const styles = StyleSheet.create({
+     color: colors.muted,
+     fontWeight: '600',
+   },
+-  collapseIcon: {
+-    fontSize: 10,
+-    color: colors.muted,
+-  },
++
+   toolIcon: {
+     fontSize: 18,
+   },
+diff --git i/what-dad-do-vibe/src/components/tools/Toolbar.tsx w/what-dad-do-vibe/src/components/tools/Toolbar.tsx
+index 96a7baa..f093912 100644
+--- i/what-dad-do-vibe/src/components/tools/Toolbar.tsx
++++ w/what-dad-do-vibe/src/components/tools/Toolbar.tsx
+@@ -1,19 +1,25 @@
+-import React, { useState } from 'react';
+-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
++import React, { useState, useRef } from 'react';
++import { View, Text, TouchableOpacity, Modal, Animated, PanResponder, StyleSheet } from 'react-native';
+ import { ToolBase, ToolDefinition } from './ToolBase';
+ import { FeedingTimer } from './FeedingTimer';
+ import { GrowthTracker } from './GrowthTracker';
++import { VaccineTracker } from './VaccineTracker';
++import { VaccineCalendar } from './VaccineCalendar';
+ import { Pressable } from 'react-native';
+ import { colors, spacing, typography } from '../../styles/tokens';
+ 
+ const AVAILABLE_TOOLS: ToolDefinition[] = [
+   { id: 'feeding-timer', name: '喂奶计时器', icon: '🍼', description: '记录每次喂奶时间' },
+   { id: 'growth-tracker', name: '身高体重', icon: '📏', description: '身高体重生长曲线' },
++  { id: 'vaccine-tracker', name: '疫苗本', icon: '💉', description: '疫苗接种记录和提醒' },
++  { id: 'vaccine-calendar', name: '疫苗日历', icon: '📅', description: '按月查看疫苗接种时间线' },
+ ];
+ 
+ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
+   'feeding-timer': FeedingTimer,
+   'growth-tracker': GrowthTracker,
++  'vaccine-tracker': VaccineTracker,
++  'vaccine-calendar': VaccineCalendar,
+ };
+ 
+ interface ToolInstance {
+@@ -32,58 +38,79 @@ interface ToolbarProps {
+ 
+ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTool, onReorder }: ToolbarProps) {
+   const [showPicker, setShowPicker] = useState(false);
+-  const [reorderMode, setReorderMode] = useState(false);
++  const [dragIndex, setDragIndex] = useState<number | null>(null);
++  const dragIdxRef = useRef<number | null>(null);
++  const dragY = useRef(new Animated.Value(0)).current;
++  const panResponder = useRef(
++    PanResponder.create({
++      onStartShouldSetPanResponder: () => true,
++      onMoveShouldSetPanResponder: () => true,
++      onPanResponderGrant: () => { dragY.setValue(0); },
++      onPanResponderMove: (_, g) => {
++        const idx = dragIdxRef.current;
++        if (idx === null) return;
++        dragY.setValue(g.dy);
++        const h = 60;
++        if (g.dy > h * 0.35 && idx < activeTools.length - 1) {
++          const items = [...activeTools];
++          [items[idx], items[idx + 1]] = [items[idx + 1], items[idx]];
++          dragIdxRef.current = idx + 1;
++          setDragIndex(idx + 1);
++          dragY.setValue(g.dy - h);
++          onReorder(items);
++        } else if (g.dy < -h * 0.35 && idx > 0) {
++          const items = [...activeTools];
++          [items[idx], items[idx - 1]] = [items[idx - 1], items[idx]];
++          dragIdxRef.current = idx - 1;
++          setDragIndex(idx - 1);
++          dragY.setValue(g.dy + h);
++          onReorder(items);
++        }
++      },
++      onPanResponderRelease: () => {
++        Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
++        dragIdxRef.current = null;
++        setDragIndex(null);
++      },
++    })
++  ).current;
+ 
+   const activeToolIds = activeTools.map(t => t.toolId);
+   const availableToAdd = AVAILABLE_TOOLS.filter(t => !activeToolIds.includes(t.id));
+ 
+-  const moveItem = (index: number, direction: -1 | 1) => {
+-    const newIndex = index + direction;
+-    if (newIndex < 0 || newIndex >= activeTools.length) return;
+-    const items = [...activeTools];
+-    [items[index], items[newIndex]] = [items[newIndex], items[index]];
+-    onReorder(items);
+-  };
+-
+   return (
+     <View style={styles.wrapper}>
+-      {activeTools.length > 1 && (
+-        <TouchableOpacity style={styles.reorderToggle} onPress={() => setReorderMode(!reorderMode)}>
+-          <Text style={styles.reorderText}>{reorderMode ? '完成排序' : '排序工具 ⠿'}</Text>
+-        </TouchableOpacity>
+-      )}
+-
+       {activeTools.map((inst, index) => {
+         const def = AVAILABLE_TOOLS.find(t => t.id === inst.toolId);
+         const Component = TOOL_COMPONENTS[inst.toolId];
+         if (!def || !Component) return null;
++        const isDragging = dragIndex === index;
+         return (
+-          <View key={inst.instanceId} style={styles.toolRow}>
+-            {reorderMode && (
+-              <View style={styles.reorderBtns}>
+-                <TouchableOpacity
+-                  style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
+-                  onPress={() => moveItem(index, -1)}
+-                  disabled={index === 0}
+-                >
+-                  <Text style={styles.moveBtnText}>▲</Text>
+-                </TouchableOpacity>
+-                <Text style={styles.moveIndex}>{index + 1}</Text>
+-                <TouchableOpacity
+-                  style={[styles.moveBtn, index === activeTools.length - 1 && styles.moveBtnDisabled]}
+-                  onPress={() => moveItem(index, 1)}
+-                  disabled={index === activeTools.length - 1}
+-                >
+-                  <Text style={styles.moveBtnText}>▼</Text>
+-                </TouchableOpacity>
+-              </View>
+-            )}
+-            <View style={styles.toolContent}>
+-              <ToolBase tool={def} onRemove={() => onRemoveTool(inst.instanceId)}>
+-                <Component userId={userId} babyGender={babyGender} />
+-              </ToolBase>
+-            </View>
+-          </View>
++          <Animated.View
++            key={inst.instanceId}
++            style={[
++              styles.toolItem,
++              isDragging && {
++                zIndex: 999,
++                elevation: 10,
++                shadowColor: '#000',
++                shadowOffset: { width: 0, height: 4 },
++                shadowOpacity: 0.15,
++                shadowRadius: 12,
++                transform: [{ translateY: isDragging ? dragY : 0 }],
++              },
++            ]}
++          >
++            <ToolBase
++              tool={def}
++              onRemove={() => onRemoveTool(inst.instanceId)}
++              onDragStart={() => { dragIdxRef.current = index; setDragIndex(index); dragY.setValue(0); }}
++              isDragging={isDragging}
++              dragHandlers={panResponder.panHandlers}
++            >
++              <Component userId={userId} babyGender={babyGender} />
++            </ToolBase>
++          </Animated.View>
+         );
+       })}
+ 
+@@ -114,17 +141,9 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
+ }
+ 
+ const styles = StyleSheet.create({
+-  wrapper: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+-  reorderToggle: { alignItems: 'center', paddingVertical: spacing.xs },
+-  reorderText: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
+-  toolRow: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.xs },
+-  toolContent: { flex: 1 },
+-  reorderBtns: { alignItems: 'center', justifyContent: 'center', gap: 2, width: 28 },
+-  moveBtn: { width: 28, height: 22, borderRadius: 4, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
+-  moveBtnDisabled: { opacity: 0.3 },
+-  moveBtnText: { fontSize: 10, color: colors.accent, fontWeight: '700' },
+-  moveIndex: { ...typography.caption1, color: colors.muted, fontWeight: '600' },
+-  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, gap: spacing.xs, borderWidth: 1, borderColor: colors.border, borderRadius: 12, borderStyle: 'dashed' },
++  wrapper: { paddingHorizontal: spacing.lg },
++  toolItem: { marginBottom: spacing.sm },
++  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, gap: spacing.xs, borderWidth: 1, borderColor: colors.border, borderRadius: 12, borderStyle: 'dashed', marginTop: spacing.sm },
+   addIcon: { fontSize: 20, color: colors.accent, fontWeight: '600' },
+   addText: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
+   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },

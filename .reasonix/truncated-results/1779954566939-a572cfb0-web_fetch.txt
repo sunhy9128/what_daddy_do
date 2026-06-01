@@ -1,0 +1,652 @@
+https://everme.evermind.ai/SKILL.md
+
+---
+name: everme-install
+description: One-shot EverMe install for any AI Agent — registers a new EverMe account (or logs in an existing one), installs the EverMe MCP plugin for every locally detected agent, and optionally imports cold-start memory.
+version: 1
+keywords: [everme, evercli, install, mcp, claude-code, claude-desktop, openclaw, cursor, codex, hermes, memory, onboarding]
+audience: ai-agent
+---
+
+# EverMe Install — Agent Skill
+
+This document is the canonical install contract for any AI Agent (Claude Code, Claude Desktop, OpenClaw, Cursor, Codex, Hermes, …) that helps a user connect their machine to EverMe.
+
+> **Claude Code ≠ Claude Desktop.** Two different Anthropic products with **separate config directories** (`~/.claude/` vs `~/Library/Application Support/Claude/`), different plugin formats, and different install paths in this document.
+> - **Claude Code** is the CLI (`claude` command). It loads native Claude Code plugins via `claude plugin install`. EverMe's path: `evercli plugin install claude-code` (§3.2).
+> - **Claude Desktop** is the macOS/Windows desktop app from claude.ai/download. It loads stdio MCP servers via `claude_desktop_config.json` — it does **not** understand Claude Code plugins. EverMe's path: `evercli plugin install claude-desktop` (§3.4.1).
+>
+> If a user mentions "Claude" without qualifying which, ask which one — the install path is different.
+
+**Goal:** complete the install end-to-end with **at most one browser click** from the user.
+
+**What this skill is.** The install + verify contract: account login (Device Flow or API key), `evercli plugin install` per host, optional cold-start memory import, `evercli doctor` verification, restart handoff. Everything needed to get one machine connected end-to-end.
+
+**What this skill is NOT.** Not the runtime API reference, not the data-model spec, not the in-session troubleshooting guide. If you need:
+
+- evercli command details beyond install → `evercli <subcommand> --help`
+- error semantics during a live agent session → the plugin's logs and the backend, not this doc
+
+Read every section before executing. Pick the right branch (new user vs existing user) based on whether the user supplied an `emk_*` API key in their message.
+
+---
+
+## 0 · When to use this skill
+
+Trigger when the user pastes any of:
+
+- A message containing `https://everme.evermind.ai/SKILL.md` (the prompt copied from the official "Install via AI Agent" tab).
+- "Install EverMe" / "帮我安装 EverMe" / "set up EverMe on this machine".
+- The message includes an EverMe API key (`emk_` followed by 32 hex chars).
+
+**Branch selection (do this first, silently):**
+
+| Signal in user message | Branch |
+|---|---|
+| Contains `emk_[a-f0-9]{32}` | **B · Existing user** — skip Device Flow, skip memory import |
+| No API key | **A · New user** — Device Flow + optional memory import |
+
+In both branches:
+
+- Always pass `--format json` to every `evercli` command.
+- Always parse the JSON envelope (`{ok, data, error?, meta?}`) before deciding the next step.
+- Never invent flags. Only the flags listed in this doc exist.
+
+---
+
+## 1 · Install EverCli (both branches)
+
+Prerequisite: Node.js ≥ 18 (used by the npm wrapper to download and verify the platform-native binary on first install). Most developer machines already have it; if not, install from <https://nodejs.org>.
+
+Tell the user once, in plain words: *"Installing EverCli now — you'll see npm download a small wrapper that fetches the platform-native binary."*
+
+```bash
+npm install -g @everme/cli
+```
+
+The npm wrapper auto-detects OS/arch (Darwin/Linux/Windows × amd64/arm64), downloads the matching pre-built binary from GitHub Releases, verifies SHA-256, and exposes it as the `evercli` command.
+
+**Possible install hiccups:**
+
+- `EBADPLATFORM` — your OS/arch isn't pre-built. Bail and tell the user.
+- `EACCES` on `npm install -g` — try `sudo npm install -g @everme/cli`, or set `npm config set prefix ~/.npm-global` and add `~/.npm-global/bin` to PATH.
+- Behind a firewall — set `https_proxy` env var before `npm install`.
+
+**Verify:**
+
+```bash
+evercli --version
+```
+
+Expected output (version reflects whatever is currently published on the `@beta` dist-tag):
+
+```
+evercli <version>          # e.g. 0.1.1
+  commit:   <short-sha>
+  built:    <ISO-8601 timestamp>
+  go:       go1.25.x
+  platform: darwin/arm64
+```
+
+If the binary is not on `PATH`, ask the user to open a new shell. Do not retry the install silently.
+
+---
+
+## 2A · New user — Device Flow
+
+Use this branch when the user message contains **no** `emk_*` key.
+
+### 2A.1 · Start the Device Flow
+
+```bash
+evercli auth login --no-wait --format json
+```
+
+Expected success envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "status": "pending",
+    "userCode": "ABCD-EFGH",
+    "verificationUrl": "https://everme.evermind.ai/cli-auth?userCode=ABCD-EFGH",
+    "expiresInSec": 300,
+    "deviceCode": "dc_xxxxxxxxxxxx",
+    "resumeCommand": "evercli auth login --device-code dc_xxxxxxxxxxxx --format json"
+  }
+}
+```
+
+Capture `data.deviceCode` — you need it in step 2A.3.
+
+### 2A.2 · Hand off to the browser
+
+Send the user this message verbatim (substituting the real URL):
+
+> Please open this link in your browser to authorize (one click is enough):
+>
+> **{data.verificationUrl}**
+>
+> Tell me when you're done.
+
+Do **not** poll the device-code endpoint in a loop. Wait for the user to reply.
+
+The code expires in 5 minutes. If the user takes longer, the next poll will return `status: expired` — restart from 2A.1.
+
+### 2A.3 · Resume after authorization
+
+When the user confirms (e.g. "done", "好了", "ok"):
+
+```bash
+evercli auth login --device-code <dc_xxxxxxxxxxxx> --format json
+```
+
+Possible outcomes:
+
+| `data.status` | Meaning | Next step |
+|---|---|---|
+| `approved` | Login complete. `apiKey` is now in the OS keychain. | Continue to §3 |
+| `pending` | User hasn't authorized yet | Wait, ask user to retry the browser step, then re-run this command |
+| `denied` | User clicked "Deny" | Acknowledge, restart from 2A.1 if they changed their mind |
+| `expired` | 5-minute window elapsed | Restart from 2A.1 |
+
+On `approved`, expected fields: `accountId`, `email`, `apiKeyPrefix` (e.g. `emk_a1b2`), `isNewKey: true`, `scopes`.
+
+Tell the user:
+
+> Logged in as **{data.email}**. Your API key prefix is `{data.apiKeyPrefix}` (full key is stored securely in your OS keychain).
+
+---
+
+## 2B · Existing user — API-key login
+
+Use this branch when the user message contains an `emk_*` key.
+
+```bash
+evercli auth login --api-key emk_xxxxxxxxxxxx --format json
+```
+
+Expected success envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "status": "approved",
+    "accountId": "...",
+    "email": "user@example.com",
+    "apiKeyPrefix": "emk_a1b2",
+    "isNewKey": false,
+    "scopes": ["mem:read", "mem:write", "mem:search", "plugin:manage"]
+  }
+}
+```
+
+On `ok: false` with `error.type: "auth"`, the key is invalid or revoked. Ask the user to double-check the value (no retries — the message could be a typo).
+
+Tell the user:
+
+> Welcome back, **{data.email}**. API key validated and saved to your OS keychain.
+
+---
+
+## 3 · Scan local agents and install plugins (both branches)
+
+The CLI's `plugin install` writes the per-agent config each platform expects. How the *plugin source* itself reaches the user's machine differs per platform — important for provenance, audit, and corporate-firewall allowlisting:
+
+| Platform | Registry / channel | When fetched | evercli's role |
+|---|---|---|---|
+| `@everme/memory-mcp` (Claude Code, OpenClaw) | **npm** via `npx -y` | On-demand at agent startup (no global install) | Writes the `npx` invocation into the host's MCP config |
+| `@everme/claude-code` | **npm** via `npm install -g` (then `claude plugin marketplace add <local path>`) | First time `evercli plugin install claude-code` runs | Triggers the global npm install, then `claude plugin install` |
+| `@everme/openclaw` | **clawhub** — OpenClaw's own registry / proxy (resolves as `clawhub:@everme/openclaw`), **not** the public npm registry | When the user runs `openclaw plugins install @everme/openclaw` (manual step — see §3.2) | Writes `~/.openclaw/openclaw.json` and registers the agent; does **not** fetch the package itself |
+| `@everme/memory-mcp` (Cursor, Claude Desktop, Codex, Hermes) | **npm** via `npx -y` | On-demand at agent startup | `evercli plugin install <host>` writes the MCP entry + mints/rotates the `agentId` / `agentToken` automatically; **no manual paste**. Codex also gets the EverMe marketplace + skill via the same command. Hermes uses the MCP YAML path in `~/.hermes/config.yaml`. |
+
+If the user's machine is behind a firewall, all three channels need outbound HTTPS — npm to `registry.npmjs.org`, clawhub to OpenClaw's hub host. Allowlist accordingly.
+
+### 3.1 · Detect installed agents
+
+```bash
+evercli plugin list --format json
+```
+
+Expected envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "platforms": [
+      {
+        "platform": "claude-code",
+        "displayName": "Claude Code",
+        "installed": true,
+        "configPath": "/Users/.../.claude/everme.env",
+        "hasEverMeEntry": false,
+        "registeredAgent": null
+      },
+      {
+        "platform": "openclaw",
+        "displayName": "OpenClaw",
+        "installed": false,
+        "configPath": "",
+        "hasEverMeEntry": false,
+        "registeredAgent": null
+      }
+    ]
+  }
+}
+```
+
+Filter `data.platforms[]` to entries with `installed: true && hasEverMeEntry: false` — those are the ones that need the EverMe MCP plugin installed.
+
+If none qualify, tell the user no supported agent was detected and stop here.
+
+### 3.2 · Install plugins in one call
+
+Pass every qualifying platform as a positional argument:
+
+```bash
+evercli plugin install <p1> <p2> ... --no-prompt --format json
+```
+
+Example:
+
+```bash
+evercli plugin install claude-code openclaw --no-prompt --format json
+```
+
+Expected success envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "installed": [
+      {
+        "platform": "claude-code",
+        "agentId": "agt_...",
+        "tokenPrefix": "evt_a1b2",
+        "configPath": "/Users/.../.claude/everme.env",
+        "backupPath": "/Users/.../.claude.json-bak"
+      }
+    ],
+    "skipped": null,
+    "failed": null
+  }
+}
+```
+
+**Partial failure** (`ok: false`, top-level `error.type: "conflict"`): report per-platform reasons from `data.failed[]` and continue to §4 (import) and §5 (verify). Do not abort the whole install — partial success is recoverable and §5 will tell the user concretely what's missing.
+
+#### OpenClaw post-install step (only if `openclaw` was installed)
+
+If `openclaw` appears in `data.installed[]`, tell the user to run **one** additional command:
+
+```bash
+openclaw plugins install @everme/openclaw
+```
+
+What the user will see in OpenClaw's install log:
+
+```
+Resolving clawhub:@everme/openclaw…
+Downloading @everme/openclaw…
+```
+
+**`clawhub` is OpenClaw's own registry / proxy** — not the public npm registry. The package is resolved as `clawhub:@everme/openclaw` and fetched from OpenClaw's hub. Tell users behind a corporate firewall they may need to allowlist the clawhub host in addition to `registry.npmjs.org`.
+
+`evercli` writes the `~/.openclaw/openclaw.json` config and registers the agent with the EverMe backend, but it deliberately does **not** install the plugin package itself. OpenClaw's plugin model is an in-process JavaScript context-engine (see [plugins/openclaw/openclaw.plugin.json](https://github.com/EverMind-AI/EverMe-CLI/blob/main/plugins/openclaw/openclaw.plugin.json) — `"kind": "context-engine"`), and OpenClaw's own CLI (which speaks clawhub) is the only thing that knows where to put the package files. This is unique to OpenClaw; `claude-code` and `memory-mcp` are handled end-to-end by `evercli` through npm.
+
+### 3.3 · What evercli writes (and what it never touches)
+
+For audit / corporate-security review: `evercli plugin install` only writes the per-platform files and keys listed below. **Anything outside this scope is not modified by evercli.** If you see an agent claiming to "fix" config outside this list, that's an anomaly — push back.
+
+| Platform | File touched | Keys / contents evercli writes |
+|---|---|---|
+| Claude Code | `~/.claude/everme.env` | The entire file (KEY=value, mode `0600`). Contents: `EVERME_API_BASE`, `EVERME_AGENT_ID`, `EVERME_AGENT_TOKEN` |
+| Claude Code | `claude` plugin registry (via `claude plugin marketplace add` + `claude plugin install`) | Adds the `everme` marketplace entry, then installs `everme@everme`. Does **not** edit `~/.claude/settings.json` |
+| OpenClaw | `~/.openclaw/openclaw.json` | Appends to `plugins.allow`, sets `plugins.slots.memory` / `plugins.slots.contextEngine`, writes `plugins.entries["@everme/openclaw"]` |
+| Cursor | `~/.cursor/mcp.json` | Upserts `mcpServers.everme-memory` (preserves any other servers). `EVERME_API_BASE` / `EVERME_AGENT_ID` / `EVERME_AGENT_TOKEN` land in its `env` |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) / `%APPDATA%\Claude\claude_desktop_config.json` (Windows) / `~/.config/claude-desktop/claude_desktop_config.json` (Linux) | Upserts `mcpServers.everme-memory` (preserves any other servers) |
+| Codex | `~/.codex/config.toml` + `codex plugin marketplace add` | Upserts `[marketplaces.everme]`, `[plugins."everme@everme"]`, `[mcp_servers.everme]`, `[mcp_servers.everme.env]`. Marketplace add runs **before** the backend mints a fresh token. |
+| Hermes | `~/.hermes/config.yaml` | Upserts `mcp_servers.everme` (preserves sibling MCP servers and unrelated top-level Hermes config). `EVERME_API_BASE` / `EVERME_AGENT_ID` / `EVERME_AGENT_TOKEN` land in its `env` |
+
+`evercli plugin install` supports `claude-code`, `openclaw`, `cursor`, `claude-desktop`, `codex`, and `hermes`. Windsurf / VS Code Copilot / Cline are future candidates. For any host outside this list there is **no** manual `register` fallback — `evercli plugin register` was retired in V1.
+
+**Files evercli will never write during install:**
+
+- `~/.claude/settings.json` and `~/.claude.json` (Claude Code's own configs — evercli only writes the everme env file)
+- Your shell profile (`.zshrc` / `.bashrc` / `.profile`)
+- `package.json`, `package-lock.json`, or any file inside your project directories
+- Any file outside `$HOME/.claude/`, `$HOME/.openclaw/`, `$HOME/.cursor/`, `$HOME/.hermes/`, the Claude Desktop config dir, and `$HOME/.codex/`
+
+**Backups.** When evercli replaces an existing entry, it writes a `.bak` sibling first. The path appears in `data.installed[].backupPath` of the install JSON envelope. Restore by `mv <path>.bak <path>`.
+
+### 3.4 · Per-host install notes
+
+Every V1 host uses the **same** command — `evercli plugin install <host>` — and writes the local config + mints the agent token automatically. There is no manual paste step. The per-host notes below cover what gets written, where, and any post-install restart required.
+
+#### 3.4.1 · Claude Desktop
+
+**Scope.** The macOS / Windows desktop app from claude.ai/download. **Not** Claude Code (the CLI). Linux uses Anthropic's experimental build.
+
+```bash
+evercli plugin install claude-desktop
+```
+
+**Writes:** `mcpServers.everme-memory` into the OS-appropriate config file
+(macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\claude_desktop_config.json`, Linux `~/.config/claude-desktop/claude_desktop_config.json`). Any sibling MCP servers are preserved.
+
+**Restart:** quit Claude Desktop fully (⌘Q on macOS), then relaunch. The MCP server icon should list `everme-memory` with three tools (`mem_search`, `mem_context`, `mem_save_turn`).
+
+#### 3.4.2 · Codex
+
+**Scope.** Codex CLI + Codex Desktop App both consume `~/.codex/config.toml`, so a single install covers both. **ChatGPT Desktop / Codex Web are out of scope** — they run in OpenAI's cloud and cannot spawn local stdio MCP subprocesses.
+
+```bash
+evercli plugin install codex
+```
+
+**Writes** end up in two distinct sections of `~/.codex/config.toml` (unrelated keys untouched), split between two writers:
+
+```toml
+# Written by `codex plugin marketplace add` during evercli's Prepare step.
+# Exact key shape (source_type, source, last_updated) depends on whether
+# Codex fetched the marketplace from GitHub or a local path; evercli does
+# NOT overwrite this section.
+[marketplaces.everme]
+last_updated = "2026-05-26T10:32:09Z"
+source_type = "git"
+source = "EverMind-AI/EverMe"
+
+# Written by evercli's Commit step.
+[plugins."everme@everme"]
+enabled = true
+
+[mcp_servers.everme]
+command = "npx"   # npx.cmd on Windows
+args = ["-y", "@everme/memory-mcp"]
+
+[mcp_servers.everme.env]
+EVERME_API_BASE = "https://api.everme.evermind.ai"
+EVERME_AGENT_ID = "agt_..."
+EVERME_AGENT_TOKEN = "evt_..."
+```
+
+The marketplace add runs **before** the backend mints a fresh token, so a marketplace failure (network, missing `codex` CLI, bad `--sparse` path) leaves no stranded cloud agent. The EverMe Codex skill (`everme-memory`, telling Codex when to call `mem_*` tools) ships through this marketplace.
+
+**Restart:** exit the current `codex` session (or quit the Codex app) and relaunch.
+
+#### 3.4.3 · Cursor
+
+```bash
+evercli plugin install cursor
+```
+
+**Writes:** `mcpServers.everme-memory` into `~/.cursor/mcp.json` (global). Cursor accepts the same `mcpServers` JSON shape as Claude Desktop.
+
+**Restart:** quit and relaunch Cursor.
+
+#### 3.4.4 · Hermes
+
+```bash
+evercli plugin install hermes
+```
+
+**Writes:** `mcp_servers.everme` into `~/.hermes/config.yaml`. The entry launches `npx -y @everme/memory-mcp` and passes `EVERME_API_BASE`, `EVERME_AGENT_ID`, and `EVERME_AGENT_TOKEN` through the MCP server's `env`. Any sibling `mcp_servers` entries and unrelated Hermes config are preserved.
+
+**Why evercli writes YAML directly:** Hermes supports MCP via `mcp_servers`, but `hermes mcp add --args -y ...` is not reliable for dash-leading args in current Hermes CLI versions. evercli writes the same YAML shape Hermes loads at runtime.
+
+**Restart:** quit the Hermes app / runtime and relaunch.
+
+**Behavior:** Hermes support is MCP-based, so recall/save are model-driven tool calls like Cursor / Claude Desktop.
+
+---
+
+## 4 · Cold-start memory import (new-user branch only)
+
+**Skip this entire section for the existing-user branch.** Their memory is already in the cloud — no local import needed.
+
+### 4.1 · Scan for importable files
+
+```bash
+evercli import scan --format json
+```
+
+Expected envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "sources": [
+      {
+        "platform": "claude-code",
+        "rootPath": "/Users/.../.claude/projects",
+        "fileCount": 22,
+        "totalBytes": 12288
+      },
+      {
+        "platform": "openclaw",
+        "rootPath": "/Users/.../.openclaw/workspace/memory",
+        "fileCount": 126,
+        "totalBytes": 675840
+      }
+    ]
+  }
+}
+```
+
+If every `fileCount` is 0, skip the rest of §4.
+
+### 4.2 · Ask the user before uploading
+
+This step is **not** automatic. Show the user a summary table:
+
+> I found existing AI memory on this machine. Want me to upload it to EverMe so it's available across all your devices and agents?
+>
+> | Source | Files | Size |
+> |---|---|---|
+> | Claude Code | 22 | 12 KB |
+> | OpenClaw | 126 | 660 KB |
+> | **Total** | **148** | **672 KB** |
+
+Wait for explicit confirmation ("yes" / "好的" / "confirm"). On decline, tell the user they can run `evercli import run` later and skip to §5.
+
+### 4.3 · Run the import
+
+```bash
+evercli import run --no-prompt --format json
+```
+
+Expected success envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "imports": [
+      {
+        "platform": "claude-code",
+        "recordId": "src_...",
+        "fileCount": 22,
+        "totalBytes": 12288
+      }
+    ],
+    "skipped": [],
+    "failed": []
+  }
+}
+```
+
+On partial failure: report which platforms failed, then continue. The user can `evercli import run --resume` later.
+
+---
+
+## 5 · Verify install (both branches)
+
+**This step is required.** Do not jump to §6 final handoff until §5 has been run and passed. Silent half-failures (plugin "installed" but MCP server not picked up, agent registered but credentials unreadable, etc.) are the #1 source of bad first-run experience — `evercli doctor` is built specifically to catch them.
+
+### 5.1 · Run the doctor
+
+```bash
+evercli doctor --format json
+```
+
+Expected success envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "checks": [
+      { "name": "network.everme-api",           "ok": true,  "severity": "critical" },
+      { "name": "network.readyz",               "ok": true,  "severity": "warning"  },
+      { "name": "credential.backend",           "ok": true,  "severity": "info"     },
+      { "name": "credential.readable",          "ok": true,  "severity": "critical" },
+      { "name": "plugin.claude-code.mcp-visible","ok": true, "severity": "warning"  }
+    ],
+    "summary": { "criticalFailed": 0, "warningFailed": 0 }
+  }
+}
+```
+
+Handling:
+
+| Result | Action |
+|---|---|
+| `summary.criticalFailed > 0` | **Stop.** Read `error.hint` on each failed check. Address before continuing. Do NOT send the final handoff. |
+| `summary.warningFailed > 0` | Continue, but call the specific warnings out in §6 so the user knows what to fix manually (the most common is `plugin.claude-code.mcp-visible` — needs user to approve via `/mcp` in Claude Code). |
+| All `ok: true` | Continue to §6. |
+
+The `plugin.claude-code.mcp-visible` check degrades to `severity: info` (and `ok: true`) when `claude` is not on PATH — that's expected on machines without Claude Code, not a failure.
+
+### 5.2 · Cross-check the EverMe web dashboard
+
+Tell the user:
+
+> You can confirm everything wired up by visiting **<https://everme.evermind.ai/agents>** — every machine + agent you just registered should appear there with the matching `agentId`, recent `lastActiveAt`, and `connectionStatus: connected`.
+
+This is the authoritative source of truth for "is my install really live" — it reflects what the backend sees, not just what your local config claims.
+
+---
+
+## 6 · Final handoff message (both branches)
+
+**Use the templates below verbatim — do not paraphrase.** The exact phrasing is tuned for clarity (which step is mandatory, which fields to substitute, which link to surface). Agents that "summarize in their own voice" tend to drop the restart step or the dashboard URL — both are required UX. Substitute only the `{placeholders}`.
+
+Send the user a short summary. Adapt phrasing to the branch. **Both branches end with a restart step that is mandatory** — the EverMe plugin only loads on agent startup.
+
+Restart command, by platform (include only the lines for platforms you installed):
+
+| Platform | Restart |
+|---|---|
+| Claude Code | **Quit your current `claude` session** (Ctrl-D, type `/exit`, or close the terminal), then start a fresh one: `claude` |
+| Claude Desktop | Fully quit the app (⌘Q on macOS, right-click tray icon → Quit on Windows), then relaunch from Applications / Start menu |
+| OpenClaw | `openclaw gateway restart` |
+| Codex (CLI) | Exit the current `codex` session (Ctrl-D or `/exit`), then run `codex` again |
+| Codex (VS Code) | Reload the VS Code window (`Cmd-Shift-P` → "Developer: Reload Window") |
+| Hermes | Quit the Hermes app / runtime and relaunch |
+| Cursor | Quit Cursor (⌘Q) and reopen the project |
+
+**New-user branch (after §4 ran or was skipped):**
+
+> All done! 🎉
+>
+> - Account: **{email}**
+> - API key: `{apiKeyPrefix}****` (saved to your OS keychain)
+> - Plugins installed: {list of platforms from §3.2 `data.installed[].platform`}
+> - Memory imported: **{total fileCount}** files ({total bytes}) — *only if §4 ran*
+> - Health check: **all passing** (or, if §5 had warnings: list them concretely)
+>
+> Manage your memory and inspect registered agents at **<https://everme.evermind.ai/agents>**.
+>
+> **One last step — restart your agent so EverMe loads:**
+> - Claude Code: quit your `claude` session, run `claude` again
+> - OpenClaw: `openclaw gateway restart`
+>
+> After restart, try asking your agent to remember something simple ("remember: I prefer Go for backend") and ask it back in a fresh prompt — that confirms the loop is closed.
+
+**Existing-user branch:**
+
+> EverMe is connected on this machine. ✓
+>
+> - Account: **{email}**
+> - Plugins installed: {list of platforms}
+> - Health check: **all passing**
+>
+> Your existing memory is in the cloud — no local import needed.
+>
+> **Restart your agent so EverMe loads:**
+> - Claude Code: quit your `claude` session, run `claude` again
+> - OpenClaw: `openclaw gateway restart`
+>
+> After restart, try asking your agent to recall something you've discussed before. Inspect this machine's registration at **<https://everme.evermind.ai/agents>** if anything looks off.
+
+---
+
+## 7 · Error and exit-code reference
+
+Every `evercli` command returns one of these envelopes:
+
+```json
+// success
+{ "ok": true,  "data": {...}, "meta": {...} }
+
+// failure
+{ "ok": false, "error": { "type": "...", "message": "...", "hint": "...", "detail": {...} }, "meta": {...} }
+```
+
+Exit codes:
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Business error (validation, conflict, upstream) |
+| 2 | Input validation |
+| 3 | Auth (not logged in, key invalid) |
+| 4 | Network / unreachable |
+| 5 | Internal error |
+| 130 | Cancelled (Ctrl+C) |
+
+Common `error.type` values: `auth`, `network`, `conflict`, `validation`, `not_logged_in`, `plugin_not_detected`, `io`, `internal`.
+
+Always surface `error.hint` to the user when present — it's written to be actionable.
+
+---
+
+## 8 · What NOT to do
+
+- **Do not** invent flags. The only flags that exist on `evercli auth login` are `--api-key`, `--device-code`, `--no-wait`, `--format`. No `--scopes`, no `--browser`, no `--email`.
+- **Do not** use `evercli onboard` — it has been removed. The three atomic commands above are the only supported path.
+- **Do not** poll the device-code endpoint silently. Hand off to the user and wait for them to reply.
+- **Do not** auto-import memory. Always ask first.
+- **Do not** echo the full `emk_*` value back to the user — only the `apiKeyPrefix` returned by the CLI. The keychain holds the truth.
+- **Do not** write `emk_*` or `evt_*` (full or prefixed-with-context) to any local file the agent might persist for itself — including but not limited to `MEMORY.md`, `~/.claude/projects/*/memory/`, `.cursorrules`, OpenClaw memos, session-summary notes, or auto-generated commit messages. These secrets belong only to the OS keychain (written by `evercli auth login` / `plugin install`) and the §6 handoff shown once to the user. Agent memory systems frequently sync to cloud storage or git — both wrong places for credentials. If your agent is about to save a turn that contains a key, redact it to the `emk_a1b2****` prefix form first.
+- **Do not** retry-loop on `error.type: auth` — let the user correct the input.
+- **Do not** attempt to restart the user's agent for them. Tell them to restart it manually — give the exact command for their platform (see §6 restart table).
+- **Do not** skip §5 verify. `evercli plugin install` exiting 0 is necessary but not sufficient — the doctor command is the only thing that catches silent half-failures like "plugin registered but MCP server not approved" or "credentials written but unreadable."
+- **Do not** assume `@everme/openclaw` comes from npm. It's resolved through **clawhub** (`clawhub:@everme/openclaw`) by the OpenClaw CLI — see §3 channel table and §3.2.
+- **Do not** `npm install` `@everme/memory-mcp` or `@everme/claude-code` manually — `evercli plugin install` handles the fetch for you (the former via `npx -y` at agent startup, the latter via `npm install -g` triggered by evercli). `@everme/openclaw` is the exception: the user runs `openclaw plugins install @everme/openclaw` themselves after `evercli plugin install openclaw`, because OpenClaw's plugin loader owns that step — see §3.2.
+- **Do not** instruct a Claude **Desktop** / Codex / Cursor / Hermes user to run `evercli plugin install claude-code` or `claude plugin install everme`. Those commands target Claude Code (the CLI) and either no-op or fail on the other hosts. The correct command is `evercli plugin install <their-host>` — see §3.4 for the per-host notes.
+- **Do not** look for or suggest `evercli plugin register`. It was retired in V1 — every supported host now installs via `evercli plugin install <host>`, no manual paste, no one-shot token. Re-running `evercli plugin install` on an already-installed host rotates the token transparently (server-side upsert on `account_id + platform + machine_fingerprint`).
+
+---
+
+## 9 · Reference
+
+**Plugin distribution channels** (see §3 for full retrieval-channel table):
+
+- npm package (CLI wrapper): <https://www.npmjs.com/package/@everme/cli>
+- npm package (Agent SDK): <https://www.npmjs.com/package/@everme/agent-sdk>
+- npm package (Generic MCP server): <https://www.npmjs.com/package/@everme/memory-mcp>
+- npm package (Claude Code plugin): <https://www.npmjs.com/package/@everme/claude-code>
+- **clawhub package (OpenClaw plugin)**: `clawhub:@everme/openclaw` — resolved by the OpenClaw CLI, not the npm registry. Source mirror at <https://www.npmjs.com/package/@everme/openclaw> is for reference only.
+- GitHub Releases (CLI binary downloads): <https://github.com/EverMind-AI/EverMe-CLI/releases>
+
+**EverMe endpoints (Beta):**
+
+- Web dashboard: <https://everme.evermind.ai>
+- **Registered agents view**: <https://everme.evermind.ai/agents> — authoritative source for "is my install actually live"
+- API gateway (default): <https://api.everme.evermind.ai>

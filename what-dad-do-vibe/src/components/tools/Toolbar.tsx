@@ -1,5 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, Animated, PanResponder, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+// Android 启用 LayoutAnimation
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { ToolBase, ToolDefinition } from './ToolBase';
 import { FeedingTimer } from './FeedingTimer';
 import { GrowthTracker } from './GrowthTracker';
@@ -10,11 +16,11 @@ import { Pressable } from 'react-native';
 import { colors, spacing, typography } from '../../styles/tokens';
 
 const AVAILABLE_TOOLS: ToolDefinition[] = [
-  { id: 'feeding-timer', name: '喂奶计时器', icon: '🍼', description: '记录每次喂奶时间' },
-  { id: 'growth-tracker', name: '身高体重', icon: '📏', description: '身高体重生长曲线' },
-  { id: 'vaccine-tracker', name: '疫苗本', icon: '💉', description: '疫苗接种记录和提醒' },
-  { id: 'vaccine-calendar', name: '疫苗日历', icon: '📅', description: '按月查看疫苗接种时间线' },
-  { id: 'food-safety', name: '食物禁忌', icon: '🍽️', description: '孕期+婴儿食物安全查询' },
+  { id: 'feeding-timer', name: '喂奶计时器', icon: 'timer-outline', description: '记录每次喂奶时间' },
+  { id: 'growth-tracker', name: '身高体重', icon: 'trending-up-outline', description: '身高体重生长曲线' },
+  { id: 'vaccine-tracker', name: '疫苗本', icon: 'medkit-outline', description: '疫苗接种记录和提醒' },
+  { id: 'vaccine-calendar', name: '疫苗日历', icon: 'calendar-outline', description: '按月查看疫苗接种时间线' },
+  { id: 'food-safety', name: '食物禁忌', icon: 'restaurant-outline', description: '孕期+婴儿食物安全查询' },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
@@ -41,86 +47,80 @@ interface ToolbarProps {
 
 export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTool, onReorder }: ToolbarProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const dragIdxRef = useRef<number | null>(null);
-  const dragY = useRef(new Animated.Value(0)).current;
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => { dragY.setValue(0); },
-      onPanResponderMove: (_, g) => {
-        const idx = dragIdxRef.current;
-        if (idx === null) return;
-        dragY.setValue(g.dy);
-        const h = 60;
-        if (g.dy > h * 0.35 && idx < activeTools.length - 1) {
-          const items = [...activeTools];
-          [items[idx], items[idx + 1]] = [items[idx + 1], items[idx]];
-          dragIdxRef.current = idx + 1;
-          setDragIndex(idx + 1);
-          dragY.setValue(g.dy - h);
-          onReorder(items);
-        } else if (g.dy < -h * 0.35 && idx > 0) {
-          const items = [...activeTools];
-          [items[idx], items[idx - 1]] = [items[idx - 1], items[idx]];
-          dragIdxRef.current = idx - 1;
-          setDragIndex(idx - 1);
-          dragY.setValue(g.dy + h);
-          onReorder(items);
-        }
-      },
-      onPanResponderRelease: () => {
-        Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
-        dragIdxRef.current = null;
-        setDragIndex(null);
-      },
-    })
-  ).current;
+  const [reordering, setReordering] = useState(false);
+
+  const moveUp = (index: number) => {
+    if (index <= 0) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const items = [...activeTools];
+    [items[index - 1], items[index]] = [items[index], items[index - 1]];
+    onReorder(items);
+  };
+
+  const moveDown = (index: number) => {
+    if (index >= activeTools.length - 1) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const items = [...activeTools];
+    [items[index], items[index + 1]] = [items[index + 1], items[index]];
+    onReorder(items);
+  };
 
   const activeToolIds = activeTools.map(t => t.toolId);
   const availableToAdd = AVAILABLE_TOOLS.filter(t => !activeToolIds.includes(t.id));
 
   return (
     <View style={styles.wrapper}>
+      {/* 工具列表 */}
       {activeTools.map((inst, index) => {
         const def = AVAILABLE_TOOLS.find(t => t.id === inst.toolId);
         const Component = TOOL_COMPONENTS[inst.toolId];
         if (!def || !Component) return null;
-        const isDragging = dragIndex === index;
+        const isFirst = index === 0;
+        const isLast = index === activeTools.length - 1;
         return (
-          <Animated.View
-            key={inst.instanceId}
-            style={[
-              styles.toolItem,
-              isDragging && {
-                zIndex: 999,
-                elevation: 10,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                transform: [{ translateY: isDragging ? dragY : 0 }],
-              },
-            ]}
-          >
+          <View key={inst.instanceId} style={styles.toolItem}>
             <ToolBase
               tool={def}
               onRemove={() => onRemoveTool(inst.instanceId)}
-              onDragStart={() => { dragIdxRef.current = index; setDragIndex(index); dragY.setValue(0); }}
-              isDragging={isDragging}
-              dragHandlers={panResponder.panHandlers}
+              showRemove={reordering}
+              showReorder={reordering}
+              isFirst={isFirst}
+              isLast={isLast}
+              onMoveUp={() => moveUp(index)}
+              onMoveDown={() => moveDown(index)}
             >
               <Component userId={userId} babyGender={babyGender} />
             </ToolBase>
-          </Animated.View>
+          </View>
         );
       })}
 
-      <TouchableOpacity style={styles.addBtn} onPress={() => setShowPicker(true)}>
-        <Text style={styles.addIcon}>+</Text>
-        <Text style={styles.addText}>添加工具</Text>
-      </TouchableOpacity>
+      {/* 底部操作栏：排序 + 添加工具 */}
+      <View style={styles.footerRow}>
+
+        <TouchableOpacity
+          style={[styles.footerBtn, activeTools.length <= 1 && styles.footerBtnFull]}
+          onPress={() => setShowPicker(true)}
+        >
+          <Text style={styles.footerBtnAddIcon}>+</Text>
+          <Text style={styles.footerBtnText}>添加工具</Text>
+        </TouchableOpacity>
+        {activeTools.length > 1 && (
+          <TouchableOpacity
+            style={[styles.footerBtn, reordering && styles.footerBtnActive]}
+            onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setReordering(!reordering); }}
+          >
+            <Ionicons
+              name={reordering ? 'checkmark-circle' : 'swap-vertical-outline'}
+              size={16}
+              color={reordering ? '#fff' : colors.accent}
+            />
+            <Text style={[styles.footerBtnText, reordering && styles.footerBtnTextActive]}>
+              {reordering ? '完成排序' : '排序'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <Modal visible={showPicker} animationType="fade" transparent>
         <Pressable style={styles.pickerOverlay} onPress={() => setShowPicker(false)}>
@@ -129,7 +129,7 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
             {availableToAdd.length === 0 && <Text style={styles.pickerEmpty}>已添加所有可用工具</Text>}
             {availableToAdd.map(tool => (
               <TouchableOpacity key={tool.id} style={styles.pickerItem} onPress={() => { onAddTool(tool.id); setShowPicker(false); }}>
-                <Text style={styles.pickerItemIcon}>{tool.icon}</Text>
+                <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={24} color={colors.accent} />
                 <View style={styles.pickerItemInfo}>
                   <Text style={styles.pickerItemName}>{tool.name}</Text>
                   <Text style={styles.pickerItemDesc}>{tool.description}</Text>
@@ -145,10 +145,35 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
 
 const styles = StyleSheet.create({
   wrapper: { paddingHorizontal: spacing.lg },
+  footerRow: {
+    flexDirection: 'row', gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  footerBtn: {
+    flex: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 4,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: 10,
+    borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  footerBtnActive: {
+    backgroundColor: colors.accent, borderColor: colors.accent,
+  },
+  footerBtnFull: {
+    flex: 0, flexGrow: 0,
+  },
+  footerBtnText: {
+    ...typography.footnote, color: colors.accent, fontWeight: '500',
+  },
+  footerBtnTextActive: {
+    color: '#fff',
+  },
+  footerBtnAddIcon: {
+    fontSize: 18, color: colors.accent, fontWeight: '600',
+  },
   toolItem: { marginBottom: spacing.sm },
-  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, gap: spacing.xs, borderWidth: 1, borderColor: colors.border, borderRadius: 12, borderStyle: 'dashed', marginTop: spacing.sm },
-  addIcon: { fontSize: 20, color: colors.accent, fontWeight: '600' },
-  addText: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
   pickerContent: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.xl, width: '100%', maxWidth: 400 },
   pickerTitle: { ...typography.title3, fontWeight: '700', marginBottom: spacing.lg },

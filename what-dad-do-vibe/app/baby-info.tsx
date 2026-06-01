@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
-import { updateBaby as updateBabyInDb } from '../src/lib/api';
+
 import { Card } from '../src/components/atoms';
 import { colors, spacing, typography } from '../src/styles/tokens';
 
 export default function BabyInfoScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, addBaby } = useApp();
+  const { state, addBaby, updateBabyGender } = useApp();
 
   const existingBaby = state.babies[0];
   const [year, setYear] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[0] : '');
@@ -48,8 +48,8 @@ export default function BabyInfoScreen() {
     setSaving(true);
     try {
       if (existingBaby) {
-        // 更新已有宝宝的预产期（保留性别）
-        await updateBabyInDb(existingBaby.id, { due_date: dueDate });
+        // 更新已有宝宝的预产期（保留性别，同步 context）
+        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate);
       } else {
         // 新建宝宝记录
         await addBaby(dueDate);
@@ -97,10 +97,17 @@ export default function BabyInfoScreen() {
               <Text style={styles.infoLabel}>孕期阶段</Text>
               <Text style={styles.infoValue}>{stageInfo?.stage || '未知'}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>当前孕周</Text>
-              <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
-            </View>
+            {state.stage === 'postpartum' ? (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>宝宝出生后</Text>
+                <Text style={styles.infoValue}>{state.birthAgeLabel}</Text>
+              </View>
+            ) : (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>当前孕周</Text>
+                <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
+              </View>
+            )}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>预产期</Text>
               <Text style={styles.infoValue}>{existingBaby.dueDate}</Text>

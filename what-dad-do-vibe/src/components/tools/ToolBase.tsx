@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, Animated, Easing } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../styles/tokens';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export interface ToolDefinition {
   id: string;
@@ -13,32 +18,78 @@ interface ToolBaseProps {
   tool: ToolDefinition;
   children: React.ReactNode;
   onRemove: (id: string) => void;
+  showRemove?: boolean;
+  showReorder?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
-export function ToolBase({ tool, children, onRemove }: ToolBaseProps) {
+export function ToolBase({
+  tool, children, onRemove,
+  showRemove = false,
+  showReorder = false,
+  isFirst = false, isLast = false,
+  onMoveUp, onMoveDown,
+}: ToolBaseProps) {
   const [collapsed, setCollapsed] = useState(false);
+
+  const toggleCollapse = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCollapsed(!collapsed);
+  };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.header}
-        onPress={() => setCollapsed(!collapsed)}
+        onPress={toggleCollapse}
         activeOpacity={0.7}
       >
         <View style={styles.headerLeft}>
-          <Text style={styles.dragHandle}>⠿</Text>
-          <Text style={styles.toolIcon}>{tool.icon}</Text>
+          {showReorder && (
+            <View style={styles.reorderBtns}>
+              <TouchableOpacity
+                style={[styles.reorderBtn, isFirst && styles.reorderBtnDisabled]}
+                onPress={onMoveUp}
+                disabled={isFirst}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <Ionicons name="chevron-up" size={10} color={isFirst ? colors.muted : colors.fgSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.reorderBtn, isLast && styles.reorderBtnDisabled]}
+                onPress={onMoveDown}
+                disabled={isLast}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <Ionicons name="chevron-down" size={10} color={isLast ? colors.muted : colors.fgSecondary} />
+              </TouchableOpacity>
+            </View>
+          )}
+          <Ionicons
+            name={tool.icon as keyof typeof Ionicons.glyphMap}
+            size={18}
+            color={colors.fg}
+          />
           <Text style={styles.toolName}>{tool.name}</Text>
         </View>
         <View style={styles.headerRight}>
-          <Text style={styles.collapseIcon}>{collapsed ? '▶' : '▼'}</Text>
-          <TouchableOpacity
-            style={styles.removeBtn}
-            onPress={() => onRemove(tool.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.removeIcon}>✕</Text>
-          </TouchableOpacity>
+          <Ionicons
+            name={collapsed ? 'chevron-forward' : 'chevron-down'}
+            size={14}
+            color={colors.muted}
+          />
+          {showRemove && (
+            <TouchableOpacity
+              style={styles.removeBtn}
+              onPress={() => onRemove(tool.id)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.removeIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
       {!collapsed && (
@@ -60,9 +111,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
     paddingVertical: spacing.sm,
     backgroundColor: colors.surfaceSecondary,
+    minHeight: 40,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -72,19 +125,22 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
-  dragHandle: {
-    fontSize: 16,
-    color: colors.muted,
-    fontWeight: '600',
+  reorderBtns: {
+    flexDirection: 'column',
+    gap: 1,
   },
-  collapseIcon: {
-    fontSize: 10,
-    color: colors.muted,
+  reorderBtn: {
+    width: 20,
+    height: 13,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  toolIcon: {
-    fontSize: 18,
+  reorderBtnDisabled: {
+    opacity: 0.3,
   },
   toolName: {
     ...typography.footnote,
@@ -95,7 +151,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -106,8 +161,41 @@ const styles = StyleSheet.create({
   },
   body: {
     padding: spacing.md,
-    minHeight: 200,
   },
 });
+
+// 3-dot pulse 加载动画 — 各工具通用
+export function LoadingDot({ delay = 0, size = 8 }: { delay?: number; size?: number }) {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1, duration: 600, delay, useNativeDriver: true,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.3, duration: 600, useNativeDriver: true,
+          easing: Easing.inOut(Easing.ease),
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [delay, opacity]);
+
+  return (
+    <Animated.View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: colors.accent,
+        opacity,
+      }}
+    />
+  );
+}
 
 export default ToolBase;
