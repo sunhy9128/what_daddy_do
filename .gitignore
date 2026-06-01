@@ -43,3 +43,4 @@ src/lib/supabase.js
 .claude
 package.json
 package-lock.json
+what-dad-do-vibe/supabase/migrations/*

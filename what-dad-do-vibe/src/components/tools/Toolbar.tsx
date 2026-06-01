@@ -116,7 +116,7 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
               color={reordering ? '#fff' : colors.accent}
             />
             <Text style={[styles.footerBtnText, reordering && styles.footerBtnTextActive]}>
-              {reordering ? '完成排序' : '排序'}
+              {reordering ? '完成编辑' : '编辑'}
             </Text>
           </TouchableOpacity>
         )}

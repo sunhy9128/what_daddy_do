@@ -3,26 +3,20 @@ import { View, Text, StyleSheet } from 'react-native';
 import { GrowthDataPoint, BOY_GROWTH, GIRL_GROWTH } from '../../lib/growth-chart-data';
 import { colors, spacing, typography } from '../../styles/tokens';
 
-// 上下分栏：上半身长，下半体重，共享 X 轴
-const W = 300;
-const HALF_H = 120;
-const H = HALF_H * 2 + 4;
-const PAD = { top: 16, right: 8, bottom: 6, left: 30 };
-const PW = W - PAD.left - PAD.right;
-const PH = HALF_H - PAD.top - PAD.bottom;
+const CHART_W = 300;
+const PANEL_H = 130;
+const TOTAL_H = PANEL_H * 2 + 24;
+const PAD_L = 32;
+const PAD_R = 8;
+const PAD_T = 16;
+const PAD_B = 4;
+const PLOT_W = CHART_W - PAD_L - PAD_R;
+const PLOT_H = PANEL_H - PAD_T - PAD_B;
 
-interface Record {
-  month: number;
-  height: number;
-  weight: number;
-}
+interface Record { month: number; height: number; weight: number; }
+interface Props { gender: 'boy' | 'girl'; records: Record[]; }
 
-interface Props {
-  gender: 'boy' | 'girl';
-  records: Record[];
-}
-
-function interpolate(data: GrowthDataPoint[], month: number, key: keyof GrowthDataPoint): number {
+function interp(data: GrowthDataPoint[], month: number, key: keyof GrowthDataPoint): number {
   if (month <= data[0].month) return data[0][key];
   if (month >= data[data.length - 1].month) return data[data.length - 1][key];
   for (let i = 0; i < data.length - 1; i++) {
@@ -34,166 +28,156 @@ function interpolate(data: GrowthDataPoint[], month: number, key: keyof GrowthDa
   return data[data.length - 1][key];
 }
 
-function buildCurve(data: GrowthDataPoint[], key: keyof GrowthDataPoint, xFn: (m: number) => number, yFn: (v: number) => number) {
-  const steps = 72;
-  const pts: { x: number; y: number }[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const m = (i / steps) * 36;
-    pts.push({ x: xFn(m), y: yFn(interpolate(data, m, key)) });
-  }
-  return pts;
-}
+function ChartPanel({
+  data, yMin, yMax, yStep, unit, colorP, colorM, band1, band2, records, top,
+}: {
+  data: GrowthDataPoint[];
+  yMin: number; yMax: number; yStep: number;
+  unit: string; colorP: string; colorM: string;
+  band1: string; band2: string;
+  records: { month: number; value: number }[];
+  top: number;
+}) {
+  const x = (m: number) => PAD_L + (m / 36) * PLOT_W;
+  const y = (v: number) => top + PAD_T + ((yMax - v) / (yMax - yMin)) * PLOT_H;
 
-function lineDots(points: { x: number; y: number }[], color: string, w: number) {
-  return points.map((p, i) => (
-    <View key={i} style={[styles.lineDot, { left: p.x, top: p.y - w / 2, width: w, height: w, backgroundColor: color, borderRadius: w / 2 }]} />
-  ));
-}
+  // 色带 + 网格线 + Y 标签一次性生成
+  const elements: React.ReactElement[] = [];
 
-function renderHalf(
-  data: GrowthDataPoint[],
-  yMin: number,
-  yMax: number,
-  yStep: number,
-  unit: string,
-  colorP: string,
-  colorMid: string,
-  colorBand1: string,
-  colorBand2: string,
-  records: { month: number; value: number }[],
-  yOffset: number,
-) {
-  const x = (m: number) => PAD.left + (m / 36) * PW;
-  const yFn = (v: number) => yOffset + PAD.top + ((yMax - v) / (yMax - yMin)) * PH;
-
-  // 色带
-  const bands: React.ReactElement[] = [];
+  // 色带 — 用竖条拼
   for (let i = 0; i <= 72; i++) {
     const m = (i / 72) * 36;
     const cx = x(m);
-    const p3 = yFn(interpolate(data, m, 'p3'));
-    const p15 = yFn(interpolate(data, m, 'p15'));
-    const p85 = yFn(interpolate(data, m, 'p85'));
-    const p97 = yFn(interpolate(data, m, 'p97'));
-    bands.push(
-      <React.Fragment key={`b-${yOffset}-${i}`}>
-        <View style={[styles.band, { left: cx, top: p3, height: Math.max(1, p15 - p3), backgroundColor: colorBand1, width: 3 }]} />
-        <View style={[styles.band, { left: cx, top: p15, height: Math.max(1, p85 - p15), backgroundColor: colorBand2, width: 3 }]} />
-        <View style={[styles.band, { left: cx, top: p85, height: Math.max(1, p97 - p85), backgroundColor: colorBand1, width: 3 }]} />
+    const p3 = y(interp(data, m, 'p3'));
+    const p15 = y(interp(data, m, 'p15'));
+    const p85 = y(interp(data, m, 'p85'));
+    const p97 = y(interp(data, m, 'p97'));
+    elements.push(
+      <React.Fragment key={`b-${i}`}>
+        <View style={[s.bar, { left: cx, top: p3, height: Math.max(1, p15 - p3), backgroundColor: band1 }]} />
+        <View style={[s.bar, { left: cx, top: p15, height: Math.max(1, p85 - p15), backgroundColor: band2 }]} />
+        <View style={[s.bar, { left: cx, top: p85, height: Math.max(1, p97 - p85), backgroundColor: band1 }]} />
       </React.Fragment>
     );
   }
 
-  const curveP3 = buildCurve(data, 'p3', x, yFn);
-  const curveP50 = buildCurve(data, 'p50', x, yFn);
-  const curveP97 = buildCurve(data, 'p97', x, yFn);
+  // 网格线 + Y 标签
+  const yCount = Math.floor((yMax - yMin) / yStep);
+  for (let i = 0; i <= yCount; i++) {
+    const val = yMin + i * yStep;
+    const yy = y(val);
+    elements.push(
+      <React.Fragment key={`g-${i}`}>
+        <View style={[s.grid, { top: yy, left: PAD_L, width: PLOT_W }]} />
+        <Text style={[s.yLbl, { top: yy - 5 }]}>{val}</Text>
+      </React.Fragment>
+    );
+  }
 
-  return (
-    <View style={{ position: 'absolute', left: 0, top: yOffset, width: W, height: HALF_H }}>
-      {bands}
+  // 曲线采样点（每 0.5 月）
+  const pts = (key: keyof GrowthDataPoint): { x: number; y: number }[] => {
+    const out: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 72; i++) {
+      const m = (i / 72) * 36;
+      out.push({ x: x(m), y: y(interp(data, m, key)) });
+    }
+    return out;
+  };
 
-      {/* 网格线 */}
-      {Array.from({ length: Math.floor((yMax - yMin) / yStep) + 1 }, (_, i) => {
-        const val = yMin + i * yStep;
-        const yy = yFn(val);
-        return <View key={`g-${yOffset}-${i}`} style={[styles.gridLine, { top: yy, left: PAD.left, width: PW }]} />;
-      })}
+  const curveP3 = pts('p3');
+  const curveP50 = pts('p50');
+  const curveP97 = pts('p97');
 
-      {/* Y 轴标签 */}
-      {Array.from({ length: Math.floor((yMax - yMin) / yStep) + 1 }, (_, i) => {
-        const val = yMin + i * yStep;
-        return (
-          <Text key={`yl-${yOffset}-${i}`} style={[styles.yLabel, { top: yFn(val) - 5 }]}>
-            {val}
-          </Text>
-        );
-      })}
+  // 曲线点
+  for (let i = 0; i < curveP97.length; i++) {
+    elements.push(<View key={`p97-${i}`} style={[s.dot, { left: curveP97[i].x, top: curveP97[i].y - 0.75, width: 1.5, height: 1.5, borderRadius: 0.75, backgroundColor: colorP }]} />);
+  }
+  for (let i = 0; i < curveP50.length; i++) {
+    elements.push(<View key={`p50-${i}`} style={[s.dot, { left: curveP50[i].x, top: curveP50[i].y - 1, width: 2, height: 2, borderRadius: 1, backgroundColor: colorM }]} />);
+  }
+  for (let i = 0; i < curveP3.length; i++) {
+    elements.push(<View key={`p3-${i}`} style={[s.dot, { left: curveP3[i].x, top: curveP3[i].y - 0.75, width: 1.5, height: 1.5, borderRadius: 0.75, backgroundColor: colorP }]} />);
+  }
 
-      {/* 曲线 */}
-      {lineDots(curveP97, colorP, 1.5)}
-      {lineDots(curveP50, colorMid, 2)}
-      {lineDots(curveP3, colorP, 1.5)}
+  // 数据点
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const px = x(r.month);
+    const py = y(r.value);
+    if (isNaN(py) || py < top || py > top + PANEL_H) continue;
+    const v15 = interp(data, r.month, 'p15');
+    const v85 = interp(data, r.month, 'p85');
+    const dc = (r.value < v15 || r.value > v85) ? colorP : colorM;
+    elements.push(<View key={`d-${i}`} style={[s.dataPt, { left: px - 4, top: py - 4, backgroundColor: dc }]} />);
+  }
 
-      {/* 单位 */}
-      <Text style={[styles.axisUnit, { left: PAD.left - 4, top: yOffset + 2 }]}>{unit}</Text>
+  // 单位标签
+  elements.push(<Text key="unit" style={[s.unit, { top: top + 2, left: PAD_L - 2 }]}>{unit}</Text>);
 
-      {/* 数据点 */}
-      {records.map((r, i) => {
-        const px = x(r.month), py = yFn(r.value);
-        const v15 = interpolate(data, r.month, 'p15');
-        const v85 = interpolate(data, r.month, 'p85');
-        const dotColor = (r.value < v15 || r.value > v85) ? colorP : colorMid;
-        return <View key={i} style={[styles.dataDot, { left: px - 4, top: py - 4, backgroundColor: dotColor }]} />;
-      })}
-    </View>
-  );
+  return <>{elements}</>;
 }
 
 export function GrowthChart({ gender, records }: Props) {
-  const lengthData = (gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH).length;
-  const weightData = (gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH).weight;
+  const lenData = (gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH).length;
+  const wtData = (gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH).weight;
 
-  const lenVals = lengthData.flatMap(d => [d.p3, d.p97]);
-  const lenMin = Math.floor(Math.min(...lenVals) / 5) * 5;
-  const lenMax = Math.ceil(Math.max(...lenVals) / 5) * 5;
+  const lv = lenData.flatMap(d => [d.p3, d.p97]);
+  const lenMin = Math.floor(Math.min(...lv) / 5) * 5;
+  const lenMax = Math.ceil(Math.max(...lv) / 5) * 5;
 
-  const wtVals = weightData.flatMap(d => [d.p3, d.p97]);
+  const wv = wtData.flatMap(d => [d.p3, d.p97]);
   const wtMin = 0;
-  const wtMax = Math.ceil(Math.max(...wtVals) / 2) * 2;
+  const wtMax = Math.ceil(Math.max(...wv) / 2) * 2;
 
-  const xFn = (m: number) => PAD.left + (m / 36) * PW;
+  const xFn = (m: number) => PAD_L + (m / 36) * PLOT_W;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>生长曲线</Text>
-
-      <View style={{ width: W, height: H, backgroundColor: '#FCFAF5', borderRadius: 8, overflow: 'hidden' }}>
-        {/* 上下半区分隔线 */}
-        <View style={{ position: 'absolute', left: PAD.left, top: HALF_H, width: PW, height: 0.5, backgroundColor: colors.border }} />
-
-        {/* X 轴 — 放在底部（在上下半区下方） */}
-        <View style={{ position: 'absolute', left: 0, top: H - 16, width: W, height: 16 }}>
-          {[0, 6, 12, 18, 24, 30, 36].map(m => (
-            <Text key={m} style={[styles.xLabel, { left: xFn(m) - 6 }]}>{m}</Text>
-          ))}
-        </View>
-        <Text style={[styles.xTitle, { left: W / 2 - 10, top: H - 14 }]}>月龄</Text>
+    <View style={s.wrapper}>
+      <Text style={s.title}>生长曲线</Text>
+      <View style={{ width: CHART_W, height: TOTAL_H }}>
+        {/* 背景 */}
+        <View style={{ position: 'absolute', left: 0, top: 0, width: CHART_W, height: TOTAL_H, backgroundColor: '#FCFAF5', borderRadius: 8 }} />
 
         {/* 上半：身长 */}
-        {renderHalf(lengthData, lenMin, lenMax, 5, 'cm', '#D06060', '#CC4444', '#FFE0E0', '#E8FFE8',
-          records.map(r => ({ month: r.month, value: r.height })), 0)}
+        <ChartPanel data={lenData} yMin={lenMin} yMax={lenMax} yStep={5} unit="cm" colorP="#D06060" colorM="#CC4444" band1="#FFE0E0" band2="#E8FFE8" records={records.map(r => ({ month: r.month, value: r.height }))} top={0} />
+
+        {/* 分隔线 */}
+        <View style={{ position: 'absolute', left: PAD_L, top: PANEL_H + 1, width: PLOT_W, height: 0.5, backgroundColor: colors.border }} />
 
         {/* 下半：体重 */}
-        {renderHalf(weightData, wtMin, wtMax, 2, 'kg', '#6080C0', '#4466CC', '#E0ECFF', '#E8FFF0',
-          records.map(r => ({ month: r.month, value: r.weight })), HALF_H + 2)}
+        <ChartPanel data={wtData} yMin={wtMin} yMax={wtMax} yStep={2} unit="kg" colorP="#6080C0" colorM="#4466CC" band1="#E0ECFF" band2="#E8FFF0" records={records.map(r => ({ month: r.month, value: r.weight }))} top={PANEL_H + 2} />
+
+        {/* X 轴刻度 */}
+        {[0, 6, 12, 18, 24, 30, 36].map(m => (
+          <Text key={m} style={[s.xLbl, { left: xFn(m) - 6, top: TOTAL_H - 14 }]}>{m}</Text>
+        ))}
+        <Text style={[s.xLbl, { left: CHART_W / 2 - 10, top: TOTAL_H - 14, fontWeight: '600' }]}>月龄</Text>
       </View>
 
       {/* 图例 */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#D06060' }]} /><Text style={styles.legendText}>身长 P3/P97</Text></View>
-        <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#CC4444' }]} /><Text style={styles.legendText}>P50</Text></View>
-        <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#6080C0' }]} /><Text style={styles.legendText}>体重 P3/P97</Text></View>
-        <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#4466CC' }]} /><Text style={styles.legendText}>P50</Text></View>
+      <View style={s.legend}>
+        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#CC4444' }]} /><Text style={s.legTxt}>身长</Text></View>
+        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#4466CC' }]} /><Text style={s.legTxt}>体重</Text></View>
+        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#666', width: 8, height: 8, borderRadius: 4 }]} /><Text style={s.legTxt}>记录</Text></View>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { alignItems: 'center', marginVertical: spacing.sm },
+const s = StyleSheet.create({
+  wrapper: { alignItems: 'center', marginVertical: spacing.sm },
   title: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.xs },
-  band: { position: 'absolute', opacity: 0.35 },
-  gridLine: { position: 'absolute', height: 0.5, backgroundColor: '#E8E4D9' },
-  yLabel: { position: 'absolute', left: 2, fontSize: 8, color: '#8A8A9A', width: 24, textAlign: 'right' },
-  xLabel: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 12, textAlign: 'center' },
-  xTitle: { position: 'absolute', fontSize: 7, color: '#8A8A9A' },
-  axisUnit: { position: 'absolute', fontSize: 8, fontWeight: '600', color: '#666' },
-  lineDot: { position: 'absolute', opacity: 0.7 },
-  dataDot: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: '#fff' },
-  legend: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap', justifyContent: 'center' },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { ...typography.caption2, color: colors.muted },
+  bar: { position: 'absolute', opacity: 0.35 },
+  grid: { position: 'absolute', height: 0.5, backgroundColor: '#E8E4D9' },
+  yLbl: { position: 'absolute', left: 2, fontSize: 8, color: '#8A8A9A', width: 26, textAlign: 'right' },
+  xLbl: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 12, textAlign: 'center' },
+  unit: { position: 'absolute', fontSize: 8, fontWeight: '600', color: '#666' },
+  dot: { position: 'absolute', opacity: 0.7 },
+  dataPt: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: '#fff' },
+  legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  legIt: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legDot: { width: 10, height: 10, borderRadius: 5 },
+  legTxt: { ...typography.caption2, color: colors.muted },
 });
 
 export default GrowthChart;
