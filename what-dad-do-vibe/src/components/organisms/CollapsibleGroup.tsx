@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '../../styles/tokens';
 
@@ -7,10 +7,21 @@ interface CollapsibleGroupProps {
   count: number;
   defaultExpanded?: boolean;
   children: React.ReactNode;
+  /** 首次展开时触发（用于懒加载） */
+  onInit?: () => void;
 }
 
-export function CollapsibleGroup({ title, count, defaultExpanded = true, children }: CollapsibleGroupProps) {
+export function CollapsibleGroup({ title, count, defaultExpanded = true, children, onInit }: CollapsibleGroupProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const initedRef = useRef(false);
+
+  // 首次展开时触发 onInit
+  useEffect(() => {
+    if (expanded && !initedRef.current) {
+      initedRef.current = true;
+      onInit?.();
+    }
+  }, [expanded, onInit]);
 
   return (
     <View style={styles.container}>

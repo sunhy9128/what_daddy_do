@@ -1,9 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const supabaseUrl = 'https://bckqyruxcusaaarrpyif.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJja3F5cnV4Y3VzYWFhcnJweWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMzU4MTUsImV4cCI6MjA5MzYxMTgxNX0.2FOrt5mdReu_Agmf_oOHewDhITS7dwio-ZbB4aVHaKA';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage as any,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 
 // Types
 export interface User {
@@ -16,10 +24,27 @@ export interface Baby {
   id: string;
   user_id: string;
   due_date: string;
+  birth_date: string | null;
   name: string;
   gender: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface FoodSafety {
+  id: string;
+  name: string;
+  category: '蔬菜' | '水果' | '肉类' | '海鲜' | '蛋奶' | '豆制品' | '谷物' | '饮品' | '调味品' | '零食' | '药材' | '其他';
+  preconception: 'safe' | 'caution' | 'forbidden';
+  first: 'safe' | 'caution' | 'forbidden';
+  second: 'safe' | 'caution' | 'forbidden';
+  third: 'safe' | 'caution' | 'forbidden';
+  postpartum: 'safe' | 'caution' | 'forbidden';
+  baby_0_3m: 'safe' | 'caution' | 'forbidden';
+  baby_3_12m: 'safe' | 'caution' | 'forbidden';
+  baby_1_3y: 'safe' | 'caution' | 'forbidden';
+  note: string | null;
+  sort_order: number;
 }
 
 export interface PregnancyStage {
@@ -35,7 +60,7 @@ export interface Task {
   title: string;
   description: string | null;
   stage: 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
-  type: 'prenatal' | 'daily' | 'custom' | 'checkin';
+  type: 'prenatal' | 'daily' | 'checkin';
   task_subtype: 'one_time' | 'recurring';
   due_date: string | null;
   is_completed: boolean;
@@ -80,6 +105,36 @@ export interface PostComment {
   created_at: string;
 }
 
+export interface Vaccine {
+  id: number;
+  name: string;
+  disease: string;
+  category: '免费' | '自费';
+  total_doses: number;
+  notes: string | null;
+}
+
+export interface VaccineDose {
+  id: number;
+  vaccine_id: number;
+  dose_number: number;
+  min_age_months: number;
+  max_age_months: number | null;
+  min_interval_days: number;
+  notes: string | null;
+}
+
+export interface UserVaccination {
+  id: string;
+  user_id: string;
+  dose_id: number;
+  vaccinated_at: string | null;
+  is_vaccinated: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface KnowledgeArticle {
   id: number;
   emoji: string;
@@ -111,4 +166,45 @@ export interface CommunityPost {
   likes: number;
   comments: number;
   created_at: string;
+}
+
+// 物品准备
+export interface PresetItem {
+  id: string;
+  name: string;
+  description: string | null;
+  category: '喂养' | '洗护' | '衣物' | '睡眠' | '出行' | '妈妈用品' | '产后恢复' | '医疗' | '其他';
+  period: 'preconception' | 'first' | 'second' | 'third' | 'postpartum_0_3m' | 'postpartum_3_12m' | 'postpartum_1_3y';
+  quantity_suggestion: string | null;
+  preparation_timing: string | null;
+  essential_level: 'essential' | 'recommended' | 'optional';
+  sort_order: number;
+  recommendation_type: 'suggested' | 'caution' | null;
+  source: 'manual' | 'xiaohongshu_consensus' | null;
+  created_at: string;
+}
+
+export interface UserPreparation {
+  id: string;
+  user_id: string;
+  item_id: string;
+  status: 'not_prepared' | 'prepared' | 'not_needed';
+  prepared_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// 心理支持
+export interface PsychologicalSupport {
+  id: string;
+  title: string;
+  content: string;
+  period: 'preconception' | 'first' | 'second' | 'third' | 'postpartum_0_3m' | 'postpartum_3_12m' | 'postpartum_1_3y';
+  support_type: 'emotion' | 'communication' | 'action' | 'knowledge';
+  tips: string[];
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
 }

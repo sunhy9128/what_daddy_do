@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -6,6 +6,9 @@ import { useApp } from '../../src/context/AppContext';
 import { Toolbar } from '../../src/components/tools/Toolbar';
 import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
 import { useAuth } from '../../src/context/AuthContext';
+import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
+import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
+import { CollapsibleGroup } from '../../src/components/organisms';
 
 import { colors, spacing, typography } from '../../src/styles/tokens';
 
@@ -27,16 +30,58 @@ export default function HomeScreen() {
 
   const [showUrgentModal, setShowUrgentModal] = useState(false);
   const [urgentText, setUrgentText] = useState('');
-  const nextToolId = useRef(1);
   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
+
+  // 物品准备 + 心理支持
+  const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
+  const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
+  const [loadingSupport, setLoadingSupport] = useState(false);
+
+  const periods = [state.stage];
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setLoadingItems(true);
+      setLoadingSupport(true);
+      try {
+        const [items, support, preps] = await Promise.all([
+          getPresetItemsByPeriods(periods),
+          getPsychologicalSupportByPeriods(periods),
+          getUserPreparations(user.id),
+        ]);
+        setPresetItems(items);
+        setSupportTips(support);
+        setUserPreparations(preps);
+      } catch (e) {
+        console.error('Failed to load items/support:', e);
+      } finally {
+        setLoadingItems(false);
+        setLoadingSupport(false);
+      }
+    })();
+  }, [user, state.stage]);
+
+  const handleToggleItem = async (itemId: string) => {
+    if (!user) return;
+    const existing = userPreparations.find(p => p.item_id === itemId);
+    const newStatus = existing?.status === 'prepared' ? 'not_prepared' : 'prepared';
+    try {
+      const updated = await setUserPreparation(user.id, itemId, newStatus);
+      setUserPreparations(prev => {
+        const filtered = prev.filter(p => p.item_id !== itemId);
+        return [...filtered, updated];
+      });
+    } catch (e) {
+      console.error('Failed to update item:', e);
+    }
+  };
 
   // 加载/保存工具配置
   useEffect(() => {
     if (!user) return;
-    loadActiveTools(user.id).then(tools => {
-      setActiveTools(tools);
-      nextToolId.current = tools.length + 1;
-    });
+    loadActiveTools(user.id).then(tools => setActiveTools(tools));
   }, [user]);
 
   useEffect(() => {
@@ -73,7 +118,9 @@ export default function HomeScreen() {
           <View style={styles.stageRow}>
             <Text style={styles.stageText}>{stageLabel}</Text>
             {state.babies.length > 0 && (
-              <Text style={styles.weekText}>第 {state.weeksPregnant} 周</Text>
+              <Text style={styles.weekText}>
+                {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
+              </Text>
             )}
           </View>
         </View>
@@ -117,6 +164,69 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ===== 物品准备 ===== */}
+        {presetItems.length > 0 && (
+          <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
+            {presetItems.map(item => {
+              const prep = userPreparations.find(p => p.item_id === item.id);
+              const isPrepared = prep?.status === 'prepared';
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.prepItem}
+                  onPress={() => handleToggleItem(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
+                    {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
+                  </View>
+                  <View style={styles.prepInfo}>
+                    <View style={styles.prepNameRow}>
+                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]}>{item.name}</Text>
+                      <Text style={styles.prepEssential}>{item.essential_level === 'essential' ? '必需' : item.essential_level === 'recommended' ? '推荐' : '可选'}</Text>
+                    </View>
+                    {item.description && <Text style={styles.prepDesc}>{item.description}</Text>}
+                    <View style={styles.prepMeta}>
+                      <Text style={styles.prepMetaText}>{item.category}</Text>
+                      {item.quantity_suggestion && <Text style={styles.prepMetaText}>· {item.quantity_suggestion}</Text>}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </CollapsibleGroup>
+        )}
+
+        {/* ===== 心理支持 ===== */}
+        {supportTips.length > 0 && (
+          <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
+            {supportTips.map(tip => {
+              const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
+
+              return (
+                <View key={tip.id} style={styles.supportCard}>
+                  <View style={styles.supportHeader}>
+                    <Text style={styles.supportTitle}>{tip.title}</Text>
+                    <Text style={styles.supportTypeBadge}>{typeLabel}</Text>
+                  </View>
+                  <Text style={styles.supportContent}>{tip.content}</Text>
+                  {tip.tips && tip.tips.length > 0 && (
+                    <View style={styles.supportTips}>
+                      {tip.tips.map((t, i) => (
+                        <View key={i} style={styles.supportTipRow}>
+                          <Text style={styles.supportTipDot}>•</Text>
+                          <Text style={styles.supportTipText}>{t}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </CollapsibleGroup>
+        )}
+
         {/* 工具栏 */}
         <Toolbar
           activeTools={activeTools}
@@ -124,7 +234,7 @@ export default function HomeScreen() {
           babyGender={state.babies[0]?.gender}
           onAddTool={(toolId) => {
             if (activeTools.some(t => t.toolId === toolId)) return;
-            setActiveTools(prev => [...prev, { instanceId: `tool-${nextToolId.current++}`, toolId }]);
+            setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
           }}
           onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
           onReorder={(tools) => setActiveTools(tools)}
@@ -319,5 +429,79 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+
+  // ===== 物品准备样式 =====
+  prepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border,
+  },
+  prepCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+    marginTop: 2,
+  },
+  prepCheckboxActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  prepCheckmark: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  prepInfo: { flex: 1 },
+  prepNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  prepName: { ...typography.callout, fontWeight: '600', color: colors.fg },
+  prepNameDone: { color: colors.muted, textDecorationLine: 'line-through' },
+  prepEssential: { ...typography.caption1, fontSize: 11, fontWeight: '600', color: colors.accent },
+  prepDesc: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.xs, lineHeight: 18 },
+  prepMeta: { flexDirection: 'row', gap: spacing.xs },
+  prepMetaText: { ...typography.caption1, fontSize: 11, color: colors.muted },
+
+  // ===== 心理支持样式 =====
+  supportCard: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border,
+  },
+  supportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  supportTitle: { ...typography.callout, fontWeight: '600', color: colors.fg, flex: 1, marginRight: spacing.sm },
+  supportTypeBadge: {
+    ...typography.caption1,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  supportContent: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 20, marginBottom: spacing.sm },
+  supportTips: { gap: spacing.xs },
+  supportTipRow: { flexDirection: 'row', gap: spacing.xs, paddingRight: spacing.md },
+  supportTipDot: { ...typography.footnote, color: colors.accent, width: 12 },
+  supportTipText: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 20, flex: 1 },
 
 });

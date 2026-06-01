@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { getTasks, createTask, toggleTaskComplete, deleteTask, updateTask as updateTaskInDb, getRecords, createRecord, deleteRecord, getCommunityPosts, getUrgentNotes, dismissUrgentNote as dismissUrgentNoteInDb, createUrgentNote as createUrgentNoteInDb, getBabies, createBaby as createBabyInDb, updateBaby as updateBabyInDb } from '../lib/api';
-import { PregnancyStage, calculateStageFromDueDate } from '../lib/stages';
+import { PregnancyStage, calculateStageFromDueDate, calculateBirthAge } from '../lib/stages';
 import { supabase } from '../lib/supabase';
 
 // Types
@@ -12,7 +12,7 @@ export interface Task {
   title: string;
   description?: string;
   stage: PregnancyStage;
-  type: 'prenatal' | 'daily' | 'custom' | 'checkin';
+  type: 'prenatal' | 'daily' | 'checkin';
   taskSubtype: 'one_time' | 'recurring';
   dueDate?: string;
   isCompleted: boolean;
@@ -41,6 +41,7 @@ export interface UrgentNote {
 export interface Baby {
   id: string;
   dueDate: string;
+  birthDate?: string | null;
   name: string;
   gender?: string;
 }
@@ -64,6 +65,7 @@ interface AppState {
   urgentNotes: UrgentNote[];
   babies: Baby[];
   weeksPregnant: number;
+  birthAgeLabel: string;
   loading: boolean;
 }
 
@@ -81,8 +83,8 @@ type Action =
   | { type: 'SET_URGENT_NOTES'; payload: UrgentNote[] }
   | { type: 'ADD_URGENT_NOTE'; payload: UrgentNote }
   | { type: 'REMOVE_URGENT_NOTE'; payload: string }
-  | { type: 'SET_BABIES'; payload: { babies: Baby[]; stage: PregnancyStage; weeksPregnant: number } }
-  | { type: 'ADD_BABY'; payload: { baby: Baby; stage: PregnancyStage; weeksPregnant: number } }
+  | { type: 'SET_BABIES'; payload: { babies: Baby[]; stage: PregnancyStage; weeksPregnant: number; birthAgeLabel: string } }
+  | { type: 'ADD_BABY'; payload: { baby: Baby; stage: PregnancyStage; weeksPregnant: number; birthAgeLabel: string } }
   | { type: 'SET_LOADING'; payload: boolean };
 
 const initialState: AppState = {
@@ -93,6 +95,7 @@ const initialState: AppState = {
   urgentNotes: [],
   babies: [],
   weeksPregnant: 0,
+  birthAgeLabel: '',
   loading: true,
 };
 
@@ -139,9 +142,9 @@ function reducer(state: AppState, action: Action): AppState {
     case 'REMOVE_URGENT_NOTE':
       return { ...state, urgentNotes: state.urgentNotes.filter(n => n.id !== action.payload) };
     case 'SET_BABIES':
-      return { ...state, babies: action.payload.babies, stage: action.payload.stage, weeksPregnant: action.payload.weeksPregnant };
+      return { ...state, babies: action.payload.babies, stage: action.payload.stage, weeksPregnant: action.payload.weeksPregnant, birthAgeLabel: action.payload.birthAgeLabel };
     case 'ADD_BABY':
-      return { ...state, babies: [action.payload.baby, ...state.babies], stage: action.payload.stage, weeksPregnant: action.payload.weeksPregnant };
+      return { ...state, babies: [action.payload.baby, ...state.babies], stage: action.payload.stage, weeksPregnant: action.payload.weeksPregnant, birthAgeLabel: action.payload.birthAgeLabel };
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
     default:
@@ -161,8 +164,8 @@ const AppContext = createContext<{
   refreshCommunityPosts: (category?: string) => Promise<void>;
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
-  addBaby: (dueDate: string, name?: string) => Promise<void>;
-  updateBabyGender: (babyId: string, gender: string, dueDate?: string) => Promise<void>;
+  addBaby: (dueDate: string, name?: string, birthDate?: string) => Promise<void>;
+  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string) => Promise<void>;
 } | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -175,7 +178,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     title: string;
     description: string;
     stage: PregnancyStage | 'postpartum';
-    type: 'prenatal' | 'daily' | 'custom' | 'checkin';
+    type: 'prenatal' | 'daily' | 'checkin';
     due_date?: string;
   }[] = [
     // ========== 备孕阶段 ==========
@@ -186,8 +189,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { title: '补充叶酸', description: '每天400-800微克，预防胎儿神经管畸形，夫妻同补', stage: 'preconception', type: 'daily' },
     { title: '作息调整', description: '保持规律作息，每晚7-8小时充足睡眠', stage: 'preconception', type: 'daily' },
     { title: '规律运动', description: '每周150分钟中等强度运动，如快走、游泳、慢跑', stage: 'preconception', type: 'daily' },
-    { title: '戒酒戒烟', description: '提前3个月戒酒戒烟，二手烟也要避免', stage: 'preconception', type: 'custom' },
-    { title: '学习排卵期知识', description: '掌握排卵期计算方法，使用排卵试纸提高受孕率', stage: 'preconception', type: 'custom' },
+    { title: '戒酒戒烟', description: '提前3个月戒酒戒烟，二手烟也要避免', stage: 'preconception', type: 'daily' },
+    { title: '学习排卵期知识', description: '掌握排卵期计算方法，使用排卵试纸提高受孕率', stage: 'preconception', type: 'daily' },
     { title: '服用叶酸', description: '每天按时服用叶酸，夫妻同补效果更好', stage: 'preconception', type: 'checkin' },
     { title: '测量基础体温', description: '每天早晨测量基础体温，记录排卵周期', stage: 'preconception', type: 'checkin' },
 
@@ -199,9 +202,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { title: '甲状腺功能检查', description: '甲减影响胎儿智力发育，早查早干预', stage: 'first', type: 'prenatal' },
     { title: '应对早孕反应', description: '少食多餐，吃苏打饼干缓解孕吐，避免油腻刺激食物', stage: 'first', type: 'daily' },
     { title: '清淡饮食', description: '以易消化的粥、面、蒸菜为主，保证基本营养摄入', stage: 'first', type: 'daily' },
-    { title: '选择生产医院', description: '考察家附近的产科医院，了解床位、技术、距离', stage: 'first', type: 'custom' },
-    { title: '办理生育登记', description: '到社区办理生育服务登记，后续报销产检费用', stage: 'first', type: 'custom' },
-    { title: '学习孕早期知识', description: '了解1-12周胎儿发育过程和各阶段注意事项', stage: 'first', type: 'custom' },
+    { title: '选择生产医院', description: '考察家附近的产科医院，了解床位、技术、距离', stage: 'first', type: 'daily' },
+    { title: '办理生育登记', description: '到社区办理生育服务登记，后续报销产检费用', stage: 'first', type: 'daily' },
+    { title: '学习孕早期知识', description: '了解1-12周胎儿发育过程和各阶段注意事项', stage: 'first', type: 'daily' },
     { title: '服用叶酸', description: '每天按时服用叶酸，至少到孕12周', stage: 'first', type: 'checkin' },
     { title: '记录身体变化', description: '每天记录早孕反应、体重变化', stage: 'first', type: 'checkin' },
 
@@ -215,9 +218,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { title: '补充DHA', description: '每天200-300mg，促进胎儿大脑和视网膜发育', stage: 'second', type: 'daily' },
     { title: '孕期运动', description: '散步、孕妇瑜伽、游泳，增强盆底肌', stage: 'second', type: 'daily' },
     { title: '妊娠纹护理', description: '每天涂抹护理油，保持腹部皮肤弹性', stage: 'second', type: 'daily' },
-    { title: '参加孕妇课程', description: '参加孕教课，学习分娩和育儿知识', stage: 'second', type: 'custom' },
-    { title: '布置婴儿房', description: '规划宝宝房间，选购婴儿床、衣柜等', stage: 'second', type: 'custom' },
-    { title: '拍孕妇照', description: '24-28周肚子大小适中，是拍摄最佳时机', stage: 'second', type: 'custom' },
+    { title: '参加孕妇课程', description: '参加孕教课，学习分娩和育儿知识', stage: 'second', type: 'daily' },
+    { title: '布置婴儿房', description: '规划宝宝房间，选购婴儿床、衣柜等', stage: 'second', type: 'daily' },
+    { title: '拍孕妇照', description: '24-28周肚子大小适中，是拍摄最佳时机', stage: 'second', type: 'daily' },
     { title: '孕期瑜伽', description: '每天进行孕期瑜伽练习', stage: 'second', type: 'checkin' },
     { title: '服用钙片', description: '每天按时补钙，预防抽筋', stage: 'second', type: 'checkin' },
 
@@ -230,12 +233,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { title: '血糖监控', description: '每日三餐后测量血糖', stage: 'third', type: 'daily' },
     { title: '体重监测', description: '每周固定时间称重', stage: 'third', type: 'daily' },
     { title: '凯格尔运动', description: '每天做盆底肌训练，增强分娩力量', stage: 'third', type: 'daily' },
-    { title: '待产包准备', description: '打包入院物品：产褥垫、卫生巾、哺乳衣、纸尿裤、包被等', stage: 'third', type: 'custom' },
-    { title: '学习拉玛泽呼吸法', description: '学习分娩减痛呼吸法，陪产时帮助妈妈', stage: 'third', type: 'custom' },
-    { title: '安排月子服务', description: '确定月嫂/月子中心/父母照顾', stage: 'third', type: 'custom' },
-    { title: '学习新生儿护理', description: '学习抱娃、换尿布、洗澡、拍嗝、脐带护理', stage: 'third', type: 'custom' },
-    { title: '安装婴儿安全座椅', description: '提前安装并调试，出院必备', stage: 'third', type: 'custom' },
-    { title: '准爸爸产假申请', description: '向公司申请陪产假/护理假', stage: 'third', type: 'custom' },
+    { title: '待产包准备', description: '打包入院物品：产褥垫、卫生巾、哺乳衣、纸尿裤、包被等', stage: 'third', type: 'daily' },
+    { title: '学习拉玛泽呼吸法', description: '学习分娩减痛呼吸法，陪产时帮助妈妈', stage: 'third', type: 'daily' },
+    { title: '安排月子服务', description: '确定月嫂/月子中心/父母照顾', stage: 'third', type: 'daily' },
+    { title: '学习新生儿护理', description: '学习抱娃、换尿布、洗澡、拍嗝、脐带护理', stage: 'third', type: 'daily' },
+    { title: '安装婴儿安全座椅', description: '提前安装并调试，出院必备', stage: 'third', type: 'daily' },
+    { title: '准爸爸产假申请', description: '向公司申请陪产假/护理假', stage: 'third', type: 'daily' },
     { title: '数胎动打卡', description: '每天早中晚各数1小时并记录', stage: 'third', type: 'checkin' },
     { title: '散步打卡', description: '每天散步30分钟以上，保持适度活动', stage: 'third', type: 'checkin' },
     { title: '凯格尔运动打卡', description: '每天做3组凯格尔运动，每组10-15次', stage: 'third', type: 'checkin' },
@@ -251,10 +254,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { title: '母乳喂养', description: '按需哺乳，每2-3小时一次', stage: 'postpartum', type: 'daily' },
     { title: '产后情绪管理', description: '关注情绪变化，预防产后抑郁', stage: 'postpartum', type: 'daily' },
     { title: '产后修复运动', description: '从温和的腹式呼吸、凯格尔运动开始', stage: 'postpartum', type: 'daily' },
-    { title: '办理出生医学证明', description: '医院/线上办理，后续上户口需要', stage: 'postpartum', type: 'custom' },
-    { title: '给宝宝上户口', description: '携带出生证明到派出所落户', stage: 'postpartum', type: 'custom' },
-    { title: '办理新生儿医保', description: '出生后90天内办理，可追溯报销', stage: 'postpartum', type: 'custom' },
-    { title: '申请生育津贴', description: '准备材料申请生育津贴和报销产检费用', stage: 'postpartum', type: 'custom' },
+    { title: '办理出生医学证明', description: '医院/线上办理，后续上户口需要', stage: 'postpartum', type: 'daily' },
+    { title: '给宝宝上户口', description: '携带出生证明到派出所落户', stage: 'postpartum', type: 'daily' },
+    { title: '办理新生儿医保', description: '出生后90天内办理，可追溯报销', stage: 'postpartum', type: 'daily' },
+    { title: '申请生育津贴', description: '准备材料申请生育津贴和报销产检费用', stage: 'postpartum', type: 'daily' },
     { title: '产后凯格尔运动', description: '每天坚持凯格尔运动，促进盆底恢复', stage: 'postpartum', type: 'checkin' },
     { title: '记录宝宝作息', description: '每天记录吃奶、睡觉、换尿布', stage: 'postpartum', type: 'checkin' },
   ];
@@ -282,10 +285,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const currentBaby = babiesData?.[0];
       let autoStage: PregnancyStage = 'preconception';
       let weeksPregnant = 0;
+      let birthAgeLabel = '';
       if (currentBaby?.due_date) {
         const calc = calculateStageFromDueDate(currentBaby.due_date);
         autoStage = calc.stage;
         weeksPregnant = calc.weeksPregnant;
+        if (calc.stage === 'postpartum') {
+          birthAgeLabel = calculateBirthAge(currentBaby.due_date, currentBaby.birth_date);
+        }
       }
 
       const todayStr = new Date().toISOString().split('T')[0];
@@ -354,10 +361,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           babies: (babiesData || []).map(b => ({
             id: b.id,
             dueDate: b.due_date,
+            birthDate: b.birth_date,
             name: b.name,
+            gender: b.gender || undefined,
           })),
           stage: autoStage,
           weeksPregnant,
+          birthAgeLabel,
         },
       });
 
@@ -562,36 +572,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await dismissUrgentNoteInDb(id);
   }, []);
 
-  const addBaby = useCallback(async (dueDate: string, name: string = '宝宝') => {
+  const addBaby = useCallback(async (dueDate: string, name: string = '宝宝', birthDate?: string) => {
     if (!user) return;
     const baby = await createBabyInDb({
       user_id: user.id,
       due_date: dueDate,
+      birth_date: birthDate || null,
       name,
     });
     const calc = calculateStageFromDueDate(dueDate);
+    const birthAgeLabel = calc.stage === 'postpartum' ? calculateBirthAge(dueDate, birthDate) : '';
     dispatch({
       type: 'ADD_BABY',
       payload: {
-        baby: { id: baby.id, dueDate: baby.due_date, name: baby.name },
+        baby: { id: baby.id, dueDate: baby.due_date, birthDate: baby.birth_date, name: baby.name },
         stage: calc.stage,
         weeksPregnant: calc.weeksPregnant,
+        birthAgeLabel,
       },
     });
     // 同步更新 stage
     dispatch({ type: 'SET_STAGE', payload: calc.stage });
   }, [user]);
 
-  const updateBabyGender = useCallback(async (babyId: string, gender: string, dueDate?: string) => {
-    await updateBabyInDb(babyId, { gender, ...(dueDate ? { due_date: dueDate } : {}) });
+  const updateBabyGender = useCallback(async (babyId: string, gender: string, dueDate?: string, birthDate?: string) => {
+    const updates: any = { ...(dueDate ? { due_date: dueDate } : {}) };
+    if (gender) updates.gender = gender;
+    if (birthDate) updates.birth_date = birthDate;
+    await updateBabyInDb(babyId, updates);
     const today = dueDate || new Date().toISOString().split('T')[0];
     const calc = calculateStageFromDueDate(today);
+    const birthAgeLabel = calc.stage === 'postpartum' ? calculateBirthAge(today, birthDate) : '';
     dispatch({
       type: 'SET_BABIES',
       payload: {
-        babies: state.babies.map(b => b.id === babyId ? { ...b, gender, dueDate: today } : b),
+        babies: state.babies.map(b => b.id === babyId ? { ...b, ...(gender ? { gender } : {}), dueDate: today, birthDate: birthDate || b.birthDate } : b),
         stage: calc.stage,
         weeksPregnant: calc.weeksPregnant,
+        birthAgeLabel,
       },
     });
     dispatch({ type: 'SET_STAGE', payload: calc.stage });

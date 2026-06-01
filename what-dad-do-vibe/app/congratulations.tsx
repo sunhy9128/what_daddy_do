@@ -18,10 +18,10 @@ export default function CongratulationsScreen() {
     if (!selectedGender || !baby || saving) return;
     setSaving(true);
     try {
-      // 更新性别 + 将预产期调整为今天（宝宝已出生）
+      // 更新性别 + 记录实际出生日期 + 将预产期调整为今天
       const today = new Date();
       const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      await updateBabyGender(baby.id, selectedGender, dateStr);
+      await updateBabyGender(baby.id, selectedGender, dateStr, dateStr);
       router.replace('/(tabs)');
     } catch {
       setSaving(false);

@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { PregnancyStage, STAGES, STAGE_LABELS } from '../../src/lib/stages';
 import { getPresetTasks, PresetTask } from '../../src/lib/api';
+
 import { Card, ProgressBar, Tag, Button } from '../../src/components/atoms';
 import { TaskCard } from '../../src/components/molecules';
 import { StageTabs } from '../../src/components/molecules';
 import { CollapsibleGroup } from '../../src/components/organisms';
+// 物品准备/心理支持已迁移到首页（index.tsx）
 import { colors, radius, spacing, shadows, typography } from '../../src/styles/tokens';
 
 // 阶段标签列表（供 StageTabs 使用）
@@ -22,28 +25,45 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
   '产后': 'postpartum',
 };
 
+// 物品准备/心理支持已迁移到首页（index.tsx）
+
 
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
   const { state, toggleTask, addTask, removeTask, updateTask } = useApp();
+  const { user } = useAuth();
   const [selectedStage, setSelectedStage] = useState(STAGE_LABELS[state.stage] || '孕晚期');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskType, setNewTaskType] = useState<'custom' | 'checkin' | 'prenatal' | 'daily'>('custom');
+  const [newTaskType, setNewTaskType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTitle, setEditTitle] = useState('');
-  const [editType, setEditType] = useState<'custom' | 'checkin' | 'prenatal' | 'daily'>('custom');
+  const [editType, setEditType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
   const [presetTasks, setPresetTasks] = useState<PresetTask[]>([]);
   const [loadingPresets, setLoadingPresets] = useState(true);
   const [savingTask, setSavingTask] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const taskBusy = useRef(false);
 
+
+
+  // 根据任务标题自动分类（产后阶段不返回 prenatal）
+  const detectTaskType = (title: string): 'prenatal' | 'daily' | 'checkin' => {
+    const prenatalKeywords = ['产检', '检查', '筛查', 'B超', '胎心', '唐筛', '糖耐', '四维', 'NT', '彩超', '大排畸', '小排畸', '血常规', '尿常规'];
+    const checkinKeywords = ['打卡'];
+    const dailyKeywords = ['每天', '每日', '运动', '散步', '喝水', '体重', '血压', '血糖', '测', '量', '记录'];
+    if (currentStageKey !== 'postpartum') {
+      for (const kw of prenatalKeywords) { if (title.includes(kw)) return 'prenatal'; }
+    }
+    for (const kw of checkinKeywords) { if (title.includes(kw)) return 'checkin'; }
+    for (const kw of dailyKeywords) { if (title.includes(kw)) return 'daily'; }
+    return 'daily';
+  };
+
   const TASK_TYPE_OPTIONS = [
-    { value: 'custom', label: '自定义任务', color: '#f5c65d' },
     { value: 'checkin', label: '每日打卡', color: '#34c759' },
     { value: 'prenatal', label: '产检任务', color: '#007aff' },
     { value: 'daily', label: '日常任务', color: '#5dd79f' },
@@ -66,6 +86,8 @@ export default function TasksScreen() {
   useEffect(() => {
     loadPresetTasks();
   }, []);
+
+
 
   async function loadPresetTasks() {
     setLoadingPresets(true);
@@ -95,11 +117,21 @@ export default function TasksScreen() {
   // 当前阶段的日常任务（重复任务）
   const dailyTasks = filteredTasks.filter(t => t.type === 'daily');
 
-  // 当前阶段的自定义任务
-  const customTasks = filteredTasks.filter(t => t.type === 'custom');
+  // 自定义任务分组已合并到日常/产检/打卡中
 
   // 当前阶段的日打卡任务
   const checkinTasks = filteredTasks.filter(t => t.type === 'checkin');
+
+  // 各列表是否可见（无待办时隐藏）
+  const showPrenatal = currentStageKey !== 'postpartum' && prenatalTasks.length > 0;
+  const showCheckin = checkinTasks.length > 0;
+  const showDaily = dailyTasks.length > 0;
+  // 排在前面的有实际内容的列表默认展开
+  const firstVisible =
+    (showPrenatal && 'prenatal') ||
+    (showCheckin && 'checkin') ||
+    (showDaily && 'daily') ||
+    null;
 
   // 获取当前阶段的预设任务（去重）
   const presetsForStage = presetTasks.filter(p => p.stage === currentStageKey);
@@ -131,16 +163,17 @@ export default function TasksScreen() {
       return;
     }
     setSavingTask(true);
+    const detectedType = detectTaskType(newTaskTitle.trim());
     try {
       await addTask({
         title: newTaskTitle.trim(),
         stage: currentStageKey,
-        type: newTaskType,
+        type: detectedType,
       });
       setNewTaskTitle('');
-      setNewTaskType('custom');
       setShowAddModal(false);
-      Alert.alert('成功', '任务已添加');
+      const typeLabelMap: Record<string, string> = { prenatal: '产检', daily: '日常', checkin: '打卡' };
+      Alert.alert('成功', `任务已添加（${typeLabelMap[detectedType] || '日常'}）`);
     } catch (error: any) {
       Alert.alert('错误', error.message);
     } finally {
@@ -171,7 +204,7 @@ export default function TasksScreen() {
   const handleEditTask = () => {
     if (selectedTask) {
       setEditTitle(selectedTask.title);
-      setEditType(selectedTask.type as 'custom' | 'checkin' | 'prenatal' | 'daily');
+      setEditType(selectedTask.type as 'checkin' | 'prenatal' | 'daily');
       setIsEditMode(true);
     }
   };
@@ -198,7 +231,7 @@ export default function TasksScreen() {
   const TASK_TYPE_LABELS: Record<string, string> = {
     prenatal: '产检任务',
     daily: '日常任务',
-    custom: '自定义任务',
+    // custom 已合并到日常/产检/打卡中
     checkin: '每日打卡',
   };
 
@@ -215,7 +248,7 @@ export default function TasksScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>任务清单</Text>
+          <Text style={styles.title}>待办清单</Text>
           <Text style={styles.subtitle}>当前阶段：{selectedStage}</Text>
         </View>
 
@@ -235,10 +268,10 @@ export default function TasksScreen() {
           <ProgressBar value={progress} />
         </Card>
 
-        {/* 产检任务 — 默认展开 */}
-        <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded>
-          {prenatalTasks.length > 0 ? (
-            prenatalTasks.map(task => (
+        {/* 产检任务 — 产后阶段不显示；无待办时隐藏 */}
+        {currentStageKey !== 'postpartum' && prenatalTasks.length > 0 && (
+          <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
+            {prenatalTasks.map(task => (
               <TaskCard
                 key={task.id}
                 title={task.title}
@@ -250,16 +283,14 @@ export default function TasksScreen() {
                 onInfo={() => handleInfoPress(task)}
                 onDelete={() => handleDeleteTask(task.id)}
               />
-            ))
-          ) : (
-            <Text style={styles.emptyText}>暂无产检任务，点击下方添加</Text>
-          )}
-        </CollapsibleGroup>
+            ))}
+          </CollapsibleGroup>
+        )}
 
-        {/* 每日打卡 — 默认折叠 */}
-        <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={false}>
-          {checkinTasks.length > 0 ? (
-            checkinTasks.map(task => (
+        {/* 每日打卡 — 无待办时隐藏 */}
+        {checkinTasks.length > 0 && (
+          <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={firstVisible === 'checkin'}>
+            {checkinTasks.map(task => (
               <TaskCard
                 key={task.id}
                 title={task.title}
@@ -272,16 +303,14 @@ export default function TasksScreen() {
                 onInfo={() => handleInfoPress(task)}
                 onDelete={() => handleDeleteTask(task.id)}
               />
-            ))
-          ) : (
-            <Text style={styles.emptyText}>暂无日打卡任务</Text>
-          )}
-        </CollapsibleGroup>
+            ))}
+          </CollapsibleGroup>
+        )}
 
-        {/* 日常任务 — 默认折叠 */}
-        <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={false}>
-          {dailyTasks.length > 0 ? (
-            dailyTasks.map(task => (
+        {/* 日常任务 — 无待办时隐藏 */}
+        {dailyTasks.length > 0 && (
+          <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={firstVisible === 'daily'}>
+            {dailyTasks.map(task => (
               <TaskCard
                 key={task.id}
                 title={task.title}
@@ -293,34 +322,16 @@ export default function TasksScreen() {
                 onInfo={() => handleInfoPress(task)}
                 onDelete={() => handleDeleteTask(task.id)}
               />
-            ))
-          ) : (
-            <Text style={styles.emptyText}>暂无日常任务</Text>
-          )}
-        </CollapsibleGroup>
+            ))}
+          </CollapsibleGroup>
+        )}
 
-        {/* 自定义任务 — 默认折叠 */}
-        <CollapsibleGroup title="自定义任务" count={customTasks.length} defaultExpanded={false}>
-          {customTasks.length > 0 ? (
-            customTasks.map(task => (
-              <TaskCard
-                key={task.id}
-                title={task.title}
-                type={task.type}
-                dueDate={task.dueDate}
-                isCompleted={task.isCompleted}
-                dailyCount={0}
-                onToggle={() => toggleTask(task.id)}
-                onInfo={() => handleInfoPress(task)}
-                onDelete={() => handleDeleteTask(task.id)}
-              />
-            ))
-          ) : (
-            <Text style={styles.emptyText}>暂无自定义任务</Text>
-          )}
-        </CollapsibleGroup>
 
-        {/* 可添加的预设任务 — 默认折叠 */}
+
+
+
+        {/* 可添加的预设任务 — 无可添加时隐藏 */}
+        {availablePresets.length > 0 && (
         <View style={styles.presetGroup}>
           <TouchableOpacity style={styles.presetGroupHeader} onPress={() => setShowPresets(!showPresets)} activeOpacity={0.7}>
             <View style={styles.presetGroupTitleRow}>
@@ -347,24 +358,22 @@ export default function TasksScreen() {
                     <Text style={styles.presetTitle}>{task.title}</Text>
                     <Text style={styles.presetDesc}>{task.description}</Text>
                     <Tag
-                      label={task.type === 'prenatal' ? '产检' : task.type === 'daily' ? '日常' : task.type === 'checkin' ? '日打卡' : '自建'}
-                      variant={task.type === 'prenatal' ? 'short' : task.type === 'daily' ? 'long' : task.type === 'checkin' ? 'long' : 'custom'}
+                      label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
+                      variant={task.type === 'prenatal' ? 'short' : 'long'}
                     />
                   </View>
                 </TouchableOpacity>
               ))}
-              {availablePresets.length === 0 && (
-                <Text style={styles.emptyText}>该阶段暂无预设任务</Text>
-              )}
             </View>
           )}
 
         </View>
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* FAB — 添加自定义任务 */}
+      {/* FAB — 添加任务 */}
       <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
@@ -375,7 +384,7 @@ export default function TasksScreen() {
           <View style={styles.modalContent}>
             {/* 头部 */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>添加自定义任务</Text>
+              <Text style={styles.modalTitle}>添加任务</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowAddModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Text style={styles.modalCloseIcon}>✕</Text>
               </TouchableOpacity>
@@ -395,7 +404,9 @@ export default function TasksScreen() {
             {/* 任务类型选择 */}
             <Text style={[styles.modalLabel, { marginTop: spacing.md }]}>任务类型</Text>
             <View style={styles.typeSelector}>
-              {TASK_TYPE_OPTIONS.map((option) => (
+              {TASK_TYPE_OPTIONS
+                .filter(opt => !(currentStageKey === 'postpartum' && opt.value === 'prenatal'))
+                .map((option) => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
@@ -450,14 +461,16 @@ export default function TasksScreen() {
                       onChangeText={setEditTitle}
                     />
                     <View style={styles.typeSelector}>
-                      {TASK_TYPE_OPTIONS.map((option) => (
+                      {TASK_TYPE_OPTIONS
+                        .filter(opt => !(currentStageKey === 'postpartum' && opt.value === 'prenatal'))
+                        .map((option) => (
                         <TouchableOpacity
                           key={option.value}
                           style={[
                             styles.typeOption,
                             editType === option.value && { backgroundColor: option.color },
                           ]}
-                          onPress={() => setEditType(option.value as 'custom' | 'checkin' | 'prenatal' | 'daily')}
+                          onPress={() => setEditType(option.value as 'checkin' | 'prenatal' | 'daily')}
                         >
                           <Text
                             style={[
@@ -726,4 +739,5 @@ const styles = StyleSheet.create({
   flexButton: { flex: 1, minHeight: 48 },
   deleteButton: { backgroundColor: colors.error },
   actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
+
 });

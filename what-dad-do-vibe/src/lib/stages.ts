@@ -25,6 +25,41 @@ export function getStageLabel(stage: PregnancyStage): string {
 }
 
 /**
+ * 计算宝宝出生后的年龄显示文本
+ * 优先使用 birthDate，无则回退到 dueDate
+ * - 未出生返回空字符串
+ * - < 1 岁：x周
+ * - 1 ~ 3 岁：x年x周
+ * - >= 3 岁：x岁
+ */
+export function calculateBirthAge(dueDate: string, birthDate?: string | null): string {
+  const today = new Date();
+  const birth = birthDate ? new Date(birthDate) : new Date(dueDate);
+  const msSinceBirth = today.getTime() - birth.getTime();
+
+  if (msSinceBirth <= 0) return ''; // 还未出生
+
+  const totalDays = Math.floor(msSinceBirth / (1000 * 60 * 60 * 24));
+  const years = Math.floor(totalDays / 365.25);
+  const remainingDays = Math.round(totalDays - years * 365.25);
+  const weeks = Math.floor(remainingDays / 7);
+
+  if (years >= 3) {
+    return `${years}岁`;
+  }
+
+  if (years > 0) {
+    return `${years}年${weeks}周`;
+  }
+
+  // < 1 岁：只显示周数
+  if (weeks > 0) {
+    return `${weeks}周`;
+  }
+  return `${totalDays}天`;
+}
+
+/**
  * 根据预产期计算当前孕期阶段
  */
 export function calculateStageFromDueDate(dueDate: string): {

@@ -1,4 +1,4 @@
-import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostLike, PostComment, KnowledgeArticle, KnowledgeRead, PregnancyStage } from '../lib/supabase';
+import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostLike, PostComment, KnowledgeArticle, KnowledgeRead, Vaccine, VaccineDose, UserVaccination, PregnancyStage, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety } from '../lib/supabase';
 
 // 预设任务类型
 export interface PresetTask {
@@ -6,7 +6,7 @@ export interface PresetTask {
   title: string;
   description: string;
   stage: 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
-  type: 'prenatal' | 'daily' | 'custom' | 'checkin';
+  type: 'prenatal' | 'daily' | 'checkin';
   due_date?: string;
   created_at?: string;
 }
@@ -314,4 +314,157 @@ export async function markKnowledgeRead(userId: string, articleId: number): Prom
     .from('user_knowledge_reads')
     .insert({ user_id: userId, article_id: articleId, read_at: new Date().toISOString() });
   if (error) console.error('markKnowledgeRead error:', error.message);
+}
+
+// 疫苗
+export async function getVaccines(): Promise<(Vaccine & { doses: VaccineDose[] })[]> {
+  const { data: vaccines, error: vErr } = await supabase.from('vaccines').select('*').order('id');
+  if (vErr) throw vErr;
+  const { data: doses, error: dErr } = await supabase.from('vaccine_doses').select('*').order('dose_number');
+  if (dErr) throw dErr;
+
+  return (vaccines || []).map(v => ({
+    ...v,
+    doses: (doses || []).filter(d => d.vaccine_id === v.id),
+  }));
+}
+
+export async function getUserVaccinations(userId: string): Promise<UserVaccination[]> {
+  const { data, error } = await supabase
+    .from('user_vaccinations')
+    .select('*')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function setVaccinationStatus(
+  userId: string, doseId: number, isVaccinated: boolean, vaccinatedAt?: string
+): Promise<UserVaccination> {
+  const { data, error } = await supabase
+    .from('user_vaccinations')
+    .upsert({
+      user_id: userId,
+      dose_id: doseId,
+      is_vaccinated: isVaccinated,
+      vaccinated_at: vaccinatedAt || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,dose_id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ==========================================================
+// 物品准备 API
+// ==========================================================
+
+// 获取物品准备列表（按 period 筛选）
+export async function getPresetItems(period?: string): Promise<PresetItem[]> {
+  let query = supabase
+    .from('preset_items')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  if (period) {
+    query = query.eq('period', period);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+// 获取多个 period 的物品（用于跨阶段显示）
+export async function getPresetItemsByPeriods(periods: string[]): Promise<PresetItem[]> {
+  const { data, error } = await supabase
+    .from('preset_items')
+    .select('*')
+    .in('period', periods)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// 获取用户的物品准备状态
+export async function getUserPreparations(userId: string): Promise<UserPreparation[]> {
+  const { data, error } = await supabase
+    .from('user_preparations')
+    .select('*')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return data || [];
+}
+
+// 设置用户物品准备状态（upsert）
+export async function setUserPreparation(
+  userId: string,
+  itemId: string,
+  status: 'not_prepared' | 'prepared' | 'not_needed'
+): Promise<UserPreparation> {
+  const now = new Date().toISOString();
+  const payload: Partial<UserPreparation> = {
+    user_id: userId,
+    item_id: itemId,
+    status,
+    updated_at: now,
+  };
+
+  if (status === 'prepared') {
+    payload.prepared_at = now;
+  } else {
+    payload.prepared_at = null;
+  }
+
+  const { data, error } = await supabase
+    .from('user_preparations')
+    .upsert(payload, { onConflict: 'user_id,item_id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ==========================================================
+// 心理支持 API
+// ==========================================================
+
+// 获取心理支持内容列表（按 period 筛选）
+export async function getPsychologicalSupport(period?: string): Promise<PsychologicalSupport[]> {
+  let query = supabase
+    .from('psychological_support')
+    .select('*')
+    .eq('is_published', true)
+    .order('sort_order', { ascending: true });
+
+  if (period) {
+    query = query.eq('period', period);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+// 获取多个 period 的心理支持内容
+export async function getPsychologicalSupportByPeriods(periods: string[]): Promise<PsychologicalSupport[]> {
+  const { data, error } = await supabase
+    .from('psychological_support')
+    .select('*')
+    .eq('is_published', true)
+    .in('period', periods)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// 食物安全查询
+export async function getFoodSafety(): Promise<FoodSafety[]> {
+  const { data, error } = await supabase
+    .from('food_safety')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data || [];
 }

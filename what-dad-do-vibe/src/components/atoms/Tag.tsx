@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, StyleSheet, View, ViewProps, TextProps } from 'react-native';
 import { colors, radius, spacing, typography } from '../../styles/tokens';
 
-type TagVariant = 'default' | 'short' | 'long' | 'custom' | 'success' | 'warning';
+type TagVariant = 'default' | 'short' | 'long' | 'success' | 'warning';
 
 interface TagProps extends ViewProps {
   variant?: TagVariant;
@@ -13,7 +13,6 @@ const variantStyles = {
   default: { backgroundColor: colors.bg, color: colors.fg },
   short: { backgroundColor: '#f0f9ff', color: '#007aff' },
   long: { backgroundColor: '#f0fdf4', color: '#34c759' },
-  custom: { backgroundColor: '#fef3c7', color: '#d97706' },
   success: { backgroundColor: '#f0fdf4', color: '#34c759' },
   warning: { backgroundColor: '#fef3c7', color: '#d97706' },
 };

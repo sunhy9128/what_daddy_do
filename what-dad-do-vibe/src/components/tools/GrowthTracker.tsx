@@ -46,7 +46,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>
       {/* 性别 — 有宝宝数据时自动显示 */}
       <View style={styles.genderRow}>
         <Text style={styles.genderDisplay}>
@@ -97,7 +97,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
 }
 
 const styles = StyleSheet.create({
-  container: { maxHeight: 500 },
+  container: { height: 520 },
   genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: 8, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
   genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },

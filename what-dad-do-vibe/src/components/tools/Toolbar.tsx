@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Modal, Animated, PanResponder, StyleSheet } from 'react-native';
 import { ToolBase, ToolDefinition } from './ToolBase';
 import { FeedingTimer } from './FeedingTimer';
 import { GrowthTracker } from './GrowthTracker';
+import { VaccineTracker } from './VaccineTracker';
+import { VaccineCalendar } from './VaccineCalendar';
+import { FoodSafetyTool } from './FoodSafety';
 import { Pressable } from 'react-native';
 import { colors, spacing, typography } from '../../styles/tokens';
 
 const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'feeding-timer', name: '喂奶计时器', icon: '🍼', description: '记录每次喂奶时间' },
   { id: 'growth-tracker', name: '身高体重', icon: '📏', description: '身高体重生长曲线' },
+  { id: 'vaccine-tracker', name: '疫苗本', icon: '💉', description: '疫苗接种记录和提醒' },
+  { id: 'vaccine-calendar', name: '疫苗日历', icon: '📅', description: '按月查看疫苗接种时间线' },
+  { id: 'food-safety', name: '食物禁忌', icon: '🍽️', description: '孕期+婴儿食物安全查询' },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
   'feeding-timer': FeedingTimer,
   'growth-tracker': GrowthTracker,
+  'vaccine-tracker': VaccineTracker,
+  'vaccine-calendar': VaccineCalendar,
+  'food-safety': FoodSafetyTool,
 };
 
 interface ToolInstance {
@@ -32,58 +41,79 @@ interface ToolbarProps {
 
 export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTool, onReorder }: ToolbarProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [reorderMode, setReorderMode] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const dragIdxRef = useRef<number | null>(null);
+  const dragY = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => { dragY.setValue(0); },
+      onPanResponderMove: (_, g) => {
+        const idx = dragIdxRef.current;
+        if (idx === null) return;
+        dragY.setValue(g.dy);
+        const h = 60;
+        if (g.dy > h * 0.35 && idx < activeTools.length - 1) {
+          const items = [...activeTools];
+          [items[idx], items[idx + 1]] = [items[idx + 1], items[idx]];
+          dragIdxRef.current = idx + 1;
+          setDragIndex(idx + 1);
+          dragY.setValue(g.dy - h);
+          onReorder(items);
+        } else if (g.dy < -h * 0.35 && idx > 0) {
+          const items = [...activeTools];
+          [items[idx], items[idx - 1]] = [items[idx - 1], items[idx]];
+          dragIdxRef.current = idx - 1;
+          setDragIndex(idx - 1);
+          dragY.setValue(g.dy + h);
+          onReorder(items);
+        }
+      },
+      onPanResponderRelease: () => {
+        Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
+        dragIdxRef.current = null;
+        setDragIndex(null);
+      },
+    })
+  ).current;
 
   const activeToolIds = activeTools.map(t => t.toolId);
   const availableToAdd = AVAILABLE_TOOLS.filter(t => !activeToolIds.includes(t.id));
 
-  const moveItem = (index: number, direction: -1 | 1) => {
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= activeTools.length) return;
-    const items = [...activeTools];
-    [items[index], items[newIndex]] = [items[newIndex], items[index]];
-    onReorder(items);
-  };
-
   return (
     <View style={styles.wrapper}>
-      {activeTools.length > 1 && (
-        <TouchableOpacity style={styles.reorderToggle} onPress={() => setReorderMode(!reorderMode)}>
-          <Text style={styles.reorderText}>{reorderMode ? '完成排序' : '排序工具 ⠿'}</Text>
-        </TouchableOpacity>
-      )}
-
       {activeTools.map((inst, index) => {
         const def = AVAILABLE_TOOLS.find(t => t.id === inst.toolId);
         const Component = TOOL_COMPONENTS[inst.toolId];
         if (!def || !Component) return null;
+        const isDragging = dragIndex === index;
         return (
-          <View key={inst.instanceId} style={styles.toolRow}>
-            {reorderMode && (
-              <View style={styles.reorderBtns}>
-                <TouchableOpacity
-                  style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
-                  onPress={() => moveItem(index, -1)}
-                  disabled={index === 0}
-                >
-                  <Text style={styles.moveBtnText}>▲</Text>
-                </TouchableOpacity>
-                <Text style={styles.moveIndex}>{index + 1}</Text>
-                <TouchableOpacity
-                  style={[styles.moveBtn, index === activeTools.length - 1 && styles.moveBtnDisabled]}
-                  onPress={() => moveItem(index, 1)}
-                  disabled={index === activeTools.length - 1}
-                >
-                  <Text style={styles.moveBtnText}>▼</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            <View style={styles.toolContent}>
-              <ToolBase tool={def} onRemove={() => onRemoveTool(inst.instanceId)}>
-                <Component userId={userId} babyGender={babyGender} />
-              </ToolBase>
-            </View>
-          </View>
+          <Animated.View
+            key={inst.instanceId}
+            style={[
+              styles.toolItem,
+              isDragging && {
+                zIndex: 999,
+                elevation: 10,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                transform: [{ translateY: isDragging ? dragY : 0 }],
+              },
+            ]}
+          >
+            <ToolBase
+              tool={def}
+              onRemove={() => onRemoveTool(inst.instanceId)}
+              onDragStart={() => { dragIdxRef.current = index; setDragIndex(index); dragY.setValue(0); }}
+              isDragging={isDragging}
+              dragHandlers={panResponder.panHandlers}
+            >
+              <Component userId={userId} babyGender={babyGender} />
+            </ToolBase>
+          </Animated.View>
         );
       })}
 
@@ -114,17 +144,9 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: spacing.sm, paddingHorizontal: spacing.lg },
-  reorderToggle: { alignItems: 'center', paddingVertical: spacing.xs },
-  reorderText: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
-  toolRow: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.xs },
-  toolContent: { flex: 1 },
-  reorderBtns: { alignItems: 'center', justifyContent: 'center', gap: 2, width: 28 },
-  moveBtn: { width: 28, height: 22, borderRadius: 4, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' },
-  moveBtnDisabled: { opacity: 0.3 },
-  moveBtnText: { fontSize: 10, color: colors.accent, fontWeight: '700' },
-  moveIndex: { ...typography.caption1, color: colors.muted, fontWeight: '600' },
-  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, gap: spacing.xs, borderWidth: 1, borderColor: colors.border, borderRadius: 12, borderStyle: 'dashed' },
+  wrapper: { paddingHorizontal: spacing.lg },
+  toolItem: { marginBottom: spacing.sm },
+  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, gap: spacing.xs, borderWidth: 1, borderColor: colors.border, borderRadius: 12, borderStyle: 'dashed', marginTop: spacing.sm },
   addIcon: { fontSize: 20, color: colors.accent, fontWeight: '600' },
   addText: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
