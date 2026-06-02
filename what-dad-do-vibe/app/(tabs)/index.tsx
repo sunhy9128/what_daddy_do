@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -84,9 +84,11 @@ export default function HomeScreen() {
     loadActiveTools(user.id).then(tools => setActiveTools(tools));
   }, [user]);
 
+  const activeToolsRef = useRef(activeTools);
+  activeToolsRef.current = activeTools;
   useEffect(() => {
-    if (!user || activeTools.length === 0) return;
-    saveActiveTools(user.id, activeTools);
+    if (!user) return;
+    saveActiveTools(user.id, activeToolsRef.current);
   }, [activeTools, user]);
 
   if (authLoading || state.loading) {

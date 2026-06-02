@@ -4,7 +4,7 @@ import { GrowthDataPoint, BOY_GROWTH, GIRL_GROWTH } from '../../lib/growth-chart
 import { colors, spacing, typography } from '../../styles/tokens';
 
 const W = 300, PANEL_H = 140, GAP = 2;
-const TOTAL_H = PANEL_H * 2 + GAP;
+const TOTAL_H = PANEL_H * 2 + GAP + 24;
 const PAD_L = 32, PAD_R = 4, PAD_T = 16, PAD_B = 6;
 const PLOT_W = W - PAD_L - PAD_R;
 const PLOT_H = PANEL_H - PAD_T - PAD_B;
@@ -116,9 +116,9 @@ export function GrowthChart({ gender, records }: Props) {
 
         {/* X 轴 */}
         {[0, 6, 12, 18, 24, 30, 36].map(m => (
-          <Text key={m} style={[s.xLbl, { left: xFn(m) - 6, top: TOTAL_H - 14 }]}>{m}</Text>
+          <Text key={m} style={[s.xLbl, { left: xFn(m) - 6, top: TOTAL_H - 30 }]}>{m}</Text>
         ))}
-        <Text style={[s.xLbl, { left: W / 2 - 10, top: TOTAL_H - 14, fontWeight: '600' }]}>月龄</Text>
+        <Text style={[s.xLbl, { left: W / 2 - 14, top: TOTAL_H - 14, fontWeight: '600', width: 28 }]}>月龄</Text>
 
         {/* 轴标题 */}
         <Text style={[s.axisTitle, { left: PAD_L - 2, top: 2, color: '#CC4444' }]}>身长 cm</Text>
@@ -128,7 +128,6 @@ export function GrowthChart({ gender, records }: Props) {
       <View style={s.legend}>
         <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#CC4444' }]} /><Text style={s.legTxt}>身长</Text></View>
         <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#4466CC' }]} /><Text style={s.legTxt}>体重</Text></View>
-        <View style={s.legIt}><View style={[s.legDot, { width: 8, height: 8, borderRadius: 4, backgroundColor: '#666' }]} /><Text style={s.legTxt}>记录</Text></View>
       </View>
     </View>
   );

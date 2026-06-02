@@ -21,7 +21,7 @@ export async function loadActiveTools(userId: string): Promise<StoredToolInstanc
 }
 
 export async function saveActiveTools(userId: string, tools: StoredToolInstance[]): Promise<void> {
-  await AsyncStorage.setItem(KEYS.ACTIVE_TOOLS(userId), JSON.stringify(tools));
+  try { await AsyncStorage.setItem(KEYS.ACTIVE_TOOLS(userId), JSON.stringify(tools)); } catch (e) { console.error('saveActiveTools failed', e); }
 }
 
 // 身高体重记录
@@ -39,7 +39,7 @@ export async function loadGrowthRecords(userId: string): Promise<GrowthRecordDat
 }
 
 export async function saveGrowthRecords(userId: string, records: GrowthRecordData[]): Promise<void> {
-  await AsyncStorage.setItem(`growth_records_${userId}`, JSON.stringify(records));
+  try { await AsyncStorage.setItem(`growth_records_${userId}`, JSON.stringify(records)); } catch (e) { console.error('saveGrowthRecords failed', e); }
 }
 
 // 喂奶记录
@@ -59,5 +59,5 @@ export async function loadFeedingRecords(userId: string): Promise<FeedingRecordD
 }
 
 export async function saveFeedingRecords(userId: string, records: FeedingRecordData[]): Promise<void> {
-  await AsyncStorage.setItem(KEYS.FEEDING_RECORDS(userId), JSON.stringify(records));
+  try { await AsyncStorage.setItem(KEYS.FEEDING_RECORDS(userId), JSON.stringify(records)); } catch (e) { console.error('saveFeedingRecords failed', e); }
 }

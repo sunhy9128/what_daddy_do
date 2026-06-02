@@ -24,6 +24,7 @@ interface ToolBaseProps {
   isLast?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  forceCollapsed?: boolean;
 }
 
 export function ToolBase({
@@ -32,8 +33,10 @@ export function ToolBase({
   showReorder = false,
   isFirst = false, isLast = false,
   onMoveUp, onMoveDown,
+  forceCollapsed = false,
 }: ToolBaseProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const isCollapsed = forceCollapsed || collapsed;
 
   const toggleCollapse = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -77,7 +80,7 @@ export function ToolBase({
         </View>
         <View style={styles.headerRight}>
           <Ionicons
-            name={collapsed ? 'chevron-forward' : 'chevron-down'}
+            name={isCollapsed ? 'chevron-forward' : 'chevron-down'}
             size={14}
             color={colors.muted}
           />
@@ -92,7 +95,7 @@ export function ToolBase({
           )}
         </View>
       </TouchableOpacity>
-      {!collapsed && (
+      {!isCollapsed && (
         <View style={styles.body}>
           {children}
         </View>

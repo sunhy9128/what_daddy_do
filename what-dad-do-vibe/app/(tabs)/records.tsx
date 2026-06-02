@@ -28,7 +28,7 @@ export default function RecordsScreen() {
       const title = newContent.trim().split('\n')[0].slice(0, 30) || '随手记';
       await addRecord({ title, content: newContent.trim(), isPrivate });
       setNewContent('');
-    } finally {
+    } catch (e) { console.error('Failed to add record:', e); } finally {
       postingRef.current = false;
     }
   };

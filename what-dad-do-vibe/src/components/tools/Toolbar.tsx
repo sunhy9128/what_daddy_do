@@ -88,6 +88,7 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
               isLast={isLast}
               onMoveUp={() => moveUp(index)}
               onMoveDown={() => moveDown(index)}
+              forceCollapsed={reordering}
             >
               <Component userId={userId} babyGender={babyGender} />
             </ToolBase>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, Platform } from 'react-native';
 import { getVaccines, getUserVaccinations, setVaccinationStatus } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { colors, spacing, typography } from '../../styles/tokens';
@@ -62,9 +62,9 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
     if (selectedDose === null || saving) return;
     if (!isDone) {
       const y = parseInt(year, 10), m = parseInt(month, 10), d = parseInt(day, 10);
-      if (isNaN(y) || y < 1900 || y > 2100) { Alert.alert('无效日期', '请输入正确的年份'); return; }
-      if (isNaN(m) || m < 1 || m > 12) { Alert.alert('无效日期', '月份应在 1-12 之间'); return; }
-      if (isNaN(d) || d < 1 || d > 31) { Alert.alert('无效日期', '日期应在 1-31 之间'); return; }
+      if (isNaN(y) || y < 1900 || y > 2100) { if (Platform.OS === 'web') { window.alert('无效日期，请输入正确的年份'); } else { Alert.alert('无效日期', '请输入正确的年份'); } return; }
+      if (isNaN(m) || m < 1 || m > 12) { if (Platform.OS === 'web') { window.alert('无效日期，月份应在 1-12 之间'); } else { Alert.alert('无效日期', '月份应在 1-12 之间'); } return; }
+      if (isNaN(d) || d < 1 || d > 31) { if (Platform.OS === 'web') { window.alert('无效日期，日期应在 1-31 之间'); } else { Alert.alert('无效日期', '日期应在 1-31 之间'); } return; }
     }
     setSaving(true);
     try {
@@ -78,7 +78,7 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
       }
       setShowModal(false);
     } catch (e: any) {
-      Alert.alert('操作失败', e.message);
+      if (Platform.OS === 'web') { window.alert('操作失败：' + (e.message || '未知错误')); } else { Alert.alert('操作失败', e.message); }
     } finally {
       setSaving(false);
     }
