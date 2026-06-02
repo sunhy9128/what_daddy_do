@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
+    borderRadius: radius.sm,
     backgroundColor: colors.bg,
     borderWidth: 0.5,
     borderColor: colors.border,

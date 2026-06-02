@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
-import { colors, spacing, typography } from '../src/styles/tokens';
+import { STAGES } from '../src/lib/stages';
+import { colors, spacing, typography, shadows } from '../src/styles/tokens';
 
 export default function BabyInfoScreen() {
   const insets = useSafeAreaInsets();
@@ -11,22 +13,24 @@ export default function BabyInfoScreen() {
   const { state, addBaby, updateBabyGender } = useApp();
 
   const existingBaby = state.babies[0];
+  const isPostpartum = state.stage === 'postpartum';
+
   const [year, setYear] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[0] : '');
   const [month, setMonth] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[1] : '');
   const [day, setDay] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[2] : '');
   const [saving, setSaving] = useState(false);
 
+  const safeAlert = (title: string, msg?: string) => {
+    if (Platform.OS === 'web') { window.alert(msg || title); }
+    else { Alert.alert(title, msg || ''); }
+  };
+
   const handleSave = async () => {
-    if (!year || !month || !day) {
-      Alert.alert('请填写完整', '请输入年份、月份和日期');
-      return;
-    }
-    const y = parseInt(year, 10);
-    const m = parseInt(month, 10);
-    const d = parseInt(day, 10);
-    if (isNaN(y) || isNaN(m) || isNaN(d)) { Alert.alert('格式错误', '请输入有效的数字'); return; }
-    if (m < 1 || m > 12) { Alert.alert('月份错误', '月份应在 1-12 之间'); return; }
-    if (d < 1 || d > 31) { Alert.alert('日期错误', '日期应在 1-31 之间'); return; }
+    if (!year || !month || !day) { safeAlert('请填写完整'); return; }
+    const y = parseInt(year, 10); const m = parseInt(month, 10); const d = parseInt(day, 10);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) { safeAlert('格式错误', '请输入有效数字'); return; }
+    if (m < 1 || m > 12) { safeAlert('月份错误', '月份应在 1-12 之间'); return; }
+    if (d < 1 || d > 31) { safeAlert('日期错误', '日期应在 1-31 之间'); return; }
     const dueDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     setSaving(true);
     try {
@@ -35,11 +39,10 @@ export default function BabyInfoScreen() {
       } else {
         await addBaby(dueDate);
       }
-      Alert.alert('保存成功', '孕期信息已保存，将自动计算当前孕周和阶段', [
-        { text: '好的', onPress: () => router.back() },
-      ]);
+      safeAlert('保存成功', '孕期信息已更新');
+      router.back();
     } catch (error) {
-      Alert.alert('保存失败', '请重试');
+      safeAlert('保存失败', '请重试');
     } finally {
       setSaving(false);
     }
@@ -55,104 +58,93 @@ export default function BabyInfoScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* 顶部导航 */}
       <View style={styles.nav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.navBack}>
-          <Text style={styles.navBackText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>怀孕信息</Text>
+        <Text style={styles.navTitle}>{isPostpartum ? '宝宝信息' : '怀孕信息'}</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* 当前信息卡片 */}
-        {existingBaby && (
-          <View style={styles.summary}>
-            <View style={styles.summaryIcon}>
-              <Text style={styles.summaryEmoji}>📅</Text>
+        {/* 当前信息 */}
+        {existingBaby && isPostpartum ? (
+          <View style={styles.babyCard}>
+            <Text style={styles.babyEmoji}>{existingBaby.gender === 'girl' ? '👧' : '👦'}</Text>
+            <Text style={styles.babyName}>{existingBaby.name || '宝宝'}</Text>
+            <View style={styles.babyTag}><Text style={styles.babyTagText}>已出生</Text></View>
+            <View style={styles.babyDivider} />
+            <View style={styles.infoRow}>
+              <Ionicons name="gift-outline" size={16} color="#D4A574" />
+              <Text style={styles.infoLabel}>出生日期</Text>
+              <Text style={styles.infoValue}>{existingBaby.birthDate || '未记录'}</Text>
             </View>
-            <Text style={styles.summaryTitle}>当前孕期</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>阶段</Text>
-              <Text style={styles.summaryValue}>{stageInfo?.stage || '未知'}</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="time-outline" size={16} color="#D4A574" />
+              <Text style={styles.infoLabel}>宝宝</Text>
+              <Text style={styles.infoValue}>{state.birthAgeLabel}</Text>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>
-                {state.stage === 'postpartum' ? '宝宝出生后' : '当前孕周'}
-              </Text>
-              <Text style={styles.summaryValue}>
-                {state.stage === 'postpartum' ? state.birthAgeLabel : `${stageInfo?.weeks || 0} 周`}
-              </Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>预产期</Text>
-              <Text style={styles.summaryValue}>{existingBaby.dueDate}</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="calendar-outline" size={16} color="#D4A574" />
+              <Text style={styles.infoLabel}>原预产期</Text>
+              <Text style={styles.infoValue}>{existingBaby.dueDate}</Text>
             </View>
           </View>
-        )}
+        ) : existingBaby ? (
+          <View style={styles.infoCard}>
+            <View style={styles.infoCardHeader}>
+              <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+              <Text style={styles.infoCardTitle}>当前孕期</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>阶段</Text>
+              <Text style={styles.infoValue}>{stageInfo?.stage || '未知'}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>当前孕周</Text>
+              <Text style={styles.infoValue}>{stageInfo?.weeks || 0} 周</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>预产期</Text>
+              <Text style={styles.infoValue}>{existingBaby.dueDate}</Text>
+            </View>
+          </View>
+        ) : null}
 
-        {/* 录入/修改预产期 */}
+        {/* 修改预产期 */}
+        <View style={styles.formSection}>
         <Text style={styles.formTitle}>
           {existingBaby ? '修改预产期' : '录入预产期'}
         </Text>
         <Text style={styles.formHint}>
-          请输入医院确认的预产期，系统将自动计算当前孕周和阶段
+          请输入医院确认的预产期，系统自动计算孕周和阶段
         </Text>
 
         <View style={styles.dateCard}>
           <View style={styles.dateRow}>
             <View style={styles.dateField}>
-              <TextInput
-                style={styles.dateInput}
-                value={year}
-                onChangeText={setYear}
-                keyboardType="number-pad"
-                placeholder="2026"
-                placeholderTextColor={colors.muted}
-                maxLength={4}
-              />
+              <TextInput style={styles.dateInput} value={year} onChangeText={setYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
               <Text style={styles.dateLabel}>年</Text>
             </View>
             <Text style={styles.dateSep}>/</Text>
             <View style={styles.dateField}>
-              <TextInput
-                style={styles.dateInput}
-                value={month}
-                onChangeText={setMonth}
-                keyboardType="number-pad"
-                placeholder="09"
-                placeholderTextColor={colors.muted}
-                maxLength={2}
-              />
+              <TextInput style={styles.dateInput} value={month} onChangeText={setMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
               <Text style={styles.dateLabel}>月</Text>
             </View>
             <Text style={styles.dateSep}>/</Text>
             <View style={styles.dateField}>
-              <TextInput
-                style={styles.dateInput}
-                value={day}
-                onChangeText={setDay}
-                keyboardType="number-pad"
-                placeholder="15"
-                placeholderTextColor={colors.muted}
-                maxLength={2}
-              />
+              <TextInput style={styles.dateInput} value={day} onChangeText={setDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
               <Text style={styles.dateLabel}>日</Text>
             </View>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={styles.saveText}>
-            {saving ? '保存中…' : existingBaby ? '更新预产期' : '保存'}
-          </Text>
+        <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
+          <Text style={styles.saveText}>{saving ? '保存中…' : existingBaby ? '更新预产期' : '保存'}</Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -160,102 +152,84 @@ export default function BabyInfoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-
-  // 顶部导航
   nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
     backgroundColor: colors.surface,
   },
   navBack: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center',
   },
-  navBackText: { fontSize: 18, color: colors.accent, fontWeight: '600' },
   navTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
-
   content: { padding: spacing.lg },
 
-  // 当前信息
-  summary: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: colors.border,
+  // 宝宝卡片
+  babyCard: {
+    backgroundColor: '#FFF8F5', borderRadius: 20, padding: spacing.xl,
+    alignItems: 'center', marginBottom: spacing.xl,
+    borderWidth: 1, borderColor: '#F5E0D0',
   },
-  summaryIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.accentLight,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.sm,
+  babyEmoji: { fontSize: 56, marginBottom: spacing.sm },
+  babyName: { ...typography.title1, fontWeight: '700', color: '#5A3E2B', marginBottom: spacing.xs },
+  babyTag: {
+    backgroundColor: '#D4A574', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    borderRadius: 12, marginBottom: spacing.md,
   },
-  summaryEmoji: { fontSize: 20 },
-  summaryTitle: { ...typography.headline, fontWeight: '600', color: colors.fg, marginBottom: spacing.md },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: spacing.xs + 2,
+  babyTagText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  babyDivider: { width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: '#F5E0D0', marginBottom: spacing.md },
+
+  // 孕期卡片
+  infoCard: {
+    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
+    marginBottom: spacing.xl, borderWidth: 0.5, borderColor: colors.border,
   },
-  summaryLabel: { ...typography.callout, color: colors.fgSecondary },
-  summaryValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  summaryDivider: {
-    width: '100%',
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+  infoCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  infoCardTitle: { ...typography.headline, fontWeight: '600', color: colors.fg },
+  infoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
+  infoLabel: { ...typography.callout, color: colors.fgSecondary, flex: 1 },
+  infoValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
 
   // 表单
-  formTitle: { ...typography.headline, fontWeight: '600', color: colors.fg, marginBottom: spacing.xs },
-  formHint: { ...typography.footnote, color: colors.muted, marginBottom: spacing.lg, lineHeight: 18 },
-
-  // 日期选择
+  formSection: {
+    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
+    marginBottom: spacing.lg, borderWidth: 0.5, borderColor: colors.border,
+  },
+  formTitle: {
+    ...typography.headline, fontWeight: '600', color: colors.fg, marginBottom: spacing.xs,
+  },
+  formHint: {
+    ...typography.footnote, color: colors.muted, marginBottom: spacing.lg, lineHeight: 20,
+  },
   dateCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: spacing.lg,
+    backgroundColor: colors.surfaceSecondary, borderRadius: 12, padding: spacing.lg,
     marginBottom: spacing.lg,
-    borderWidth: 0.5,
-    borderColor: colors.border,
   },
   dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
   },
-  dateField: { alignItems: 'center' },
-  dateLabel: { ...typography.caption1, color: colors.muted, marginTop: spacing.xs },
+  dateField: { alignItems: 'center', flex: 1 },
+  dateLabel: {
+    ...typography.caption2, color: colors.muted, marginTop: spacing.sm, fontWeight: '500',
+  },
   dateInput: {
-    ...typography.title1,
-    fontWeight: '700',
-    color: colors.accent,
-    textAlign: 'center',
-    width: 76,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.border,
+    ...typography.title2, fontWeight: '700', color: colors.accent,
+    textAlign: 'center', width: '100%', paddingVertical: spacing.md,
+    backgroundColor: colors.surface, borderRadius: 10,
+    borderWidth: 1, borderColor: colors.border,
   },
-  dateSep: { ...typography.title1, color: colors.muted, marginTop: -spacing.md },
-
-  // 保存
+  dateSep: {
+    ...typography.title2, color: colors.muted, marginTop: -spacing.xl,
+  },
   saveBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: spacing.md + 2,
-    alignItems: 'center',
+    backgroundColor: colors.accent, borderRadius: 12,
+    paddingVertical: spacing.md + 2, alignItems: 'center',
+    ...shadows.sm,
   },
   saveBtnDisabled: { opacity: 0.6 },
   saveText: { ...typography.callout, fontWeight: '600', color: '#fff' },

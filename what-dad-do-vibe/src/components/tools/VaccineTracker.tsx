@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, Platform, useWindowDimensions } from 'react-native';
 import { getVaccines, getUserVaccinations, setVaccinationStatus } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { colors, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
-const CELL_W = 56;
 const CELL_H = 44;
-const NAME_W = 80;
+
 
 export function VaccineTracker({ userId }: { userId: string; babyGender?: string }) {
+  const { width: screenW } = useWindowDimensions();
   const [vaccines, setVaccines] = useState<(Vaccine & { doses: VaccineDose[] })[]>([]);
   const [userVax, setUserVax] = useState<Map<number, UserVaccination>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -92,6 +92,10 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
   }, [vaccines]);
 
   const maxDoses = useMemo(() => Math.max(...vaccines.map(v => v.total_doses), 4), [vaccines]);
+  // 表格宽度自适应
+  const availW = screenW - 40; // 减去左右内边距
+  const NAME_W = Math.max(56, Math.min(88, Math.floor(availW * 0.22)));
+  const CELL_W = Math.max(32, Math.min(52, Math.floor((availW - NAME_W) / (maxDoses + 1))));
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';

@@ -20,7 +20,6 @@ export async function getPresetTasks(): Promise<PresetTask[]> {
       .order('stage', { ascending: true });
 
     if (error) {
-      console.log('getPresetTasks error:', error.message);
       return [];
     }
     return data || [];

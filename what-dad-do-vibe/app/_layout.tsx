@@ -42,6 +42,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="baby-info" />
             <Stack.Screen name="congratulations" />
+            <Stack.Screen name="profile-edit" />
           </Stack>
         </AppProvider>
       </AuthProvider>

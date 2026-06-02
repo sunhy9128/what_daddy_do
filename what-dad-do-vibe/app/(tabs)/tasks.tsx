@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
@@ -63,10 +63,15 @@ export default function TasksScreen() {
     return 'daily';
   };
 
+  const safeAlert = useCallback((title: string, msg?: string) => {
+    if (Platform.OS === 'web') { window.alert(msg || title); }
+    else { Alert.alert(title, msg || ''); }
+  }, []);
+
   const TASK_TYPE_OPTIONS = [
-    { value: 'checkin', label: '每日打卡', color: '#34c759' },
-    { value: 'prenatal', label: '产检任务', color: '#007aff' },
-    { value: 'daily', label: '日常任务', color: '#5dd79f' },
+    { value: 'checkin', label: '每日打卡', color: colors.accent },
+    { value: 'prenatal', label: '产检任务', color: colors.accent },
+    { value: 'daily', label: '日常任务', color: colors.accent },
   ] as const;
 
   const getTypeStyle = (type: string) => {
@@ -95,7 +100,7 @@ export default function TasksScreen() {
       const tasks = await getPresetTasks();
       setPresetTasks(tasks);
     } catch (error) {
-      console.error('Failed to load preset tasks:', error);
+      // 静默处理，退出登录后请求会 401
     } finally {
       setLoadingPresets(false);
     }
@@ -149,9 +154,9 @@ export default function TasksScreen() {
         type: task.type,
         dueDate: task.due_date,
       });
-      Alert.alert('成功', `已添加"${task.title}"`);
+      safeAlert('成功', `已添加"${task.title}"`);
     } catch (error: any) {
-      Alert.alert('错误', error.message);
+      safeAlert('错误', error.message);
     } finally {
       taskBusy.current = false;
     }
@@ -159,7 +164,7 @@ export default function TasksScreen() {
 
   const handleAddCustom = async () => {
     if (!newTaskTitle.trim()) {
-      Alert.alert('错误', '请输入任务标题');
+      safeAlert('错误', '请输入任务标题');
       return;
     }
     setSavingTask(true);
@@ -173,9 +178,9 @@ export default function TasksScreen() {
       setNewTaskTitle('');
       setShowAddModal(false);
       const typeLabelMap: Record<string, string> = { prenatal: '产检', daily: '日常', checkin: '打卡' };
-      Alert.alert('成功', `任务已添加（${typeLabelMap[detectedType] || '日常'}）`);
+      safeAlert('成功', `任务已添加（${typeLabelMap[detectedType] || '日常'}）`);
     } catch (error: any) {
-      Alert.alert('错误', error.message);
+      safeAlert('错误', error.message);
     } finally {
       setSavingTask(false);
     }
@@ -189,7 +194,7 @@ export default function TasksScreen() {
       setIsEditMode(false);
       setShowInfoModal(false);
     } catch (error: any) {
-      Alert.alert('错误', error.message);
+      safeAlert('错误', error.message);
     } finally {
       taskBusy.current = false;
     }
@@ -212,7 +217,7 @@ export default function TasksScreen() {
   const handleSaveEdit = async () => {
     if (taskBusy.current) return;
     if (!editTitle.trim()) {
-      Alert.alert('错误', '请输入任务标题');
+      safeAlert('错误', '请输入任务标题');
       return;
     }
     if (!selectedTask) return;
@@ -222,7 +227,7 @@ export default function TasksScreen() {
       setIsEditMode(false);
       setShowInfoModal(false);
     } catch (error: any) {
-      Alert.alert('错误', error.message);
+      safeAlert('错误', error.message);
     } finally {
       taskBusy.current = false;
     }
@@ -271,58 +276,33 @@ export default function TasksScreen() {
         {/* 产检任务 — 产后阶段不显示；无待办时隐藏 */}
         {currentStageKey !== 'postpartum' && prenatalTasks.length > 0 && (
           <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
-            {prenatalTasks.map(task => (
-              <TaskCard
-                key={task.id}
-                title={task.title}
-                type={task.type}
-                dueDate={task.dueDate}
-                isCompleted={task.isCompleted}
-                dailyCount={0}
-                onToggle={() => toggleTask(task.id)}
-                onInfo={() => handleInfoPress(task)}
-                onDelete={() => handleDeleteTask(task.id)}
-              />
-            ))}
+            <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              {prenatalTasks.map(task => (
+                <TaskCard key={task.id} title={task.title} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+              ))}
+            </ScrollView>
           </CollapsibleGroup>
         )}
 
         {/* 每日打卡 — 无待办时隐藏 */}
         {checkinTasks.length > 0 && (
           <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={firstVisible === 'checkin'}>
-            {checkinTasks.map(task => (
-              <TaskCard
-                key={task.id}
-                title={task.title}
-                type={task.type}
-                dueDate={task.dueDate}
-                isCompleted={task.isCompleted}
-                dailyCount={task.dailyCount}
-                streakCount={task.streakCount}
-                onToggle={() => toggleTask(task.id)}
-                onInfo={() => handleInfoPress(task)}
-                onDelete={() => handleDeleteTask(task.id)}
-              />
-            ))}
+            <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              {checkinTasks.map(task => (
+                <TaskCard key={task.id} title={task.title} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={task.dailyCount} streakCount={task.streakCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+              ))}
+            </ScrollView>
           </CollapsibleGroup>
         )}
 
         {/* 日常任务 — 无待办时隐藏 */}
         {dailyTasks.length > 0 && (
           <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={firstVisible === 'daily'}>
-            {dailyTasks.map(task => (
-              <TaskCard
-                key={task.id}
-                title={task.title}
-                type={task.type}
-                dueDate={task.dueDate}
-                isCompleted={false}
-                dailyCount={task.dailyCount}
-                onToggle={() => toggleTask(task.id)}
-                onInfo={() => handleInfoPress(task)}
-                onDelete={() => handleDeleteTask(task.id)}
-              />
-            ))}
+            <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              {dailyTasks.map(task => (
+                <TaskCard key={task.id} title={task.title} type={task.type} dueDate={task.dueDate} isCompleted={false} dailyCount={task.dailyCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+              ))}
+            </ScrollView>
           </CollapsibleGroup>
         )}
 
@@ -345,25 +325,27 @@ export default function TasksScreen() {
 
           {showPresets && (
             <View style={styles.presetGroupContent}>
-              {availablePresets.map((task) => (
-                <TouchableOpacity
-                  key={task.id}
-                  style={styles.presetItem}
-                  onPress={() => handleAddPreset(task)}
-                >
-                  <View style={styles.presetIcon}>
-                    <Text style={styles.presetIconText}>+</Text>
-                  </View>
-                  <View style={styles.presetInfo}>
-                    <Text style={styles.presetTitle}>{task.title}</Text>
-                    <Text style={styles.presetDesc}>{task.description}</Text>
-                    <Tag
-                      label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
-                      variant={task.type === 'prenatal' ? 'short' : 'long'}
-                    />
-                  </View>
-                </TouchableOpacity>
-              ))}
+              <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                {availablePresets.map((task) => (
+                  <TouchableOpacity
+                    key={task.id}
+                    style={styles.presetItem}
+                    onPress={() => handleAddPreset(task)}
+                  >
+                    <View style={styles.presetIcon}>
+                      <Text style={styles.presetIconText}>+</Text>
+                    </View>
+                    <View style={styles.presetInfo}>
+                      <Text style={styles.presetTitle}>{task.title}</Text>
+                      <Text style={styles.presetDesc}>{task.description}</Text>
+                      <Tag
+                        label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
+                        variant={task.type === 'prenatal' ? 'short' : 'long'}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -411,7 +393,7 @@ export default function TasksScreen() {
                   key={option.value}
                   style={[
                     styles.typeOption,
-                    newTaskType === option.value && { backgroundColor: option.color },
+                    newTaskType === option.value && styles.typeOptionActive,
                   ]}
                   onPress={() => setNewTaskType(option.value)}
                   activeOpacity={0.7}
@@ -468,7 +450,7 @@ export default function TasksScreen() {
                           key={option.value}
                           style={[
                             styles.typeOption,
-                            editType === option.value && { backgroundColor: option.color },
+                            editType === option.value && styles.typeOptionActive,
                           ]}
                           onPress={() => setEditType(option.value as 'checkin' | 'prenatal' | 'daily')}
                         >
@@ -530,25 +512,35 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingBottom: 100 },
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  title: { ...typography.largeTitle, fontWeight: '700' },
+  taskScroll: { maxHeight: 280 },
+  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
+  title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
   subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
-  progressCard: { marginTop: 0 },
+  progressCard: {
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    ...shadows.sm,
+  },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.md,
   },
-  progressTitle: { ...typography.callout, fontWeight: '500' },
+  progressTitle: { ...typography.callout, fontWeight: '500', color: colors.fg },
   progressValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  // 可添加任务分组 — UI 与 CollapsibleGroup 一致
+  // 可添加任务分组
   presetGroup: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
     overflow: 'hidden',
+    ...shadows.sm,
   },
   presetGroupHeader: {
     flexDirection: 'row',
@@ -565,6 +557,7 @@ const styles = StyleSheet.create({
   presetGroupTitle: {
     ...typography.callout,
     fontWeight: '600',
+    color: colors.fg,
   },
   presetGroupBadge: {
     backgroundColor: colors.accent,
@@ -575,7 +568,7 @@ const styles = StyleSheet.create({
   presetGroupBadgeText: {
     ...typography.footnote,
     fontWeight: '600',
-    color: colors.surface,
+    color: '#fff',
   },
   presetGroupArrow: {
     fontSize: 16,
@@ -589,23 +582,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderBottomWidth: 0.5,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   presetIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  presetIconText: { color: colors.accent, fontSize: 18, fontWeight: '600' },
+  presetIconText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
   presetInfo: { flex: 1 },
-  presetTitle: { ...typography.callout, fontWeight: '500', marginBottom: spacing.xs },
-  presetDesc: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.xs },
+  presetTitle: { ...typography.callout, fontWeight: '500', color: colors.fg, marginBottom: 2 },
+  presetDesc: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 18 },
   fab: {
     position: 'absolute',
     bottom: 90,
@@ -616,10 +609,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.lg,
     ...Platform.select({ web: { cursor: 'pointer' } }),
   },
-  fabIcon: { fontSize: 28, color: colors.surface, lineHeight: 30 },
-  // Modal — 通用弹窗样式
+  fabIcon: { fontSize: 26, color: '#fff', lineHeight: 28, fontWeight: '300' },
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -670,10 +664,10 @@ const styles = StyleSheet.create({
   modalInput: {
     ...typography.callout,
     color: colors.fg,
-    backgroundColor: colors.surfaceSecondary,
+    backgroundColor: colors.surface,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md + 2,
+    paddingVertical: spacing.md,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -681,7 +675,6 @@ const styles = StyleSheet.create({
   // 类型选择器
   typeSelector: {
     flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.sm,
     padding: 3,
@@ -689,10 +682,12 @@ const styles = StyleSheet.create({
   },
   typeOption: {
     flex: 1,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm + 1,
     borderRadius: 7,
     alignItems: 'center',
+  },
+  typeOptionActive: {
+    backgroundColor: colors.accent,
   },
   typeOptionText: {
     ...typography.footnote,
@@ -700,19 +695,21 @@ const styles = StyleSheet.create({
     color: colors.fgSecondary,
   },
   typeOptionTextActive: {
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: '600',
   },
   // 底部操作按钮组
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
   modalActionBtn: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 44,
+    borderRadius: radius.sm,
   },
-  // 任务详情弹窗
+  // 任务详情
   infoTitle: {
     ...typography.title3,
     fontWeight: '700',
@@ -724,7 +721,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderBottomWidth: 0.5,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   infoLabel: {
@@ -736,7 +733,7 @@ const styles = StyleSheet.create({
     color: colors.fg,
     fontWeight: '500',
   },
-  flexButton: { flex: 1, minHeight: 48 },
+  flexButton: { flex: 1, minHeight: 44, borderRadius: radius.sm },
   deleteButton: { backgroundColor: colors.error },
   actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
 

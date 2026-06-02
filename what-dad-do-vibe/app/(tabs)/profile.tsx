@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useApp } from '../../src/context/AppContext';
 import { Card } from '../../src/components/atoms';
+import { STAGES } from '../../src/lib/stages';
 import { colors, spacing, typography } from '../../src/styles/tokens';
 
 export default function ProfileScreen() {
@@ -21,7 +23,7 @@ export default function ProfileScreen() {
       await signOut();
       router.replace('/login');
     } catch (error) {
-      Alert.alert('退出失败', '请重试');
+      if (Platform.OS === 'web') { window.alert('退出失败，请重试'); } else { Alert.alert('退出失败', '请重试'); }
     } finally {
       setSigningOut(false);
     }
@@ -40,27 +42,72 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user?.email || '未登录'}</Text>
         </View>
 
+        {/* 孕期/宝宝信息卡片 */}
+        {state.babies.length > 0 && state.stage === 'postpartum' ? (
+          <View style={styles.babyCard}>
+            <TouchableOpacity style={styles.cardSettings} onPress={() => router.push('/baby-info')}>
+              <Ionicons name="settings-outline" size={16} color="#D4A574" />
+            </TouchableOpacity>
+            <View style={styles.babyHeader}>
+              <Text style={styles.babyEmoji}>{state.babies[0]?.gender === 'girl' ? '👧' : '👦'}</Text>
+              <View style={styles.babyNameRow}>
+                <Text style={styles.babyName}>{state.babies[0]?.name || '宝宝'}</Text>
+                <Text style={styles.babyStage}>已出生</Text>
+              </View>
+            </View>
+            {state.babies[0]?.birthDate && (
+              <View style={styles.babyInfoRow}>
+                <Ionicons name="gift-outline" size={14} color="#D4A574" />
+                <Text style={styles.babyInfoText}>出生日期：{state.babies[0].birthDate}</Text>
+              </View>
+            )}
+            <View style={styles.babyInfoRow}>
+              <Ionicons name="time-outline" size={14} color="#D4A574" />
+              <Text style={styles.babyInfoText}>宝宝 {state.birthAgeLabel}</Text>
+            </View>
+            <View style={styles.babyTagRow}>
+              <View style={styles.babyTag}><Text style={styles.babyTagText}>{state.babies[0]?.gender === 'girl' ? '女宝' : '男宝'}</Text></View>
+              <View style={[styles.babyTag, { backgroundColor: '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: '#D4A574' }]}>🎂 {state.babies[0]?.birthDate || state.babies[0]?.dueDate}</Text></View>
+            </View>
+          </View>
+        ) : state.babies.length > 0 ? (
+          <View style={styles.pregCard}>
+            <TouchableOpacity style={styles.cardSettings} onPress={() => router.push('/baby-info')}>
+              <Ionicons name="settings-outline" size={16} color={colors.muted} />
+            </TouchableOpacity>
+            <View style={styles.pregHeader}>
+              <View style={styles.pregIcon}>
+                <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+              </View>
+              <Text style={styles.pregTitle}>孕期信息</Text>
+            </View>
+            <View style={styles.pregRow}>
+              <Text style={styles.pregLabel}>当前阶段</Text>
+              <Text style={styles.pregValue}>
+                {STAGES.find(s => s.key === state.stage)?.label || '未知'}
+              </Text>
+            </View>
+            <View style={styles.pregDivider} />
+            <View style={styles.pregRow}>
+              <Text style={styles.pregLabel}>当前孕周</Text>
+              <Text style={styles.pregValue}>第 {state.weeksPregnant} 周</Text>
+            </View>
+            <View style={styles.pregDivider} />
+            <View style={styles.pregRow}>
+              <Text style={styles.pregLabel}>预产期</Text>
+              <Text style={styles.pregValue}>{state.babies[0]?.dueDate || '-'}</Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* 账号菜单 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>账号</Text>
           <Card style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/baby-info')}>
+            <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/profile-edit')}>
               <View style={styles.menuLeft}>
                 <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
-                  <Text style={styles.menuIconText}>📅</Text>
-                </View>
-                <Text style={styles.menuText}>怀孕信息</Text>
-              </View>
-              {state.babies.length > 0 && (
-                <Text style={styles.menuBadge}>{state.babies[0].dueDate}</Text>
-              )}
-            </TouchableOpacity>
-          </Card>
-          <Card style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuRow}>
-              <View style={styles.menuLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
-                  <Text style={styles.menuIconText}>👤</Text>
+                  <Ionicons name="person-outline" size={18} color={colors.accent} />
                 </View>
                 <Text style={styles.menuText}>个人资料</Text>
               </View>
@@ -75,7 +122,7 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.menuRow}>
               <View style={styles.menuLeft}>
                 <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
-                  <Text style={styles.menuIconText}>📖</Text>
+                  <Ionicons name="help-circle-outline" size={18} color={colors.accent} />
                 </View>
                 <Text style={styles.menuText}>使用帮助</Text>
               </View>
@@ -85,7 +132,7 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.menuRow}>
               <View style={styles.menuLeft}>
                 <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
-                  <Text style={styles.menuIconText}>💬</Text>
+                  <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
                 </View>
                 <Text style={styles.menuText}>关于我们</Text>
               </View>
@@ -158,9 +205,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIconText: { fontSize: 16 },
+
   menuText: { ...typography.callout, color: colors.fg },
   menuBadge: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
+
+  // 孕期信息卡片
+  pregCard: {
+    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
+    marginBottom: spacing.lg, borderWidth: 0.5, borderColor: colors.border,
+    alignItems: 'center', position: 'relative',
+  },
+  pregHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  pregIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center',
+  },
+  pregTitle: { ...typography.headline, fontWeight: '600', color: colors.fg },
+  pregRow: {
+    flexDirection: 'row', justifyContent: 'space-between', width: '100%',
+    paddingVertical: spacing.sm,
+  },
+  pregLabel: { ...typography.callout, color: colors.fgSecondary },
+  pregValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
+  pregDivider: {
+    width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: colors.border,
+  },
+
+  // 宝宝信息卡片
+  babyCard: {
+    backgroundColor: '#FFF8F5', borderRadius: 20, padding: spacing.xl,
+    marginBottom: spacing.lg, alignItems: 'center',
+    borderWidth: 1, borderColor: '#F5E0D0',
+    position: 'relative',
+  },
+  babyHeader: { alignItems: 'center', marginBottom: spacing.md },
+  babyEmoji: { fontSize: 48, marginBottom: spacing.sm },
+  babyNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  babyName: { ...typography.title2, fontWeight: '700', color: '#5A3E2B' },
+  babyStage: {
+    fontSize: 11, fontWeight: '600', color: '#fff',
+    backgroundColor: '#D4A574', paddingHorizontal: spacing.sm, paddingVertical: 2,
+    borderRadius: 8, overflow: 'hidden',
+  },
+  babyInfoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  babyInfoText: { ...typography.callout, color: '#8B6F4A' },
+  cardSettings: {
+    position: 'absolute', top: spacing.sm, right: spacing.sm,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    alignItems: 'center', justifyContent: 'center',
+    zIndex: 10,
+  },
+  babyTagRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  babyTag: {
+    backgroundColor: '#E8F0FE', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    borderRadius: 12,
+  },
+  babyTagText: { fontSize: 12, fontWeight: '500', color: colors.accent },
 
   // 退出
   logoutBtn: {
