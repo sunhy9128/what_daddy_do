@@ -307,10 +307,10 @@ const styles = StyleSheet.create({
   urgentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF8F0',
+    backgroundColor: '#FEF2F2',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F5E6D0',
+    borderColor: '#FECACA',
     paddingVertical: spacing.md,
     paddingLeft: spacing.md,
     paddingRight: spacing.sm,
@@ -324,13 +324,13 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#D97706',
+    backgroundColor: '#DC2626',
     marginRight: spacing.sm,
     flexShrink: 0,
   },
   urgentText: {
     ...typography.callout,
-    color: '#92400E',
+    color: '#991B1B',
     lineHeight: 22,
     flexShrink: 1,
   },
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   urgentCloseText: {
     fontSize: 14,
-    color: '#D97706',
+    color: '#DC2626',
     fontWeight: '400',
   },
   urgentAddBtn: {

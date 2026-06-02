@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../src/context/AuthContext';
@@ -69,7 +69,7 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logo}>👶</Text>
+          <Image source={require('../assets/icon.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>爸爸去哪了</Text>
           <Text style={styles.subtitle}>新手爸爸的育儿随军参谋</Text>
         </View>
@@ -134,7 +134,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
   },
   logo: {
-    fontSize: 64,
+    width: 80,
+    height: 80,
+    borderRadius: 20,
     marginBottom: spacing.md,
   },
   title: {

@@ -7,17 +7,6 @@ import { useApp } from '../../src/context/AppContext';
 import { Card } from '../../src/components/atoms';
 import { colors, spacing, typography } from '../../src/styles/tokens';
 
-const theme = {
-  background: colors.bg,
-  surface: colors.surface,
-  textPrimary: colors.fg,
-  textSecondary: colors.fgSecondary,
-  accent: colors.accent,
-  accentLight: colors.accent + '20',
-  error: colors.error,
-  errorLight: colors.error + '20',
-};
-
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -41,7 +30,8 @@ export default function ProfileScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+        {/* 头像区域 */}
+        <View style={styles.profile}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
               {user?.email?.charAt(0).toUpperCase() || 'U'}
@@ -50,44 +40,66 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user?.email || '未登录'}</Text>
         </View>
 
+        {/* 账号菜单 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>账号</Text>
-          <Card style={styles.menuItem}>
+          <Card style={styles.menuCard}>
             <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/baby-info')}>
-              <Text style={styles.menuText}>怀孕信息</Text>
+              <View style={styles.menuLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                  <Text style={styles.menuIconText}>📅</Text>
+                </View>
+                <Text style={styles.menuText}>怀孕信息</Text>
+              </View>
               {state.babies.length > 0 && (
                 <Text style={styles.menuBadge}>{state.babies[0].dueDate}</Text>
               )}
             </TouchableOpacity>
           </Card>
-          <Card style={styles.menuItem}>
+          <Card style={styles.menuCard}>
             <TouchableOpacity style={styles.menuRow}>
-              <Text style={styles.menuText}>个人资料</Text>
-            </TouchableOpacity>
-          </Card>
-          <Card style={styles.menuItem}>
-            <TouchableOpacity style={styles.menuRow}>
-              <Text style={styles.menuText}>设置</Text>
+              <View style={styles.menuLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                  <Text style={styles.menuIconText}>👤</Text>
+                </View>
+                <Text style={styles.menuText}>个人资料</Text>
+              </View>
             </TouchableOpacity>
           </Card>
         </View>
 
+        {/* 关于菜单 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>关于</Text>
-          <Card style={styles.menuItem}>
+          <Card style={styles.menuCard}>
             <TouchableOpacity style={styles.menuRow}>
-              <Text style={styles.menuText}>使用帮助</Text>
+              <View style={styles.menuLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                  <Text style={styles.menuIconText}>📖</Text>
+                </View>
+                <Text style={styles.menuText}>使用帮助</Text>
+              </View>
             </TouchableOpacity>
           </Card>
-          <Card style={styles.menuItem}>
+          <Card style={styles.menuCard}>
             <TouchableOpacity style={styles.menuRow}>
-              <Text style={styles.menuText}>关于我们</Text>
+              <View style={styles.menuLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                  <Text style={styles.menuIconText}>💬</Text>
+                </View>
+                <Text style={styles.menuText}>关于我们</Text>
+              </View>
             </TouchableOpacity>
           </Card>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>退出登录</Text>
+        {/* 退出登录 */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          {signingOut ? (
+            <ActivityIndicator color={colors.error} size="small" />
+          ) : (
+            <Text style={styles.logoutText}>退出登录</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -95,74 +107,70 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
-  content: {
-    padding: spacing.md,
-  },
-  header: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg },
+
+  // 头像
+  profile: { alignItems: 'center', paddingVertical: spacing.xxl },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.accent,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  avatarText: {
-    fontSize: 32,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  email: {
-    marginTop: spacing.md,
-    fontSize: 16,
-    color: theme.textPrimary,
-  },
+  avatarText: { fontSize: 28, color: '#fff', fontWeight: '600' },
+  email: { ...typography.callout, color: colors.fg },
 
-  section: {
-    marginTop: spacing.lg,
-  },
+  // 分区
+  section: { marginBottom: spacing.lg },
   sectionTitle: {
-    fontSize: 12,
-    color: theme.textSecondary,
+    ...typography.caption1,
+    fontWeight: '600',
+    color: colors.muted,
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  menuItem: {
+
+  // 菜单卡片
+  menuCard: {
     marginBottom: spacing.sm,
+    marginHorizontal: 0,
+    padding: 0,
+    borderRadius: 12,
   },
   menuRow: {
-    padding: spacing.md,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.md,
+  },
+  menuLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  menuIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  menuText: {
-    fontSize: 16,
-    color: theme.textPrimary,
-  },
-  menuBadge: {
-    fontSize: 12,
-    color: theme.accent,
-    marginTop: spacing.xs,
-  },
-  logoutButton: {
-    marginTop: spacing.xl,
-    marginHorizontal: spacing.xs,
-    padding: spacing.md,
-    backgroundColor: theme.errorLight,
+  menuIconText: { fontSize: 16 },
+  menuText: { ...typography.callout, color: colors.fg },
+  menuBadge: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
+
+  // 退出
+  logoutBtn: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.md + 2,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
   },
-  logoutText: {
-    fontSize: 16,
-    color: theme.error,
-    fontWeight: '500',
-  },
+  logoutText: { ...typography.callout, fontWeight: '500', color: colors.error },
 });

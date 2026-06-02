@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { getVaccines, getUserVaccinations } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { colors, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
-const CHART_W = 260;
+const NAME_W = 50; // 疫苗名称列宽度
+const PAD_CTX = 56; // Toolbar padding(16*2) + ToolBase body padding(12*2)
 const PERIODS = [
   { label: '0-6月', start: 0, end: 6 },
   { label: '6-12月', start: 6, end: 12 },
@@ -15,6 +16,8 @@ const PERIODS = [
 ];
 
 export function VaccineCalendar({ userId }: { userId: string; babyGender?: string }) {
+  const { width: screenW } = useWindowDimensions();
+  const chartW = Math.max(180, Math.min(300, screenW - PAD_CTX - NAME_W));
   const [vaccines, setVaccines] = useState<(Vaccine & { doses: VaccineDose[] })[]>([]);
   const [userVax, setUserVax] = useState<Map<number, UserVaccination>>(new Map());
   const [periodIndex, setPeriodIndex] = useState(0);
@@ -111,11 +114,11 @@ export function VaccineCalendar({ userId }: { userId: string; babyGender?: strin
         <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.hScroll}>
           <View style={styles.chartColumn}>
             {/* X轴 */}
-            <View style={styles.xAxis}>
+            <View style={[styles.xAxis, { width: chartW }]}>
               {Array.from({ length: Math.ceil((period?.end || 6) / 2) + 1 }, (_, i) => {
                 const m = (period?.start || 0) + i * 2;
                 if (m > (period?.end || 6)) return null;
-                return <Text key={m} style={[styles.xLabel, { left: ((m - (period?.start || 0)) / ((period?.end || 6) - (period?.start || 0))) * CHART_W }]}>{m}月</Text>;
+                return <Text key={m} style={[styles.xLabel, { left: ((m - (period?.start || 0)) / ((period?.end || 6) - (period?.start || 0))) * chartW }]}>{m}月</Text>;
               })}
             </View>
 
@@ -125,20 +128,20 @@ export function VaccineCalendar({ userId }: { userId: string; babyGender?: strin
               {filteredGroups.length > 0 ? filteredGroups.map(({ vax, doses }) => (
                 <View key={vax.id} style={styles.vaxRow}>
                   <Text style={styles.vaxName} numberOfLines={1}>{vax.name}</Text>
-                  <View style={styles.barArea}>
+                  <View style={[styles.barArea, { width: chartW }]}>
                     {/* 每行自带的竖向分割线 */}
                     {period && Array.from({ length: Math.ceil((period.end - period.start) / 2) + 1 }, (_, i) => {
                       const m = period.start + i * 2;
                       if (m > period.end) return null;
-                      const left = ((m - period.start) / (period.end - period.start)) * CHART_W;
+                      const left = ((m - period.start) / (period.end - period.start)) * chartW;
                       return <View key={m} style={[styles.vLine, { left }]} />;
                     })}
                     {doses.map(({ dose, isDone }) => {
                       const span = (period?.end || 6) - (period?.start || 0);
                       const startM = Math.max(dose.min_age_months, period?.start || 0);
                       const endM = Math.min(dose.max_age_months || 99, period?.end || 6);
-                      const left = ((startM - (period?.start || 0)) / span) * CHART_W;
-                      const w = Math.max(6, ((endM - startM) / span) * CHART_W);
+                      const left = ((startM - (period?.start || 0)) / span) * chartW;
+                      const w = Math.max(6, ((endM - startM) / span) * chartW);
                       return (
                         <View key={dose.id} style={[styles.bar, {
                           left, width: w, top: 4,
@@ -180,22 +183,22 @@ export function VaccineCalendar({ userId }: { userId: string; babyGender?: strin
 const styles = StyleSheet.create({
   container: { maxHeight: 540 },
   hScroll: { flex: 1 },
-  chartColumn: { minWidth: 322 },
+  chartColumn: { },
   periodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 4 },
   periodBtn: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
   periodBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   periodText: { ...typography.caption1, color: colors.muted, fontWeight: '500' },
   periodTextActive: { color: '#fff' },
   periodTitle: { ...typography.caption2, fontWeight: '600', color: colors.muted, marginBottom: 4, textTransform: 'uppercase' },
-  xAxis: { height: 18, position: 'relative', marginBottom: spacing.xs, marginLeft: 62, width: CHART_W },
+  xAxis: { height: 18, position: 'relative', marginBottom: spacing.xs, marginLeft: 50 },
   xLabel: { position: 'absolute', fontSize: 8, color: '#8A8A9A', textAlign: 'center', width: 20, marginLeft: -10 },
   chartScroll: { height: 300 },
   chartArea: { position: 'relative' },
   vLine: { position: 'absolute', top: 0, bottom: 0, width: 0.5, backgroundColor: '#E8E4D9' },
   emptyText: { ...typography.footnote, color: colors.muted, textAlign: 'center', paddingVertical: spacing.md },
   vaxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, minHeight: 28 },
-  vaxName: { width: 62, fontSize: 10, color: colors.fgSecondary, paddingRight: 4, fontWeight: '500' },
-  barArea: { width: CHART_W, height: 28, minHeight: 28, position: 'relative', backgroundColor: colors.surfaceSecondary + '60', borderRadius: 6 },
+  vaxName: { width: 50, fontSize: 9, color: colors.fgSecondary, paddingRight: 2, fontWeight: '500' },
+  barArea: { height: 26, minHeight: 26, position: 'relative', backgroundColor: colors.surfaceSecondary + '60', borderRadius: 4 },
   gridBg: { position: 'absolute', left: 6, top: 13, right: 6, height: 1, backgroundColor: colors.border },
   bar: { position: 'absolute', top: 4, height: 20, borderRadius: 6, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
   barLabel: { fontSize: 10, color: '#fff', fontWeight: '700', textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
