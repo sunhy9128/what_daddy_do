@@ -5,6 +5,8 @@ import { Link, useRouter } from 'expo-router';
 import { useApp } from '../../src/context/AppContext';
 import { Toolbar } from '../../src/components/tools/Toolbar';
 import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GuideOverlay } from '../../src/components/GuideOverlay';
 import { useAuth } from '../../src/context/AuthContext';
 import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
@@ -31,6 +33,7 @@ export default function HomeScreen() {
   const [showUrgentModal, setShowUrgentModal] = useState(false);
   const [urgentText, setUrgentText] = useState('');
   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
+  const [showGuide, setShowGuide] = useState(false);
 
   // 物品准备 + 心理支持
   const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
@@ -78,11 +81,28 @@ export default function HomeScreen() {
     }
   };
 
-  // 加载/保存工具配置
+  // 首次登录引导
   useEffect(() => {
     if (!user) return;
     loadActiveTools(user.id).then(tools => setActiveTools(tools));
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const shown = await AsyncStorage.getItem(`guide_shown_${user.id}`);
+        if (!shown) setShowGuide(true);
+      } catch {}
+    })();
+  }, [user]);
+
+  const dismissGuide = async () => {
+    setShowGuide(false);
+    try {
+      await AsyncStorage.setItem(`guide_shown_${user?.id || ''}`, '1');
+    } catch {}
+  };
 
   const activeToolsRef = useRef(activeTools);
   activeToolsRef.current = activeTools;
@@ -282,6 +302,9 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 首次引导 */}
+      {showGuide && <GuideOverlay onDismiss={dismissGuide} />}
     </View>
   );
 }

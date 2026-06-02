@@ -98,11 +98,11 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
 
       {/* 底部操作栏 */}
       <View style={styles.footerRow}>
-        <TouchableOpacity style={styles.footerBtnAdd} onPress={() => setShowPicker(true)}>
+        <TouchableOpacity style={styles.footerBtn} onPress={() => setShowPicker(true)}>
           <Ionicons name="add" size={18} color={colors.accent} />
           <Text style={styles.footerBtnText}>添加工具</Text>
         </TouchableOpacity>
-        {activeTools.length > 1 && (
+        {activeTools.length > 0 && (
           <TouchableOpacity
             style={[styles.footerBtn, reordering && styles.footerBtnActive]}
             onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setReordering(!reordering); }}
@@ -158,16 +158,7 @@ const styles = StyleSheet.create({
   footerBtnActive: {
     backgroundColor: colors.accent, borderColor: colors.accent,
   },
-  footerBtnAdd: {
-    flex: 1,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 4,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1, borderColor: colors.border,
-    borderStyle: 'dashed',
-    backgroundColor: colors.surface,
-  },
+
   footerBtnText: {
     ...typography.footnote, color: colors.accent, fontWeight: '500',
   },
