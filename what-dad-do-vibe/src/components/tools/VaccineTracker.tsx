@@ -5,7 +5,7 @@ import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { colors, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
-const CELL_H = 44;
+const CELL_H = 36;
 
 
 export function VaccineTracker({ userId }: { userId: string; babyGender?: string }) {
@@ -157,7 +157,7 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>
       {loading ? (
         <View style={styles.loadingContainer}>
           <View style={styles.loadingDots}>
@@ -222,10 +222,10 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
 }
 
 const styles = StyleSheet.create({
-  container: {},
-  tableSection: { marginBottom: spacing.lg },
-  tableTitle: { ...typography.callout, fontWeight: '700', marginBottom: spacing.sm, paddingLeft: spacing.xs },
-  headerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.xs },
+  container: { maxHeight: 360 },
+  tableSection: { marginBottom: spacing.md },
+  tableTitle: { ...typography.callout, fontWeight: '700', marginBottom: spacing.xs, paddingLeft: spacing.xs },
+  headerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 2 },
   headerCell: { alignItems: 'center', justifyContent: 'center' },
   headerText: { ...typography.caption1, fontWeight: '600', color: colors.muted },
   row: { flexDirection: 'row', borderLeftWidth: 3, marginBottom: 1, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' },
@@ -233,15 +233,15 @@ const styles = StyleSheet.create({
   nameText: { ...typography.caption1, color: colors.fg, fontSize: 11, lineHeight: 14 },
   cell: { height: CELL_H, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 0.5, borderLeftColor: colors.border },
   cellDone: { backgroundColor: colors.success + '15' },
-  cellDoneText: { fontSize: 16, color: colors.success, fontWeight: '700' },
+  cellDoneText: { fontSize: 14, color: colors.success, fontWeight: '700' },
   cellDate: { fontSize: 8, color: colors.success, marginTop: 1, fontWeight: '500' },
-  cellEmpty: { fontSize: 18, color: colors.muted, fontWeight: '300' },
+  cellEmpty: { fontSize: 16, color: colors.muted, fontWeight: '300' },
   ageText: { ...typography.caption1, color: colors.muted, fontSize: 10 },
-  legend: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs, flexWrap: 'wrap' },
+  legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  swatch: { width: 18, height: 18, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  swatchText: { fontSize: 11, color: '#fff', fontWeight: '700' },
-  legendText: { ...typography.caption1, color: colors.muted },
+  swatch: { width: 16, height: 16, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  swatchText: { fontSize: 10, color: '#fff', fontWeight: '700' },
+  legendText: { ...typography.caption2, color: colors.muted },
   // 弹窗
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
   modal: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.xl, width: '100%', maxWidth: 360 },
