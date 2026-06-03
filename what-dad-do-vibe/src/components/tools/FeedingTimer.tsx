@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { colors, spacing, typography } from '../../styles/tokens';
 import { loadFeedingRecords, saveFeedingRecords, FeedingRecordData } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
@@ -54,8 +54,7 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
   const formatTime = (d: Date) => {
     const h = String(d.getHours()).padStart(2, '0');
     const m = String(d.getMinutes()).padStart(2, '0');
-    const s = String(d.getSeconds()).padStart(2, '0');
-    return `${h}:${m}:${s}`;
+    return `${h}:${m}`;
   };
 
   // 距离上次喂奶的分钟数
@@ -63,10 +62,10 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
   useEffect(() => {
     const calc = () => {
       if (records.length === 0) { setElapsedMin(null); return; }
-      const last = records[0].time; // HH:MM:SS
-      const [h, m, s] = last.split(':').map(Number);
+      const last = records[0].time; // HH:MM
+      const [h, m] = last.split(':').map(Number);
       const now = new Date();
-      const lastDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
+      const lastDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
       const diff = Math.floor((now.getTime() - lastDate.getTime()) / 60000);
       setElapsedMin(diff >= 0 ? diff : 0);
     };
@@ -83,6 +82,25 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
     const newRecords = [record, ...records];
     setRecords(newRecords);
     persistRecords(newRecords);
+  };
+
+  const handleClear = () => {
+    if (records.length === 0) return;
+    const count = records.length;
+    const msg = `确定清除今日 ${count} 条喂奶记录吗？此操作不可撤销。`;
+    const doClear = () => {
+      setRecords([]);
+      persistRecords([]);
+      nextId.current = 1;
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm(msg)) doClear();
+    } else {
+      Alert.alert('清除记录', msg, [
+        { text: '取消', style: 'cancel' },
+        { text: '清除', style: 'destructive', onPress: doClear },
+      ]);
+    }
   };
 
   const today = new Date();
@@ -105,33 +123,54 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
           <View style={styles.leftCol}>
             <TouchableOpacity style={styles.mainBtn} onPress={handleFeed} activeOpacity={0.8}>
               <Text style={styles.mainBtnIcon}>🍼</Text>
-              <Text style={styles.mainBtnText}>喂奶</Text>
+              <Text style={styles.mainBtnText}>点击</Text>
             </TouchableOpacity>
-            <Text style={styles.countLabel}>今日 {records.length} 次</Text>
-            {elapsedMin !== null && elapsedMin >= 0 && (
-              <Text style={styles.elapsedLabel}>
-                距上次 {elapsedMin < 60 ? `${elapsedMin}分钟` : `${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}
-              </Text>
-            )}
+            <Text style={styles.elapsedLabel}>
+              {elapsedMin !== null ? `距上次 ${elapsedMin < 60 ? `${elapsedMin}分钟` : `${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}` : '尚未喂奶'}
+            </Text>
           </View>
 
           {/* 右侧：历史记录 */}
           <View style={styles.rightCol}>
-            <Text style={styles.dateLabel}>{dateStr}</Text>
-            <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
+            <View style={styles.dateRow}>
+              <Text style={styles.dateLabel}>{dateStr}</Text>
+              {records.length > 0 && (
+                <TouchableOpacity style={styles.clearBtn} onPress={handleClear} activeOpacity={0.7}>
+                  <Text style={styles.clearBtnText}>清除</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={styles.recordTable}>
               {records.length > 0 ? (
-                records.map((r, i) => (
-                  <View key={r.id} style={styles.recordItem}>
-                    <Text style={styles.recordIndex}>#{records.length - i}</Text>
-                    <Text style={styles.recordTime}>{r.time}</Text>
+                <>
+                  <View style={styles.recordHeader}>
+                    <View style={[styles.recordHeaderCell, { flex: 1 }]}>
+                      <Text style={styles.recordHeaderText}>序号</Text>
+                    </View>
+                    <View style={[styles.recordHeaderCell, { flex: 2 }]}>
+                      <Text style={styles.recordHeaderText}>时间</Text>
+                    </View>
                   </View>
-                ))
+                  <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
+                    {records.map((r, i) => (
+                      <View key={r.id} style={[styles.recordItem, i % 2 === 1 && styles.recordItemAlt]}>
+                        <View style={[styles.recordCell, { flex: 1 }]}>
+                          <Text style={styles.recordIndex}>#{records.length - i}</Text>
+                        </View>
+                        <View style={[styles.recordCell, { flex: 2 }]}>
+                          <Text style={styles.recordTime}>{r.time}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </>
               ) : (
-                <View style={styles.emptyState}>
+                <View style={styles.emptyTable}>
+                  <Text style={styles.emptyIcon}>🍼</Text>
                   <Text style={styles.emptyText}>点击左侧按钮记录喂奶</Text>
                 </View>
               )}
-            </ScrollView>
+            </View>
           </View>
         </>
       )}
@@ -143,7 +182,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     gap: spacing.md,
-    height: 170,
   },
   leftCol: {
     alignItems: 'center',
@@ -167,11 +205,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 2,
   },
-  countLabel: {
-    ...typography.caption1,
-    color: colors.muted,
-    fontWeight: '500',
-  },
   elapsedLabel: {
     ...typography.caption1,
     color: colors.accent,
@@ -180,42 +213,97 @@ const styles = StyleSheet.create({
   },
   rightCol: {
     flex: 1,
-    height: 140,
+    height: 146,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
   dateLabel: {
     ...typography.caption1,
     fontWeight: '600',
     color: colors.muted,
-    marginBottom: spacing.xs,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  clearBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  clearBtnText: {
+    ...typography.caption2,
+    color: colors.muted,
+    fontWeight: '500',
+  },
+  recordTable: {
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
+  recordHeader: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSecondary,
+    paddingVertical: spacing.xs + 2,
+  },
+  recordHeaderCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  recordHeaderText: {
+    ...typography.caption1,
+    fontWeight: '600',
+    color: colors.muted,
+    textAlign: 'center',
   },
   recordList: {
-    maxHeight: 160,
-    minHeight: 80,
+    height: 96,
   },
   recordItem: {
     flexDirection: 'row',
+    borderTopWidth: 0.5,
+    borderTopColor: colors.border,
+  },
+  recordItemAlt: {
+    backgroundColor: colors.surfaceSecondary + '60',
+  },
+  recordCell: {
+    flex: 1,
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
+    justifyContent: 'center',
+    paddingVertical: 6,
+    height: 32,
   },
   recordIndex: {
     ...typography.footnote,
     color: colors.muted,
     fontWeight: '500',
-    minWidth: 24,
+    textAlign: 'center',
   },
   recordTime: {
     ...typography.callout,
     fontWeight: '600',
     color: colors.fg,
+    textAlign: 'center',
   },
-  emptyState: {
+  emptyTable: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.xs,
+  },
+  emptyIcon: {
+    fontSize: 22,
+    opacity: 0.5,
   },
   emptyText: {
     ...typography.footnote,
