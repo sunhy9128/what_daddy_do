@@ -192,11 +192,14 @@ export default function HomeScreen() {
             {presetItems.map(item => {
               const prep = userPreparations.find(p => p.item_id === item.id);
               const isPrepared = prep?.status === 'prepared';
+              const level = item.essential_level;
+              const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
+              const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
 
               return (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.prepItem}
+                  style={[styles.prepItem, isPrepared && styles.prepItemDone]}
                   onPress={() => handleToggleItem(item.id)}
                   activeOpacity={0.7}
                 >
@@ -204,14 +207,20 @@ export default function HomeScreen() {
                     {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
                   </View>
                   <View style={styles.prepInfo}>
-                    <View style={styles.prepNameRow}>
-                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]}>{item.name}</Text>
-                      <Text style={styles.prepEssential}>{item.essential_level === 'essential' ? '必需' : item.essential_level === 'recommended' ? '推荐' : '可选'}</Text>
+                    <View style={styles.prepHeaderRow}>
+                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
+                      <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
                     </View>
-                    {item.description && <Text style={styles.prepDesc}>{item.description}</Text>}
+                    {item.description && (
+                      <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    )}
                     <View style={styles.prepMeta}>
-                      <Text style={styles.prepMetaText}>{item.category}</Text>
-                      {item.quantity_suggestion && <Text style={styles.prepMetaText}>· {item.quantity_suggestion}</Text>}
+                      <Text style={styles.prepMetaCategory}>{item.category}</Text>
+                      {item.quantity_suggestion && (
+                        <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -461,19 +470,27 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+    marginBottom: spacing.sm,
+  },
+  prepItemDone: {
+    backgroundColor: colors.surfaceSecondary,
+    borderColor: colors.divider,
   },
   prepCheckbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
     marginTop: 2,
+    backgroundColor: colors.bg,
   },
   prepCheckboxActive: {
     backgroundColor: colors.accent,
@@ -481,22 +498,63 @@ const styles = StyleSheet.create({
   },
   prepCheckmark: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    lineHeight: 14,
   },
   prepInfo: { flex: 1 },
-  prepNameRow: {
+  prepHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: 4,
+  },
+  prepName: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+    flex: 1,
+    lineHeight: 21,
+  },
+  prepNameDone: { color: colors.muted, textDecorationLine: 'line-through' },
+  prepLevel: {
+    ...typography.caption2,
+    fontWeight: '600',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    letterSpacing: 0.3,
+  },
+  prepLevelEssential: { color: '#fff', backgroundColor: colors.accent },
+  prepLevelRecommended: { color: colors.accent, backgroundColor: colors.accentLight, borderWidth: 0.5, borderColor: colors.accent + '40' },
+  prepLevelOptional: { color: colors.muted, backgroundColor: 'transparent' },
+  prepDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  prepDescDone: { color: colors.muted },
+  prepMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.xs,
+    marginTop: 2,
   },
-  prepName: { ...typography.callout, fontWeight: '600', color: colors.fg },
-  prepNameDone: { color: colors.muted, textDecorationLine: 'line-through' },
-  prepEssential: { ...typography.caption1, fontSize: 11, fontWeight: '600', color: colors.accent },
-  prepDesc: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.xs, lineHeight: 18 },
-  prepMeta: { flexDirection: 'row', gap: spacing.xs },
-  prepMetaText: { ...typography.caption1, fontSize: 11, color: colors.muted },
+  prepMetaCategory: {
+    ...typography.caption2,
+    color: colors.muted,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  },
+  prepMetaQty: {
+    ...typography.caption2,
+    color: colors.fgSecondary,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+  },
 
   // ===== 心理支持样式 =====
   supportCard: {
