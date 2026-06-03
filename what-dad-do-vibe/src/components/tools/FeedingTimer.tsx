@@ -15,13 +15,15 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
   const nextId = useRef(1);
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // 加载今日喂奶记录
+  // 加载今日喂奶记录（同时初始化 allRecordsRef，供 persistRecords 读取其他日的数据）
+  const allRecordsRef = useRef<FeedingRecordData[]>([]);
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
     setLoading(true);
     (async () => {
       try {
         const all = await loadFeedingRecords(userId);
+        allRecordsRef.current = all;
         const todaysRecords = all.filter(r => r.date === todayStr);
         setRecords(todaysRecords.map(r => ({ id: r.id, time: r.time })));
         const maxId = todaysRecords.reduce((max, r) => Math.max(max, r.id), 0);
@@ -34,12 +36,6 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
     })();
   }, [userId]);
 
-  // 保存喂奶记录（直接写入，避免读取旧数据）
-  const allRecordsRef = useRef<FeedingRecordData[]>([]);
-  useEffect(() => {
-    if (!userId) return;
-    loadFeedingRecords(userId).then(all => { allRecordsRef.current = all; });
-  }, [userId]);
   const persistRecords = (newRecords: FeedingRecord[]) => {
     if (!userId) return;
     const otherDays = allRecordsRef.current.filter(r => r.date !== todayStr);
