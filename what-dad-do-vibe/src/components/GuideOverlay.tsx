@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, Platform, useWindowDimensions, View as RNView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../styles/tokens';
 
@@ -19,59 +19,107 @@ const STEPS: Step[] = [
   { title: '开始使用', desc: '所有功能就绪，随时可以从底部导航栏切换页面', icon: 'rocket-outline', region: 'header' },
 ];
 
-function RegionHighlight({ region, stepIdx }: { region?: string; stepIdx: number }) {
-  // 简单定位提示：根据步骤展示不同位置的提示框
-  const positions: Record<string, { top: number; left: number }> = {
-    header: { top: 120, left: 40 },
-    urgent: { top: 220, left: 20 },
-    prep: { top: 360, left: 20 },
-    support: { top: 460, left: 20 },
-    tools: { top: 560, left: 20 },
-  };
-  const pos = positions[region || 'header'] || positions.header;
-  return <View style={[styles.highlight, { top: pos.top, left: pos.left }]} />;
-}
+interface Rect { x: number; y: number; w: number; h: number; }
 
-export function GuideOverlay({ onDismiss }: { onDismiss: () => void }) {
+export function GuideOverlay({
+  onDismiss,
+  targets,
+}: {
+  onDismiss: () => void;
+  targets?: Partial<Record<Step['region'] & string, React.RefObject<RNView | null>>>;
+}) {
   const [step, setStep] = useState(0);
+  const [rect, setRect] = useState<Rect | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const ringAnim = useRef(new Animated.Value(0)).current;
+  const { width: screenW, height: screenH } = useWindowDimensions();
 
+  const current = STEPS[step];
+  const isLast = step === STEPS.length - 1;
+
+  // 每次 step 变化，测量对应目标 ref 的窗口位置
+  useEffect(() => {
+    const region = current.region;
+    const ref = region ? targets?.[region] : null;
+    if (!ref?.current) { setRect(null); return; }
+    // 等一帧让布局稳定
+    const t = setTimeout(() => {
+      ref.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) setRect({ x, y, w, h });
+        else setRect(null);
+      });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [step, targets, current.region]);
+
+  // step 切换 / 进入时的入场动画
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
-  }, [step]);
+    Animated.timing(ringAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, [step, fadeAnim, slideAnim, ringAnim]);
 
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
-
-  const handleTap = () => {
-    if (isLast) {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => onDismiss());
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 20, duration: 150, useNativeDriver: true }),
-      ]).start(() => {
+  const goNext = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 20, duration: 150, useNativeDriver: true }),
+      Animated.timing(ringAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      if (isLast) onDismiss();
+      else {
         setStep(s => s + 1);
         fadeAnim.setValue(0);
         slideAnim.setValue(30);
-        Animated.parallel([
-          Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-        ]).start();
-      });
-    }
+        ringAnim.setValue(0);
+      }
+    });
   };
 
-  return (
-    <TouchableWithoutFeedback onPress={handleTap}>
-      <View style={styles.mask}>
-        <RegionHighlight region={current.region} stepIdx={step} />
+  // 4 mask 计算：挖空 rect
+  const PAD = 8; // 挖空区域外扩（让目标元素周围有一圈呼吸空间）
+  const RING = 2;
+  let masks: { top: number; left: number; width: number; height: number }[] = [];
+  let ringStyle: { top: number; left: number; width: number; height: number } | null = null;
+  if (rect) {
+    const x = Math.max(0, rect.x - PAD);
+    const y = Math.max(0, rect.y - PAD);
+    const w = Math.min(screenW, rect.w + PAD * 2);
+    const h = Math.min(screenH, rect.h + PAD * 2);
+    masks = [
+      { top: 0, left: 0, width: screenW, height: y },                    // 顶
+      { top: y + h, left: 0, width: screenW, height: screenH - y - h }, // 底
+      { top: y, left: 0, width: x, height: h },                         // 左
+      { top: y, left: x + w, width: screenW - x - w, height: h },        // 右
+    ];
+    ringStyle = { top: y, left: x, width: w, height: h };
+  }
 
-        <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* 4 个 mask 拼出"挖空"区域 */}
+      {masks.map((m, i) => (
+        <TouchableWithoutFeedback key={`mask-${i}`} onPress={goNext}>
+          <View style={[styles.mask, m]} />
+        </TouchableWithoutFeedback>
+      ))}
+
+      {/* 高亮 ring 描边（透传触摸到底层 UI） */}
+      {ringStyle && (
+        <View
+          pointerEvents="none"
+          style={[styles.ring, { top: ringStyle.top, left: ringStyle.left, width: ringStyle.width, height: ringStyle.height, borderWidth: RING }]}
+        />
+      )}
+
+      {/* 底部说明卡（挖空上方时也允许触摸穿透，避免遮挡视觉） */}
+      <View style={styles.cardWrap} pointerEvents="box-none">
+        <Animated.View
+          pointerEvents="box-none"
+          style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+        >
           <View style={styles.stepDots}>
             {STEPS.map((_, i) => (
               <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
@@ -87,31 +135,35 @@ export function GuideOverlay({ onDismiss }: { onDismiss: () => void }) {
           <Text style={styles.title}>{current.title}</Text>
           <Text style={styles.desc}>{current.desc}</Text>
 
-          <Text style={styles.hint}>
-            {isLast ? '点击开始使用' : `点击继续 (${step + 1}/${STEPS.length})`}
-          </Text>
+          <TouchableWithoutFeedback onPress={goNext}>
+            <View style={styles.hintBtn}>
+              <Text style={styles.hint}>
+                {isLast ? '点击开始使用' : `点击继续 (${step + 1}/${STEPS.length})`}
+              </Text>
+            </View>
+          </TouchableWithoutFeedback>
         </Animated.View>
       </View>
-    </TouchableWithoutFeedback>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   mask: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  highlight: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(26,26,46,0.62)', // 墨蓝半透明，跟 kami 主色一致
+  },
+  ring: {
+    position: 'absolute',
+    borderRadius: 12,
+    borderColor: 'rgba(255,255,255,0.85)',
+    borderStyle: 'solid',
+  },
+  cardWrap: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 80,
   },
   card: {
     backgroundColor: colors.surface,
@@ -165,6 +217,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: spacing.lg,
+  },
+  hintBtn: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
   hint: {
     ...typography.footnote,

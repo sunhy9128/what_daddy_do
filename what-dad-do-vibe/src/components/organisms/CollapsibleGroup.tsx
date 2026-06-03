@@ -9,9 +9,11 @@ interface CollapsibleGroupProps {
   children: React.ReactNode;
   /** 首次展开时触发（用于懒加载） */
   onInit?: () => void;
+  /** 容器 ref（用于外部测量位置） */
+  containerRef?: React.Ref<View>;
 }
 
-export function CollapsibleGroup({ title, count, defaultExpanded = true, children, onInit }: CollapsibleGroupProps) {
+export function CollapsibleGroup({ title, count, defaultExpanded = true, children, onInit, containerRef }: CollapsibleGroupProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const initedRef = useRef(false);
 
@@ -24,7 +26,7 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
   }, [expanded, onInit]);
 
   return (
-    <View style={styles.container}>
+    <View ref={containerRef} style={styles.container} collapsable={false}>
       <TouchableOpacity style={styles.header} onPress={() => setExpanded(!expanded)} activeOpacity={0.7}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>{title}</Text>
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: radius.sm,
   },
   badgeText: {
     ...typography.footnote,

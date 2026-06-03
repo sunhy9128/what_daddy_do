@@ -35,6 +35,12 @@ export default function HomeScreen() {
   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
   const [showGuide, setShowGuide] = useState(false);
 
+  // 引导页目标元素 ref（用于 spotlight 挖空位置）
+  const urgentRef = useRef<View>(null);
+  const prepRef = useRef<View>(null);
+  const supportRef = useRef<View>(null);
+  const toolsRef = useRef<View>(null);
+
   // 物品准备 + 心理支持
   const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
   const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
@@ -148,7 +154,7 @@ export default function HomeScreen() {
         </View>
 
         {/* 紧急关注 */}
-        <View style={styles.urgentSection}>
+        <View ref={urgentRef} style={styles.urgentSection} collapsable={false}>
           {state.urgentNotes.map(note => (
             <View key={note.id} style={styles.urgentCard}>
               <View style={styles.urgentBody}>
@@ -188,7 +194,7 @@ export default function HomeScreen() {
 
         {/* ===== 物品准备 ===== */}
         {presetItems.length > 0 && (
-          <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
+          <CollapsibleGroup containerRef={prepRef} title="物品准备" count={presetItems.length} defaultExpanded={false}>
             {presetItems.map(item => {
               const prep = userPreparations.find(p => p.item_id === item.id);
               const isPrepared = prep?.status === 'prepared';
@@ -231,7 +237,7 @@ export default function HomeScreen() {
 
         {/* ===== 心理支持 ===== */}
         {supportTips.length > 0 && (
-          <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
+          <CollapsibleGroup containerRef={supportRef} title="心理支持" count={supportTips.length} defaultExpanded={false}>
             {supportTips.map(tip => {
               const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
               const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
@@ -266,6 +272,7 @@ export default function HomeScreen() {
 
         {/* 工具栏 */}
         <Toolbar
+          wrapperRef={toolsRef}
           activeTools={activeTools}
           userId={user?.id || ''}
           babyGender={state.babies[0]?.gender}
@@ -319,7 +326,12 @@ export default function HomeScreen() {
       </Modal>
 
       {/* 首次引导 */}
-      {showGuide && <GuideOverlay onDismiss={dismissGuide} />}
+      {showGuide && (
+        <GuideOverlay
+          onDismiss={dismissGuide}
+          targets={{ urgent: urgentRef, prep: prepRef, support: supportRef, tools: toolsRef }}
+        />
+      )}
     </View>
   );
 }

@@ -13,7 +13,7 @@ import { VaccineTracker } from './VaccineTracker';
 import { VaccineCalendar } from './VaccineCalendar';
 import { FoodSafetyTool } from './FoodSafety';
 import { Pressable } from 'react-native';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 
 const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'feeding-timer', name: '喂奶计时器', icon: 'timer-outline', description: '记录每次喂奶时间' },
@@ -43,9 +43,11 @@ interface ToolbarProps {
   onAddTool: (toolId: string) => void;
   onRemoveTool: (instanceId: string) => void;
   onReorder: (tools: ToolInstance[]) => void;
+  /** wrapper ref（用于外部测量位置） */
+  wrapperRef?: React.Ref<View>;
 }
 
-export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTool, onReorder }: ToolbarProps) {
+export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTool, onReorder, wrapperRef }: ToolbarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [reordering, setReordering] = useState(false);
 
@@ -69,7 +71,7 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
   const availableToAdd = AVAILABLE_TOOLS.filter(t => !activeToolIds.includes(t.id));
 
   return (
-    <View style={styles.wrapper}>
+    <View ref={wrapperRef} style={styles.wrapper} collapsable={false}>
       {/* 工具列表 */}
       {activeTools.map((inst, index) => {
         const def = AVAILABLE_TOOLS.find(t => t.id === inst.toolId);
@@ -151,7 +153,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 4,
     height: 40,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
   },
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
   },
   toolItem: { marginBottom: spacing.sm },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
-  pickerContent: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.xl, width: '100%', maxWidth: 400 },
+  pickerContent: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, width: '100%', maxWidth: 400 },
   pickerTitle: { ...typography.title3, fontWeight: '700', marginBottom: spacing.lg },
   pickerEmpty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   pickerItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: colors.border },
