@@ -80,6 +80,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
   },
 });
 

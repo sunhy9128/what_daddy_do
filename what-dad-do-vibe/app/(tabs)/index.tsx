@@ -474,7 +474,6 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: colors.border,
     borderRadius: 10,
-    marginBottom: spacing.sm,
   },
   prepItemDone: {
     backgroundColor: colors.surfaceSecondary,
