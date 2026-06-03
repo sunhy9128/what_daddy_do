@@ -234,19 +234,25 @@ export default function HomeScreen() {
           <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
             {supportTips.map(tip => {
               const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
+              const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
+                : tip.support_type === 'communication' ? styles.supportTypeCommunication
+                : tip.support_type === 'action' ? styles.supportTypeAction
+                : styles.supportTypeKnowledge;
 
               return (
                 <View key={tip.id} style={styles.supportCard}>
                   <View style={styles.supportHeader}>
-                    <Text style={styles.supportTitle}>{tip.title}</Text>
-                    <Text style={styles.supportTypeBadge}>{typeLabel}</Text>
+                    <Text style={styles.supportTitle} numberOfLines={2}>{tip.title}</Text>
+                    <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
                   </View>
-                  <Text style={styles.supportContent}>{tip.content}</Text>
+                  <View style={styles.supportContentBlock}>
+                    <Text style={styles.supportContent}>{tip.content}</Text>
+                  </View>
                   {tip.tips && tip.tips.length > 0 && (
                     <View style={styles.supportTips}>
                       {tip.tips.map((t, i) => (
                         <View key={i} style={styles.supportTipRow}>
-                          <Text style={styles.supportTipDot}>•</Text>
+                          <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
                           <Text style={styles.supportTipText}>{t}</Text>
                         </View>
                       ))}
@@ -559,31 +565,73 @@ const styles = StyleSheet.create({
   supportCard: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: 10,
   },
   supportHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  supportTitle: { ...typography.callout, fontWeight: '600', color: colors.fg, flex: 1, marginRight: spacing.sm },
-  supportTypeBadge: {
-    ...typography.caption1,
-    fontSize: 11,
+  supportTitle: {
+    ...typography.callout,
     fontWeight: '600',
-    color: '#fff',
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 6,
-    overflow: 'hidden',
+    color: colors.fg,
+    flex: 1,
+    lineHeight: 22,
   },
-  supportContent: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 20, marginBottom: spacing.sm },
-  supportTips: { gap: spacing.xs },
-  supportTipRow: { flexDirection: 'row', gap: spacing.xs, paddingRight: spacing.md },
-  supportTipDot: { ...typography.footnote, color: colors.accent, width: 12 },
-  supportTipText: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 20, flex: 1 },
+  supportTypeBadge: {
+    ...typography.caption2,
+    fontWeight: '600',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    letterSpacing: 0.3,
+  },
+  supportTypeEmotion: { color: '#fff', backgroundColor: colors.accent },
+  supportTypeCommunication: { color: colors.accent, backgroundColor: colors.accentLight, borderWidth: 0.5, borderColor: colors.accent + '40' },
+  supportTypeAction: { color: '#fff', backgroundColor: colors.warning },
+  supportTypeKnowledge: { color: colors.muted, backgroundColor: 'transparent', borderWidth: 0.5, borderColor: colors.border },
+  supportContentBlock: {
+    borderLeftWidth: 2,
+    borderLeftColor: colors.accentLight,
+    paddingLeft: spacing.md,
+    marginBottom: spacing.md,
+  },
+  supportContent: {
+    ...typography.subhead,
+    color: colors.fgSecondary,
+    lineHeight: 24,
+  },
+  supportTips: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 0.5,
+    borderTopColor: colors.divider,
+  },
+  supportTipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  supportTipIndex: {
+    ...typography.caption2,
+    color: colors.accent,
+    fontWeight: '600',
+    width: 22,
+    fontVariant: ['tabular-nums'],
+    marginTop: 1,
+  },
+  supportTipText: {
+    ...typography.footnote,
+    color: colors.fg,
+    lineHeight: 21,
+    flex: 1,
+  },
 
 });
