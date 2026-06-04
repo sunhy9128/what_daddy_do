@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     right: spacing.xl,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     maxHeight: '85%',
     width: '100%',
     maxWidth: 500,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   modalClose: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     color: colors.fg,
     backgroundColor: colors.surfaceSecondary,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderWidth: 1,
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   },
   commentSend: {
     backgroundColor: colors.accent,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   },
   markReadBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     paddingVertical: spacing.md,
     alignItems: 'center',
     marginTop: spacing.md,

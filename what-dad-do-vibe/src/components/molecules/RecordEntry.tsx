@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 
 interface RecordEntryProps {
   title: string;
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.sm,
     backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',

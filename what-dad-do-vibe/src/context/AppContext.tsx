@@ -307,11 +307,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           type: t.type,
           taskSubtype: t.task_subtype || 'one_time',
           dueDate: t.due_date || undefined,
-          isCompleted: t.is_completed,
           completedAt: t.completed_at || undefined,
           // 每日重置：只有当天有记录的才保留计数，否则从 0 开始
           dailyCount: t.daily_date === todayStr ? t.daily_count : 0,
           dailyDate: t.daily_date === todayStr ? t.daily_date : undefined,
+          // 打卡任务：上次打卡日期是否为今天
+          isCompleted: t.type === 'checkin' ? t.last_checkin_date === todayStr : t.is_completed,
           streakCount: t.streak_count || 0,
           lastCheckinDate: t.last_checkin_date || undefined,
         })),
@@ -432,11 +433,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           type: 'UPDATE_TASK',
           payload: {
             id,
-            updates: { streakCount: newStreak, lastCheckinDate: today }
+            updates: { streakCount: newStreak, lastCheckinDate: today, isCompleted: true }
           }
         });
 
-        await updateTaskInDb(id, { streak_count: newStreak, last_checkin_date: today });
+        await updateTaskInDb(id, { streak_count: newStreak, last_checkin_date: today, is_completed: true });
       }
       // 日常任务：每日归零，点击 +1
       else if (task.taskSubtype === 'recurring' || task.type === 'daily') {

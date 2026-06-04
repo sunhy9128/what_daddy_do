@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/lib/supabase';
-import { colors, spacing, typography } from '../src/styles/tokens';
+import { colors, spacing, radius, typography } from '../src/styles/tokens';
 
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   navBack: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 36, height: 36, borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   },
   infoLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   infoIcon: {
-    width: 28, height: 28, borderRadius: 8,
+    width: 28, height: 28, borderRadius: radius.sm,
     alignItems: 'center', justifyContent: 'center',
   },
   infoLabel: { ...typography.callout, color: colors.fgSecondary },

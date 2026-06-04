@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { Confetti } from '../src/components/Confetti';
-import { colors, spacing, typography } from '../src/styles/tokens';
+import { colors, spacing, radius, typography } from '../src/styles/tokens';
 
 export default function CongratulationsScreen() {
   const insets = useSafeAreaInsets();
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   genderBtn: {
     width: 120,
     height: 140,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 14,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xxl,
   },

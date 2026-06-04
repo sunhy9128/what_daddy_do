@@ -107,14 +107,15 @@ export default function TasksScreen() {
   }
 
   const currentStageKey = STAGE_MAP[selectedStage] || 'third';
-  // 进度只统计一次性任务（排除日常/打卡等重复任务）
-  const oneTimeTasks = state.tasks.filter(t => t.type !== 'daily' && t.type !== 'checkin' && t.taskSubtype !== 'recurring');
-  const totalTasks = oneTimeTasks.length;
-  const completedTasks = oneTimeTasks.filter(t => t.isCompleted).length;
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // 当前阶段的所有任务
   const filteredTasks = state.tasks.filter(t => t.stage === currentStageKey);
+
+  // 进度只统计当前阶段的一次性任务（排除日常/打卡等重复任务）
+  const oneTimeTasks = filteredTasks.filter(t => t.type !== 'daily' && t.type !== 'checkin' && t.taskSubtype !== 'recurring');
+  const totalTasks = oneTimeTasks.length;
+  const completedTasks = oneTimeTasks.filter(t => t.isCompleted).length;
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // 当前阶段的产检任务（一次性任务）
   const prenatalTasks = filteredTasks.filter(t => t.type === 'prenatal');
@@ -278,7 +279,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {prenatalTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -289,7 +290,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={firstVisible === 'checkin'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {checkinTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={task.dailyCount} streakCount={task.streakCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={task.dailyCount} streakCount={task.streakCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -300,7 +301,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={firstVisible === 'daily'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {dailyTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} type={task.type} dueDate={task.dueDate} isCompleted={false} dailyCount={task.dailyCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={false} dailyCount={task.dailyCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -468,36 +469,58 @@ export default function TasksScreen() {
                     <Button title="保存" variant="primary" onPress={handleSaveEdit} />
                   </>
                 ) : (
-                  <>
-                    <Text style={styles.infoTitle}>{selectedTask.title}</Text>
-                    <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>类型</Text>
-                      <Text style={styles.infoValue}>{TASK_TYPE_LABELS[selectedTask.type] || selectedTask.type}</Text>
+                  <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                    {/* 任务标题 */}
+                    <View style={styles.detailHeader}>
+                      <Text style={styles.detailTitle}>{selectedTask.title}</Text>
                     </View>
-                    {selectedTask.description && (
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>描述</Text>
-                        <Text style={styles.infoValue}>{selectedTask.description}</Text>
-                      </View>
-                    )}
-                    {selectedTask.dueDate && (
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>截止日期</Text>
-                        <Text style={styles.infoValue}>{selectedTask.dueDate}</Text>
-                      </View>
-                    )}
-                    {selectedTask.type === 'checkin' && (
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>连续打卡</Text>
-                        <Text style={styles.infoValue}>{selectedTask.streakCount} 天</Text>
-                      </View>
-                    )}
 
+                    {/* 状态 + 类型标签 — 同一行 */}
+                    <View style={styles.detailTagRow}>
+                      <View style={[styles.detailStatusBadge, { backgroundColor: selectedTask.isCompleted ? colors.success + '20' : colors.surfaceSecondary }]}>
+                        <Text style={[styles.detailStatusText, { color: selectedTask.isCompleted ? colors.success : colors.muted }]}>
+                          {selectedTask.isCompleted ? '✓ 已完成' : '待完成'}
+                        </Text>
+                      </View>
+                      <Tag label={TASK_TYPE_LABELS[selectedTask.type] || selectedTask.type} variant={selectedTask.type === 'prenatal' ? 'short' : 'long'} />
+                    </View>
+
+                    {/* 描述 — 单独区块 */}
+                    {selectedTask.description ? (
+                      <View style={styles.detailSection}>
+                        <Text style={styles.detailSectionLabel}>任务描述</Text>
+                        <Text style={styles.detailDesc}>{selectedTask.description}</Text>
+                      </View>
+                    ) : null}
+
+                    {/* 信息行 */}
+                    <View style={styles.detailInfoGroup}>
+                      {selectedTask.dueDate && (
+                        <View style={styles.detailInfoRow}>
+                          <Text style={styles.detailInfoLabel}>截止日期</Text>
+                          <Text style={styles.detailInfoValue}>{selectedTask.dueDate}</Text>
+                        </View>
+                      )}
+                      {selectedTask.type === 'checkin' && (
+                        <View style={styles.detailInfoRow}>
+                          <Text style={styles.detailInfoLabel}>连续打卡</Text>
+                          <Text style={styles.detailInfoValue}>{selectedTask.streakCount} 天</Text>
+                        </View>
+                      )}
+                      {selectedTask.type === 'daily' && (
+                        <View style={styles.detailInfoRow}>
+                          <Text style={styles.detailInfoLabel}>今日完成</Text>
+                          <Text style={styles.detailInfoValue}>{selectedTask.dailyCount} 次</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* 操作按钮 */}
                     <View style={styles.actionButtons}>
                       <Button title="编辑" variant="primary" style={styles.flexButton} onPress={handleEditTask} />
                       <Button title="删除" variant="primary" style={{ ...styles.flexButton, ...styles.deleteButton }} onPress={() => handleDeleteTask(selectedTask.id)} />
                     </View>
-                  </>
+                  </ScrollView>
                 )}
               </View>
             )}
@@ -563,7 +586,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: radius.sm,
   },
   presetGroupBadgeText: {
     ...typography.footnote,
@@ -589,7 +612,7 @@ const styles = StyleSheet.create({
   presetIcon: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -605,7 +628,7 @@ const styles = StyleSheet.create({
     right: spacing.xl,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -643,7 +666,7 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -683,7 +706,7 @@ const styles = StyleSheet.create({
   typeOption: {
     flex: 1,
     paddingVertical: spacing.sm + 1,
-    borderRadius: 7,
+    borderRadius: radius.sm,
     alignItems: 'center',
   },
   typeOptionActive: {
@@ -709,29 +732,73 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: radius.sm,
   },
-  // 任务详情
-  infoTitle: {
-    ...typography.title3,
+  // 任务详情 - 新设计
+  detailHeader: {
+    marginBottom: spacing.sm,
+  },
+  detailTitle: {
+    ...typography.title2,
     fontWeight: '700',
     color: colors.fg,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xs,
   },
-  infoRow: {
+  detailStatusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.full,
+  },
+  detailStatusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  detailTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  detailSection: {
+    marginBottom: spacing.lg,
+  },
+  detailSectionLabel: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  detailDesc: {
+    ...typography.callout,
+    color: colors.fg,
+    lineHeight: 22,
+    backgroundColor: colors.bg,
+    padding: spacing.md,
+    borderRadius: radius.sm,
+  },
+  detailInfoGroup: {
+    backgroundColor: colors.bg,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
+  detailInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  infoLabel: {
+  detailInfoLabel: {
     ...typography.callout,
     color: colors.muted,
   },
-  infoValue: {
+  detailInfoValue: {
     ...typography.callout,
     color: colors.fg,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   flexButton: { flex: 1, minHeight: 44, borderRadius: radius.sm },
   deleteButton: { backgroundColor: colors.error },

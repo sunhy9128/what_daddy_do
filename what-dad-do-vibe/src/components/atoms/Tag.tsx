@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   base: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     alignSelf: 'flex-start',
   },
   text: {

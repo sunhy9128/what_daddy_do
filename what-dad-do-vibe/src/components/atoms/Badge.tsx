@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   base: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     backgroundColor: colors.bg,
   },
   text: {

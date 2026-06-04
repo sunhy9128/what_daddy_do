@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     alignItems: 'center',
   },
   segmentActive: {

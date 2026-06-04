@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, Platform, useWindowDimensions, View as RNView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../styles/tokens';
+import { colors, radius, spacing, typography } from '../styles/tokens';
 
 interface Step {
   title: string;
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     padding: spacing.xl,
     marginHorizontal: spacing.xl,
     alignItems: 'center',
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.lg,
     backgroundColor: colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',

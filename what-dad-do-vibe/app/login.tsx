@@ -6,14 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/lib/supabase';
 
-const C = {
-  bg: '#F5F0E8', surface: '#FCFAF5', surfaceSecondary: '#F0ECE4',
-  fg: '#1A1A2E', fgSecondary: '#5A5A6E', muted: '#8A8A9A',
-  border: '#E8E4D9', accent: '#2C3E6B',
-};
-const S = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 40 };
-const R = { sm: 8, md: 12, lg: 16, xl: 20 };
-const SH = { sm: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 } };
+import { colors, spacing, radius, shadows, typography } from '../src/styles/tokens';
 
 const DEFAULT_CODE = '0000';
 
@@ -153,14 +146,14 @@ export default function LoginScreen() {
             style={[styles.modeBtn, mode === 'email' && styles.modeBtnActive]}
             onPress={() => setMode('email')}
           >
-            <Ionicons name="mail-outline" size={14} color={mode === 'email' ? '#fff' : C.accent} />
+            <Ionicons name="mail-outline" size={14} color={mode === 'email' ? '#fff' : colors.accent} />
             <Text style={[styles.modeText, mode === 'email' && styles.modeTextActive]}>邮箱</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modeBtn, mode === 'phone' && styles.modeBtnActive]}
             onPress={() => setMode('phone')}
           >
-            <Ionicons name="phone-portrait-outline" size={14} color={mode === 'phone' ? '#fff' : C.accent} />
+            <Ionicons name="phone-portrait-outline" size={14} color={mode === 'phone' ? '#fff' : colors.accent} />
             <Text style={[styles.modeText, mode === 'phone' && styles.modeTextActive]}>手机</Text>
           </TouchableOpacity>
         </View>
@@ -171,7 +164,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="邮箱"
-                placeholderTextColor={C.muted}
+                placeholderTextColor={colors.muted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -181,7 +174,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="密码"
-                placeholderTextColor={C.muted}
+                placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -201,7 +194,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="手机号"
-                placeholderTextColor={C.muted}
+                placeholderTextColor={colors.muted}
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -211,7 +204,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={[styles.input, styles.codeInput]}
                   placeholder="验证码"
-                  placeholderTextColor={C.muted}
+                  placeholderTextColor={colors.muted}
                   value={code}
                   onChangeText={setCode}
                   keyboardType="number-pad"
@@ -254,54 +247,54 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: S.lg },
-  logoContainer: { alignItems: 'center', marginBottom: S.xxl },
-  logo: { width: 80, height: 80, borderRadius: 20, marginBottom: S.md },
-  title: { fontSize: 28, fontWeight: '700', color: C.fg },
-  subtitle: { fontSize: 15, color: C.fgSecondary, marginTop: S.xs },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
+  logoContainer: { alignItems: 'center', marginBottom: spacing.xxl },
+  logo: { width: 80, height: 80, borderRadius: radius.lg, marginBottom: spacing.md },
+  title: { ...typography.title1, color: colors.fg },
+  subtitle: { ...typography.callout, color: colors.fgSecondary, marginTop: spacing.xs },
 
   // 登录方式切换
   modeSwitch: {
-    flexDirection: 'row', backgroundColor: C.surfaceSecondary,
-    borderRadius: R.sm, padding: 3, marginBottom: S.lg,
+    flexDirection: 'row', backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.sm, padding: 3, marginBottom: spacing.lg,
   },
   modeBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 4, paddingVertical: S.sm + 2, borderRadius: 7,
+    gap: 4, paddingVertical: spacing.sm + 2, borderRadius: 7,
   },
-  modeBtnActive: { backgroundColor: C.accent },
-  modeText: { fontSize: 14, fontWeight: '500', color: C.accent },
+  modeBtnActive: { backgroundColor: colors.accent },
+  modeText: { fontSize: 14, fontWeight: '500', color: colors.accent },
   modeTextActive: { color: '#fff' },
 
   form: { width: '100%' },
   input: {
-    backgroundColor: C.surface, borderRadius: R.md,
-    padding: S.md, fontSize: 16, color: C.fg,
-    marginBottom: S.md, borderWidth: 0.5, borderColor: C.border,
-    ...SH.sm,
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    padding: spacing.md, fontSize: 16, color: colors.fg,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+    ...shadows.sm,
   },
   button: {
-    backgroundColor: C.accent, borderRadius: R.md,
-    padding: S.md, alignItems: 'center', marginTop: S.sm,
+    backgroundColor: colors.accent, borderRadius: radius.md,
+    padding: spacing.md, alignItems: 'center', marginTop: spacing.sm,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { fontSize: 17, fontWeight: '600', color: '#ffffff' },
-  codeRow: { flexDirection: 'row', gap: S.sm, alignItems: 'flex-end', marginBottom: S.md },
+  buttonText: { ...typography.headline, color: '#ffffff' },
+  codeRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end', marginBottom: spacing.md },
   codeInput: { flex: 1, marginBottom: 0 },
   codeBtn: {
-    backgroundColor: C.accent, borderRadius: R.md,
-    paddingHorizontal: S.md, height: 50,
+    backgroundColor: colors.accent, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, height: 50,
     alignItems: 'center', justifyContent: 'center',
     minWidth: 96,
   },
-  codeBtnDisabled: { backgroundColor: C.muted },
+  codeBtnDisabled: { backgroundColor: colors.muted },
   codeBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   codeBtnTextDisabled: { color: '#fff' },
   switchRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: S.md,
+    paddingVertical: spacing.md,
   },
-  switchHint: { fontSize: 15, color: C.fgSecondary },
-  switchAction: { fontSize: 15, color: C.accent, fontWeight: '600', marginLeft: S.xs },
+  switchHint: { ...typography.callout, color: colors.fgSecondary },
+  switchAction: { ...typography.callout, color: colors.accent, fontWeight: '600', marginLeft: spacing.xs },
 });

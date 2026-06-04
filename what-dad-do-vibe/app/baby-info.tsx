@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { STAGES } from '../src/lib/stages';
-import { colors, spacing, typography, shadows } from '../src/styles/tokens';
+import { colors, spacing, radius, typography, shadows } from '../src/styles/tokens';
 
 export default function BabyInfoScreen() {
   const insets = useSafeAreaInsets();
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   navBack: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 36, height: 36, borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center',
   },
   navTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   babyName: { ...typography.title1, fontWeight: '700', color: '#5A3E2B', marginBottom: spacing.xs },
   babyTag: {
     backgroundColor: '#D4A574', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-    borderRadius: 12, marginBottom: spacing.md,
+    borderRadius: radius.sm, marginBottom: spacing.md,
   },
   babyTagText: { fontSize: 12, fontWeight: '600', color: '#fff' },
   babyDivider: { width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: '#F5E0D0', marginBottom: spacing.md },
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     ...typography.footnote, color: colors.muted, marginBottom: spacing.lg, lineHeight: 20,
   },
   dateCard: {
-    backgroundColor: colors.surfaceSecondary, borderRadius: 12, padding: spacing.lg,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.sm, padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   dateRow: {
@@ -220,14 +220,14 @@ const styles = StyleSheet.create({
   dateInput: {
     ...typography.title2, fontWeight: '700', color: colors.accent,
     textAlign: 'center', width: '100%', paddingVertical: spacing.md,
-    backgroundColor: colors.surface, borderRadius: 10,
+    backgroundColor: colors.surface, borderRadius: radius.sm,
     borderWidth: 1, borderColor: colors.border,
   },
   dateSep: {
     ...typography.title2, color: colors.muted, marginTop: -spacing.xl,
   },
   saveBtn: {
-    backgroundColor: colors.accent, borderRadius: 12,
+    backgroundColor: colors.accent, borderRadius: radius.md,
     paddingVertical: spacing.md + 2, alignItems: 'center',
     ...shadows.sm,
   },

@@ -7,7 +7,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useApp } from '../../src/context/AppContext';
 import { Card } from '../../src/components/atoms';
 import { STAGES } from '../../src/lib/stages';
-import { colors, spacing, typography } from '../../src/styles/tokens';
+import { colors, spacing, radius, typography } from '../../src/styles/tokens';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     marginHorizontal: 0,
     padding: 0,
-    borderRadius: 12,
+    borderRadius: radius.sm,
   },
   menuRow: {
     flexDirection: 'row',
@@ -211,13 +211,13 @@ const styles = StyleSheet.create({
 
   // 孕期信息卡片
   pregCard: {
-    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
+    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg,
     marginBottom: spacing.lg, borderWidth: 0.5, borderColor: colors.border,
     alignItems: 'center', position: 'relative',
   },
   pregHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   pregIcon: {
-    width: 36, height: 36, borderRadius: 10,
+    width: 36, height: 36, borderRadius: radius.sm,
     backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center',
   },
   pregTitle: { ...typography.headline, fontWeight: '600', color: colors.fg },
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
 
   // 宝宝信息卡片
   babyCard: {
-    backgroundColor: '#FFF8F5', borderRadius: 20, padding: spacing.xl,
+    backgroundColor: '#FFF8F5', borderRadius: radius.lg, padding: spacing.xl,
     marginBottom: spacing.lg, alignItems: 'center',
     borderWidth: 1, borderColor: '#F5E0D0',
     position: 'relative',
@@ -245,13 +245,13 @@ const styles = StyleSheet.create({
   babyStage: {
     fontSize: 11, fontWeight: '600', color: '#fff',
     backgroundColor: '#D4A574', paddingHorizontal: spacing.sm, paddingVertical: 2,
-    borderRadius: 8, overflow: 'hidden',
+    borderRadius: radius.sm, overflow: 'hidden',
   },
   babyInfoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
   babyInfoText: { ...typography.callout, color: '#8B6F4A' },
   cardSettings: {
     position: 'absolute', top: spacing.sm, right: spacing.sm,
-    width: 32, height: 32, borderRadius: 16,
+    width: 32, height: 32, borderRadius: radius.md,
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center', justifyContent: 'center',
     zIndex: 10,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   babyTagRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   babyTag: {
     backgroundColor: '#E8F0FE', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-    borderRadius: 12,
+    borderRadius: radius.sm,
   },
   babyTagText: { fontSize: 12, fontWeight: '500', color: colors.accent },
 
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   logoutBtn: {
     marginTop: spacing.md,
     paddingVertical: spacing.md + 2,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',

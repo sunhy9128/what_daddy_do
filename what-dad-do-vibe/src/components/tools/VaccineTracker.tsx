@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, Platform, useWindowDimensions } from 'react-native';
 import { getVaccines, getUserVaccinations, setVaccinationStatus } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const CELL_H = 36;
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   legendText: { ...typography.caption2, color: colors.muted },
   // 弹窗
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
-  modal: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.xl, width: '100%', maxWidth: 360 },
+  modal: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, width: '100%', maxWidth: 360 },
   modalTitle: { ...typography.title3, fontWeight: '700', marginBottom: spacing.md },
   modalHint: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.md },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginBottom: spacing.lg },
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
     backgroundColor: colors.surfaceSecondary + '40',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginTop: spacing.xs,
   },
   loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },

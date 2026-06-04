@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 import { loadFeedingRecords, saveFeedingRecords, FeedingRecordData } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
 
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   recordTable: {
     borderWidth: 0.5,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },

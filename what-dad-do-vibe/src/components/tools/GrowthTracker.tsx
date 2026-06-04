@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform, LayoutAnimation, UIManager } from 'react-native';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -247,7 +247,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
 const styles = StyleSheet.create({
   container: { maxHeight: 540 },
   genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: 8, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+  genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
   genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   genderText: { ...typography.footnote, fontWeight: '500', color: colors.muted },
   genderTextActive: { color: '#fff' },
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     ...typography.callout,
     color: colors.fg,
     backgroundColor: colors.surface,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     borderWidth: 1,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing.lg,
     height: 42,
     alignItems: 'center',
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   historyTable: {
     borderWidth: 0.5,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
     backgroundColor: colors.surfaceSecondary + '40',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginTop: spacing.sm,
   },
   loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     ...typography.callout,
     color: colors.accent,
     backgroundColor: colors.bg,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 2,
     paddingVertical: 2,
     borderWidth: 1,
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   editToggleBtn: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 1,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   editRowBtn: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: radius.md,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',

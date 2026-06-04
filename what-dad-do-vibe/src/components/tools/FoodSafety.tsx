@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { getFoodSafety } from '../../lib/api';
 import { FoodSafety } from '../../lib/supabase';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   searchInput: {
     ...typography.callout, color: colors.fg,
     backgroundColor: colors.surfaceSecondary,
-    borderRadius: 10, paddingHorizontal: spacing.md,
+    borderRadius: radius.sm, paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderWidth: 1, borderColor: colors.border,
     marginBottom: spacing.md,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   empty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12, padding: spacing.md,
+    borderRadius: radius.sm, padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 0.5, borderColor: colors.border,
   },
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
     backgroundColor: colors.surfaceSecondary + '40',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   loadingText: { ...typography.footnote, color: colors.muted },

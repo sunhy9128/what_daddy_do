@@ -45,6 +45,7 @@ what-dad-do-vibe/
     login.tsx                   # 邮箱+密码登录/注册
     baby-info.tsx               # 录入/修改预产期
     congratulations.tsx         # 宝宝性别确认 + 彩纸动画
+    profile-edit.tsx            # 编辑个人资料 (用户名、宝宝信息)
     (tabs)/
       _layout.tsx               # 底部 4 tab: 首页/任务/社区/我的
       index.tsx                 # 首页: 阶段信息 + 物品准备 + 心理支持 + 工具栏
@@ -63,6 +64,8 @@ what-dad-do-vibe/
     context/
       AuthContext.tsx           # 认证: supabase.auth + AsyncStorage 持久化 session
       AppContext.tsx            # 全局状态 useReducer,含首次登录的 presetTasks 硬编码种子
+    hooks/                    # useTheme.ts (legacy, negligible)
+    navigation/               # empty directory
     components/
       atoms/                    # 基础组件 (Card, Button, Tag, Avatar, Badge, Progress)
       molecules/                # 复合组件 (TaskCard, PostCard, KnowledgeCard, RecordEntry, StageTabs, SearchBar)

@@ -6,7 +6,7 @@ import { useApp } from '../../src/context/AppContext';
 import { Card } from '../../src/components/atoms';
 import { RecordEntry } from '../../src/components/molecules';
 import { SegmentControl } from '../../src/components/organisms';
-import { colors, spacing, typography } from '../../src/styles/tokens';
+import { colors, spacing, radius, typography } from '../../src/styles/tokens';
 
 export default function RecordsScreen() {
   const insets = useSafeAreaInsets();
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   postBtnText: {
     color: colors.surface,

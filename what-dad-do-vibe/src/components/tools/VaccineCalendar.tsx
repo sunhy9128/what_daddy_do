@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { getVaccines, getUserVaccinations } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { colors, radius, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const NAME_W = 50; // 疫苗名称列宽度
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
     backgroundColor: colors.surfaceSecondary + '40',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginVertical: spacing.xs,
   },
   loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },

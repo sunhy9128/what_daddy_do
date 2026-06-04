@@ -88,10 +88,10 @@ export function TaskCard({
         <TouchableOpacity
           style={[styles.streakCircle, toggling && styles.circleDisabled]}
           onPress={handleToggle}
-          disabled={toggling || !onToggle}
+          disabled={toggling || !onToggle || isCompleted}
           activeOpacity={0.6}
         >
-          <Text style={styles.streakText}>{streakCount}</Text>
+          <Text style={styles.streakText}>{isCompleted ? '已打卡' : '打卡'}</Text>
         </TouchableOpacity>
       ) : isDaily ? (
         <TouchableOpacity
@@ -116,6 +116,7 @@ export function TaskCard({
       )}
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
+        {description ? <Text style={styles.description} numberOfLines={1}>{description}</Text> : null}
         <View style={styles.meta}>
           <Tag label={typeLabels[type]} variant={typeVariants[type]} />
           {isCheckin ? (
@@ -174,6 +175,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: spacing.xs,
   },
+  description: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    marginBottom: spacing.xs,
+  },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,9 +215,9 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   streakCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
@@ -219,8 +225,9 @@ const styles = StyleSheet.create({
   },
   streakText: {
     color: colors.surface,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+    textAlign: 'center',
   },
   streakLabel: {
     ...typography.footnote,

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp",
+        "--path",
+        "/Users/mac/Documents/Workspace/what_dad_do_vibe/what-dad-do-vibe"
+      ]
+    }
+  }
+}
