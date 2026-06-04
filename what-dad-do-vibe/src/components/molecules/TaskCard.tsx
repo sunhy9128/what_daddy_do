@@ -15,6 +15,7 @@ interface TaskCardProps {
   onToggle?: () => void;
   onInfo?: () => void;
   onDelete?: () => void;
+  readOnly?: boolean;
 }
 
 const typeLabels = {
@@ -41,6 +42,7 @@ export function TaskCard({
   onToggle,
   onInfo,
   onDelete,
+  readOnly = false,
 }: TaskCardProps) {
   const isDaily = type === 'daily';
   const isCheckin = type === 'checkin';
@@ -88,7 +90,7 @@ export function TaskCard({
         <TouchableOpacity
           style={[styles.streakCircle, toggling && styles.circleDisabled]}
           onPress={handleToggle}
-          disabled={toggling || !onToggle || isCompleted}
+          disabled={toggling || !onToggle || isCompleted || readOnly}
           activeOpacity={0.6}
         >
           <Text style={styles.streakText}>{isCompleted ? '已打卡' : '打卡'}</Text>
@@ -97,7 +99,7 @@ export function TaskCard({
         <TouchableOpacity
           style={[styles.countCircle, toggling && styles.circleDisabled]}
           onPress={handleToggle}
-          disabled={toggling || !onToggle}
+          disabled={toggling || !onToggle || readOnly}
           activeOpacity={0.6}
         >
           <Text style={styles.countText}>{dailyCount}</Text>
@@ -106,7 +108,7 @@ export function TaskCard({
         <TouchableOpacity
           style={[styles.checkbox, isCompleted && styles.checkboxChecked, toggling && styles.checkboxDisabled]}
           onPress={handleToggle}
-          disabled={toggling || !onToggle}
+          disabled={toggling || !onToggle || readOnly}
           activeOpacity={0.6}
         >
           {isCompleted && (
@@ -115,8 +117,8 @@ export function TaskCard({
         </TouchableOpacity>
       )}
       <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        {description ? <Text style={styles.description} numberOfLines={1}>{description}</Text> : null}
+        <Text style={[styles.title, isCompleted && styles.titleCompleted]}>{title}</Text>
+        {description ? <Text style={[styles.description, isCompleted && styles.descCompleted]} numberOfLines={1}>{description}</Text> : null}
         <View style={styles.meta}>
           <Tag label={typeLabels[type]} variant={typeVariants[type]} />
           {isCheckin ? (
@@ -130,7 +132,7 @@ export function TaskCard({
           ) : null}
         </View>
       </View>
-      {onDelete && (
+      {onInfo && (
         <TouchableOpacity style={styles.infoButton} onPress={handleInfoPress}>
           <Text style={styles.infoButtonText}>i</Text>
         </TouchableOpacity>
@@ -145,8 +147,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   checkbox: {
     width: 24,
@@ -175,10 +175,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: spacing.xs,
   },
+  titleCompleted: {
+    color: colors.muted,
+  },
   description: {
     ...typography.footnote,
     color: colors.fgSecondary,
     marginBottom: spacing.xs,
+  },
+  descCompleted: {
+    color: colors.muted,
   },
   meta: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../styles/tokens';
 import { loadFeedingRecords, saveFeedingRecords, FeedingRecordData } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
@@ -115,58 +116,49 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
         </View>
       ) : (
         <>
-          {/* 左侧：大按钮 */}
-          <View style={styles.leftCol}>
-            <TouchableOpacity style={styles.mainBtn} onPress={handleFeed} activeOpacity={0.8}>
-              <Text style={styles.mainBtnIcon}>🍼</Text>
-              <Text style={styles.mainBtnText}>点击</Text>
-            </TouchableOpacity>
-            <Text style={styles.elapsedLabel}>
-              {elapsedMin !== null ? `距上次 ${elapsedMin < 60 ? `${elapsedMin}分钟` : `${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}` : '尚未喂奶'}
-            </Text>
-          </View>
+          {/* 主体区域 */}
+          <View style={styles.mainArea}>
+            {/* 主按钮居中 */}
+            <View style={styles.topRow}>
+              <TouchableOpacity style={styles.mainBtn} onPress={handleFeed} activeOpacity={0.75}>
+                <Ionicons name="water-outline" size={38} color="#fff" />
+              </TouchableOpacity>
+            </View>
 
-          {/* 右侧：历史记录 */}
-          <View style={styles.rightCol}>
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>{dateStr}</Text>
-              {records.length > 0 && (
-                <TouchableOpacity style={styles.clearBtn} onPress={handleClear} activeOpacity={0.7}>
-                  <Text style={styles.clearBtnText}>清除</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={styles.recordTable}>
-              {records.length > 0 ? (
-                <>
-                  <View style={styles.recordHeader}>
-                    <View style={[styles.recordHeaderCell, { flex: 1 }]}>
-                      <Text style={styles.recordHeaderText}>序号</Text>
-                    </View>
-                    <View style={[styles.recordHeaderCell, { flex: 2 }]}>
-                      <Text style={styles.recordHeaderText}>时间</Text>
-                    </View>
-                  </View>
-                  <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
-                    {records.map((r, i) => (
-                      <View key={r.id} style={[styles.recordItem, i % 2 === 1 && styles.recordItemAlt]}>
-                        <View style={[styles.recordCell, { flex: 1 }]}>
-                          <Text style={styles.recordIndex}>#{records.length - i}</Text>
-                        </View>
-                        <View style={[styles.recordCell, { flex: 2 }]}>
-                          <Text style={styles.recordTime}>{r.time}</Text>
-                        </View>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </>
-              ) : (
-                <View style={styles.emptyTable}>
-                  <Text style={styles.emptyIcon}>🍼</Text>
-                  <Text style={styles.emptyText}>点击左侧按钮记录喂奶</Text>
+            {/* 历史记录列表 */}
+            {records.length > 0 ? (
+              <View style={styles.recordSection}>
+                <View style={styles.recordHeaderRow}>
+                  <Text style={styles.dateLabel}>{dateStr} · {records.length}次</Text>
+                  <Text style={styles.elapsedLabel}>
+                    {elapsedMin !== null
+                      ? elapsedMin < 1
+                        ? '刚刚'
+                        : elapsedMin < 60
+                          ? `距上次 ${elapsedMin}分钟`
+                          : `距上次 ${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`
+                      : '今天尚未记录'}
+                  </Text>
+                  <TouchableOpacity onPress={handleClear} activeOpacity={0.6} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Text style={styles.clearBtnText}>清除</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-            </View>
+                <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
+                  {records.map((r) => (
+                    <View key={r.id} style={styles.recordItem}>
+                      <Ionicons name="time-outline" size={14} color={colors.muted} style={{ marginRight: 6 }} />
+                      <Text style={styles.recordTime}>{r.time}</Text>
+                      <Text style={styles.recordIndex}>#{records.length - records.indexOf(r)}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : (
+              <View style={styles.emptySection}>
+                <Ionicons name="water-outline" size={20} color={colors.muted} style={{ marginBottom: 4 }} />
+                <Text style={styles.emptyText}>点击图标记录喂奶</Text>
+              </View>
+            )}
           </View>
         </>
       )}
@@ -179,131 +171,87 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  leftCol: {
+  mainArea: {
+    flex: 1,
+  },
+  topRow: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   mainBtn: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
-  mainBtnIcon: {
-    fontSize: 28,
+  recordSection: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    overflow: 'hidden',
   },
-  mainBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 2,
-  },
-  elapsedLabel: {
-    ...typography.caption1,
-    color: colors.accent,
-    fontWeight: '500',
-    fontSize: 10,
-  },
-  rightCol: {
-    flex: 1,
-    height: 146,
-  },
-  dateRow: {
+  recordHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   dateLabel: {
     ...typography.caption1,
     fontWeight: '600',
     color: colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  clearBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+  elapsedLabel: {
+    ...typography.caption2,
+    color: colors.accent,
+    fontWeight: '500',
+    fontSize: 10,
   },
   clearBtnText: {
     ...typography.caption2,
-    color: colors.muted,
-    fontWeight: '500',
-  },
-  recordTable: {
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  recordHeader: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceSecondary,
-    paddingVertical: spacing.xs + 2,
-  },
-  recordHeaderCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 2,
-  },
-  recordHeaderText: {
-    ...typography.caption1,
+    color: '#E53935',
     fontWeight: '600',
-    color: colors.muted,
-    textAlign: 'center',
   },
   recordList: {
-    height: 96,
+    maxHeight: 100,
   },
   recordItem: {
     flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: colors.border,
-  },
-  recordItemAlt: {
-    backgroundColor: colors.surfaceSecondary + '60',
-  },
-  recordCell: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    height: 32,
-  },
-  recordIndex: {
-    ...typography.footnote,
-    color: colors.muted,
-    fontWeight: '500',
-    textAlign: 'center',
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   recordTime: {
     ...typography.callout,
     fontWeight: '600',
     color: colors.fg,
-    textAlign: 'center',
-  },
-  emptyTable: {
     flex: 1,
+  },
+  recordIndex: {
+    ...typography.caption2,
+    color: colors.muted,
+  },
+  emptySection: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    gap: spacing.xs,
-  },
-  emptyIcon: {
-    fontSize: 22,
-    opacity: 0.5,
+    paddingVertical: spacing.xl + 4,
+    backgroundColor: colors.accent + '12',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent + '25',
+    borderStyle: 'dashed',
   },
   emptyText: {
     ...typography.footnote,
-    color: colors.muted,
+    color: colors.accent,
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,

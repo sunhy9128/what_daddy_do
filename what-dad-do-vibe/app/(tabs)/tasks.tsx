@@ -12,6 +12,10 @@ import { StageTabs } from '../../src/components/molecules';
 import { CollapsibleGroup } from '../../src/components/organisms';
 // 物品准备/心理支持已迁移到首页（index.tsx）
 import { colors, radius, spacing, shadows, typography } from '../../src/styles/tokens';
+import { Ionicons } from '@expo/vector-icons';
+
+// 孕期阶段顺序（用于判断是否为已过阶段）
+const STAGE_ORDER: PregnancyStage[] = ['preconception', 'first', 'second', 'third', 'postpartum'];
 
 // 阶段标签列表（供 StageTabs 使用）
 const STAGE_LABEL_LIST: string[] = Object.values(STAGE_LABELS);
@@ -107,6 +111,14 @@ export default function TasksScreen() {
   }
 
   const currentStageKey = STAGE_MAP[selectedStage] || 'third';
+
+  // 判断任务是否为已过阶段（当前阶段之前）
+  const currentStageIndex = STAGE_ORDER.indexOf(state.stage);
+  const isPastStage = currentStageIndex > 0 && STAGE_ORDER.indexOf(currentStageKey as PregnancyStage) < currentStageIndex;
+  const isPastStageTask = (taskStage: string) => {
+    const taskIndex = STAGE_ORDER.indexOf(taskStage as PregnancyStage);
+    return taskIndex >= 0 && taskIndex < currentStageIndex;
+  };
 
   // 当前阶段的所有任务
   const filteredTasks = state.tasks.filter(t => t.stage === currentStageKey);
@@ -279,7 +291,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {prenatalTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -290,7 +302,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="每日打卡" count={checkinTasks.length} defaultExpanded={firstVisible === 'checkin'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {checkinTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={task.dailyCount} streakCount={task.streakCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={task.dailyCount} streakCount={task.streakCount} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -301,7 +313,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="日常任务" count={dailyTasks.length} defaultExpanded={firstVisible === 'daily'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {dailyTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={false} dailyCount={task.dailyCount} onToggle={() => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={() => handleDeleteTask(task.id)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={false} dailyCount={task.dailyCount} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -311,8 +323,8 @@ export default function TasksScreen() {
 
 
 
-        {/* 可添加的预设任务 — 无可添加时隐藏 */}
-        {availablePresets.length > 0 && (
+        {/* 可添加的预设任务 — 过去阶段隐藏；无可添加时隐藏 */}
+        {!isPastStage && availablePresets.length > 0 && (
         <View style={styles.presetGroup}>
           <TouchableOpacity style={styles.presetGroupHeader} onPress={() => setShowPresets(!showPresets)} activeOpacity={0.7}>
             <View style={styles.presetGroupTitleRow}>
@@ -356,10 +368,12 @@ export default function TasksScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* FAB — 添加任务 */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      {/* FAB — 添加任务（过去阶段隐藏） */}
+      {!isPastStage && (
+        <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Add Custom Task Modal */}
       <Modal visible={showAddModal} animationType="fade" transparent>
@@ -517,8 +531,17 @@ export default function TasksScreen() {
 
                     {/* 操作按钮 */}
                     <View style={styles.actionButtons}>
-                      <Button title="编辑" variant="primary" style={styles.flexButton} onPress={handleEditTask} />
-                      <Button title="删除" variant="primary" style={{ ...styles.flexButton, ...styles.deleteButton }} onPress={() => handleDeleteTask(selectedTask.id)} />
+                      {isPastStageTask(selectedTask.stage) ? (
+                        <View style={styles.readOnlyNotice}>
+                          <Ionicons name="lock-closed-outline" size={16} color={colors.muted} style={{ marginRight: 6 }} />
+                          <Text style={styles.readOnlyNoticeText}>此阶段任务仅可查看</Text>
+                        </View>
+                      ) : (
+                        <>
+                          <Button title="编辑" variant="primary" style={styles.flexButton} onPress={handleEditTask} />
+                          <Button title="删除" variant="primary" style={{ ...styles.flexButton, ...styles.deleteButton }} onPress={() => handleDeleteTask(selectedTask.id)} />
+                        </>
+                      )}
                     </View>
                   </ScrollView>
                 )}
@@ -803,5 +826,18 @@ const styles = StyleSheet.create({
   flexButton: { flex: 1, minHeight: 44, borderRadius: radius.sm },
   deleteButton: { backgroundColor: colors.error },
   actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
+  readOnlyNotice: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bg,
+    borderRadius: radius.sm,
+  },
+  readOnlyNoticeText: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
 
 });
