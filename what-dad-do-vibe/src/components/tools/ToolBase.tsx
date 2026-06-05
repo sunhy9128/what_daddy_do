@@ -57,9 +57,9 @@ export function ToolBase({
       justifyContent: 'space-between',
       paddingLeft: spacing.md,
       paddingRight: spacing.sm,
-      paddingVertical: spacing.sm,
+      paddingVertical: 0,
+      height: 40,
       backgroundColor: colors.surfaceSecondary,
-      minHeight: 40,
     },
     headerLeft: {
       flexDirection: 'row',
@@ -74,6 +74,8 @@ export function ToolBase({
     reorderBtns: {
       flexDirection: 'column',
       gap: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     reorderBtn: {
       width: 20,

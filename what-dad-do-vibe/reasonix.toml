@@ -61,8 +61,15 @@ price       = { cache_hit = 0.02, input = 1, output = 2, currency = "¥" }   # p
 [tools]
 enabled = []   # empty = all built-in tools
 
+[codegraph]
+enabled      = true   # built-in MCP server; off by default for first-run sessions
+auto_install = true   # fetch the runtime when CodeGraph is enabled but missing
+# path       = ""   # empty = cache, then PATH, then a bundle beside reasonix
+# tier       = "lazy"   # lazy|background|eager
+
 [skills]
 # paths = ["~/my-skills", "../shared/skills"]   # extra custom skill roots
+# disabled_skills = ["review"]   # hide noisy or unwanted skills
 
 [permissions]
 # Per-call gating. mode = writer fallback when no rule matches: ask|allow|deny.
@@ -70,7 +77,7 @@ enabled = []   # empty = all built-in tools
 # Rules are "ToolName" or "ToolName(glob)"; '*' matches any run, '?' one char.
 mode  = "ask"
 # deny = ["bash(rm -rf*)", "bash(git push*)"]   # hard-blocked in every mode
-# allow = ["bash(go test*)", "bash(git status*)"]   # never prompted
+allow = ["bash=cd what-dad-do-vibe && npm start"]
 # ask = ["write_file"]   # force a prompt even if otherwise allowed
 
 [sandbox]
@@ -79,14 +86,13 @@ mode  = "ask"
 # bash = "enforce" (default) jails each command in an OS sandbox (macOS now;
 # graceful fallback elsewhere); "off" disables it. network allows egress.
 # workspace_root = ""            # default: current working directory
-# workspace_root = ""            # default: current working directory
 # allow_write = ["/tmp"]          # extra dirs writers may also modify
 bash    = "off"
 network = true
 
 [statusline]
 # A custom status line: a command whose first stdout line replaces the built-in
-# data row. It receives {"model","contextUsed","contextWindow"} as JSON on stdin.
+# data row. It receives {"model","contextUsed","contextWindow","cwd"} as JSON on stdin.
 # command = "my-statusline.sh"
 
 # External MCP servers. type: "stdio" (default, a subprocess) | "http" | "sse".

@@ -13,9 +13,10 @@ import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib
 import { CollapsibleGroup } from '../../src/components/organisms';
 
 import { useColors } from '../../src/context/ThemeContext';
-import { spacing, typography } from '../../src/styles/tokens';
+import { spacing, typography, radius } from '../../src/styles/tokens';
 
 import { STAGES } from '../../src/lib/stages';
+import { BUMP_SIZE_DATA } from '../../src/lib/bump-size-data';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -191,6 +192,78 @@ export default function HomeScreen() {
     ...typography.callout,
     fontWeight: '600',
     color: '#fff',
+  },
+
+  // ===== 宝宝大小对比 =====
+  bumpCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    marginBottom: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  bumpHeader: {
+    backgroundColor: colors.surfaceSecondary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  bumpTitle: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: colors.accent,
+  },
+  bumpBody: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  bumpEmoji: {
+    fontSize: 48,
+    marginBottom: spacing.sm,
+  },
+  bumpFruit: {
+    ...typography.title2,
+    fontWeight: '700',
+    color: colors.fg,
+    marginBottom: spacing.xs,
+  },
+  bumpWeek: {
+    ...typography.subhead,
+    color: colors.fgSecondary,
+    marginBottom: spacing.md,
+  },
+  bumpMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  bumpMetaItem: {
+    alignItems: 'center',
+  },
+  bumpMetaLabel: {
+    ...typography.caption2,
+    color: colors.muted,
+    marginBottom: 2,
+  },
+  bumpMetaValue: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+  },
+  bumpMetaDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.border,
+  },
+  bumpDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: spacing.sm,
   },
 
   // ===== 物品准备样式 =====
@@ -509,6 +582,49 @@ export default function HomeScreen() {
             <Text style={styles.urgentAddText}>新增紧急关注</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ===== 宝宝大小对比 ===== */}
+        {state.stage !== 'preconception' && state.stage !== 'postpartum' && state.weeksPregnant > 0 && (
+          <View style={styles.bumpCard}>
+            <View style={styles.bumpHeader}>
+              <Text style={styles.bumpTitle}>宝宝现在多大？</Text>
+            </View>
+            <View style={styles.bumpBody}>
+              <Text style={styles.bumpEmoji}>
+                {(() => {
+                  const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
+                    !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
+                  , null as typeof BUMP_SIZE_DATA[0] | null);
+                  return entry?.emoji || '🫐';
+                })()}
+              </Text>
+              {(() => {
+                const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
+                  !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
+                , null as typeof BUMP_SIZE_DATA[0] | null);
+                if (!entry) return null;
+                return (
+                  <>
+                    <Text style={styles.bumpFruit}>像 {entry.fruit} 一样大</Text>
+                    <Text style={styles.bumpWeek}>第 {state.weeksPregnant} 周</Text>
+                    <View style={styles.bumpMeta}>
+                      <View style={styles.bumpMetaItem}>
+                        <Text style={styles.bumpMetaLabel}>身长</Text>
+                        <Text style={styles.bumpMetaValue}>{entry.lengthCm} cm</Text>
+                      </View>
+                      <View style={styles.bumpMetaDivider} />
+                      <View style={styles.bumpMetaItem}>
+                        <Text style={styles.bumpMetaLabel}>体重</Text>
+                        <Text style={styles.bumpMetaValue}>{entry.weightG} g</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.bumpDesc}>{entry.description}</Text>
+                  </>
+                );
+              })()}
+            </View>
+          </View>
+        )}
 
         {/* ===== 物品准备 ===== */}
         {presetItems.length > 0 && (
