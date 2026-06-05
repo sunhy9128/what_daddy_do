@@ -140,7 +140,7 @@ function MomWeightChart({ records, bmi, prePregnancyWeight }: { records: MomWeig
   );
 }
 
-export function MomWeightTracker({ userId }: { userId: string; babyGender?: string }) {
+export function MomWeightTracker({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const [config, setConfig] = useState<MomWeightConfig | null>(null);
   const [records, setRecords] = useState<MomWeightRecord[]>([]);
@@ -246,7 +246,7 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
   };
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { maxHeight: 540 },
+    container: { maxHeight: expanded ? undefined : 540 },
     configCard: {
       backgroundColor: colors.accentLight,
       borderRadius: radius.md,
@@ -376,7 +376,7 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
     loadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, gap: spacing.md },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     loadingText: { ...typography.footnote, color: colors.fgSecondary },
-  }), [colors]);
+  }), [colors, expanded]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>

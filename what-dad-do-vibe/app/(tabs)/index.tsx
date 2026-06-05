@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { useApp } from '../../src/context/AppContext';
-import { Toolbar } from '../../src/components/tools/Toolbar';
+import { ToolGrid } from '../../src/components/tools/ToolGrid';
 import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GuideOverlay } from '../../src/components/GuideOverlay';
@@ -704,19 +704,18 @@ export default function HomeScreen() {
           </CollapsibleGroup>
         )}
 
-        {/* 工具栏 */}
-        <Toolbar
-          wrapperRef={toolsRef}
-          activeTools={activeTools}
-          userId={user?.id || ''}
-          babyGender={state.babies[0]?.gender}
-          onAddTool={(toolId) => {
-            if (activeTools.some(t => t.toolId === toolId)) return;
-            setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
-          }}
-          onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
-          onReorder={(tools) => setActiveTools(tools)}
-        />
+        {/* ===== 工具箱九宫格 ===== */}
+        <View ref={toolsRef} collapsable={false}>
+          <ToolGrid
+            tools={activeTools}
+            onToolPress={(toolId) => router.push(`/tool-detail?toolId=${toolId}`)}
+            onAddTool={(toolId) => {
+              if (activeTools.some(t => t.toolId === toolId)) return;
+              setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
+            }}
+            onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
+          />
+        </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>

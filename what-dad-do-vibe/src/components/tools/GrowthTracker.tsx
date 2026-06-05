@@ -16,7 +16,7 @@ interface GrowthRecord {
   weight: number;
 }
 
-export function GrowthTracker({ userId, babyGender }: { userId: string; babyGender?: string }) {
+export function GrowthTracker({ userId, babyGender, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const [gender, setGender] = useState<'boy' | 'girl'>(babyGender === 'girl' ? 'girl' : 'boy');
   const [month, setMonth] = useState('');
@@ -125,7 +125,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
   };
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { maxHeight: 540 },
+    container: { maxHeight: expanded ? undefined : 540 },
     genderRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -288,7 +288,7 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
       color: colors.error,
       fontWeight: '600',
     },
-  }), [colors]);
+  }), [colors, expanded]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>

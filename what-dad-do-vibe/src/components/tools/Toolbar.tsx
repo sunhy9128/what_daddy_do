@@ -19,7 +19,7 @@ import { MomWeightTracker } from './MomWeightTracker';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
-const AVAILABLE_TOOLS: ToolDefinition[] = [
+export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'feeding-timer', name: '喂奶计时器', icon: 'timer-outline', description: '记录每次喂奶时间' },
   { id: 'growth-tracker', name: '宝宝身高体重', icon: 'trending-up-outline', description: '宝宝身高体重生长曲线' },
   { id: 'vaccine-tracker', name: '疫苗本', icon: 'medkit-outline', description: '疫苗接种记录和提醒' },

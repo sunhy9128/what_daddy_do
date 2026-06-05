@@ -16,7 +16,7 @@ const PERIODS = [
   { label: '24-36月', start: 24, end: 36 },
 ];
 
-export function VaccineCalendar({ userId }: { userId: string; babyGender?: string }) {
+export function VaccineCalendar({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const { width: screenW } = useWindowDimensions();
   const chartW = Math.max(180, Math.min(300, screenW - PAD_CTX - NAME_W));
@@ -86,7 +86,7 @@ export function VaccineCalendar({ userId }: { userId: string; babyGender?: strin
   const barColor = (cat: string) => cat === '免费' ? '#4D96FF' : '#FF8E53';
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { maxHeight: 540 },
+    container: { maxHeight: expanded ? undefined : 540 },
     hScroll: { flex: 1 },
     chartColumn: { },
     periodRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm },
@@ -128,7 +128,7 @@ export function VaccineCalendar({ userId }: { userId: string; babyGender?: strin
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     loadingText: { ...typography.footnote, color: colors.fgSecondary },
-  }), [colors]);
+  }), [colors, expanded]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>

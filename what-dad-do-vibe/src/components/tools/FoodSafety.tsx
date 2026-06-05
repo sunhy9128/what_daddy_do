@@ -38,7 +38,7 @@ function SafetyBadge({ level }: { level: string }) {
   );
 }
 
-export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
+export function FoodSafetyTool({ expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const [foods, setFoods] = useState<FoodSafety[]>([]);
   const [search, setSearch] = useState('');
@@ -75,9 +75,9 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
   }, [foods, search, hasSearch]);
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { maxHeight: 540 },
-    containerCollapsed: { maxHeight: 56 },
-    containerExpanded: { maxHeight: 540 },
+    container: { maxHeight: expanded ? undefined : 540 },
+    containerCollapsed: { maxHeight: expanded ? undefined : 56 },
+    containerExpanded: { maxHeight: expanded ? undefined : 540 },
     searchInput: {
       ...typography.callout,
       color: colors.fg,
@@ -112,7 +112,7 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     loadingText: { ...typography.footnote, color: colors.fgSecondary },
-  }), [colors]);
+  }), [colors, expanded]);
 
   return (
     <ScrollView

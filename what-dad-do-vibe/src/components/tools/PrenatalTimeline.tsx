@@ -13,7 +13,7 @@ const STAGE_COLORS: Record<string, string> = {
   third: '#B8963E',
 };
 
-export function PrenatalTimeline({ userId: _userId }: { userId: string; babyGender?: string }) {
+export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const { state, toggleTask } = useApp();
 
@@ -154,7 +154,7 @@ export function PrenatalTimeline({ userId: _userId }: { userId: string; babyGend
       </View>
 
       {/* 时间轴 */}
-      <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ maxHeight: expanded ? undefined : 360 }} showsVerticalScrollIndicator={false}>
         {STAGE_ORDER.map(stage => {
           const items = grouped[stage];
           if (items.length === 0) return null;

@@ -50,6 +50,7 @@ export default function RootLayout() {
               <Stack.Screen name="baby-info" />
               <Stack.Screen name="congratulations" />
               <Stack.Screen name="profile-edit" />
+              <Stack.Screen name="tool-detail" />
             </Stack>
           </AppProvider>
         </AuthProvider>

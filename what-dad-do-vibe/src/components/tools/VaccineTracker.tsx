@@ -9,7 +9,7 @@ import { LoadingDot } from './ToolBase';
 const CELL_H = 36;
 
 
-export function VaccineTracker({ userId }: { userId: string; babyGender?: string }) {
+export function VaccineTracker({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const { width: screenW } = useWindowDimensions();
   const [vaccines, setVaccines] = useState<(Vaccine & { doses: VaccineDose[] })[]>([]);
@@ -106,7 +106,7 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
   };
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { maxHeight: 360 },
+    container: { maxHeight: expanded ? undefined : 360 },
     tableSection: { marginBottom: spacing.md },
     tableTitle: { ...typography.callout, fontWeight: '700', marginBottom: spacing.xs, paddingLeft: spacing.xs },
     headerRow: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider, paddingBottom: 2 },
@@ -150,7 +150,7 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     loadingText: { ...typography.footnote, color: colors.fgSecondary },
-  }), [colors]);
+  }), [colors, expanded]);
 
   const renderTable = (title: string, list: (Vaccine & { doses: VaccineDose[] })[], color: string) => (
     <View style={styles.tableSection}>
