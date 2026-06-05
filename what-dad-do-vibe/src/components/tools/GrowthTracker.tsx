@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform, LayoutAnimation, UIManager } from 'react-native';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, shadows } from '../../styles/tokens';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -126,24 +126,38 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
 
   const styles = useMemo(() => StyleSheet.create({
     container: { maxHeight: 540 },
-    genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-    genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
-    genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-    genderText: { ...typography.footnote, fontWeight: '500', color: colors.muted },
+    genderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    genderBtn: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      backgroundColor: colors.surfaceSecondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    genderBtnActive: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    genderText: { ...typography.footnote, fontWeight: '500', color: colors.fgSecondary },
     genderTextActive: { color: '#fff' },
     genderDisplay: { ...typography.callout, fontWeight: '600', color: colors.accent },
     addSection: { marginTop: spacing.md, marginBottom: spacing.lg },
     addSectionTitle: {
       ...typography.caption1,
       fontWeight: '600',
-      color: colors.muted,
+      color: colors.fgSecondary,
       marginBottom: spacing.sm,
-      textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' },
     inputField: { flex: 1 },
-    inputLabel: { ...typography.caption2, color: colors.muted, marginBottom: 4, fontWeight: '500' },
+    inputLabel: { ...typography.caption2, color: colors.fgSecondary, marginBottom: 4, fontWeight: '500' },
     input: {
       ...typography.callout,
       color: colors.fg,
@@ -163,37 +177,39 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
       height: 42,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.accent,
     },
-    addBtnDisabled: { backgroundColor: colors.border, borderColor: colors.border },
+    addBtnDisabled: { backgroundColor: colors.surfaceSecondary },
     addBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
     addBtnTextDisabled: { color: colors.muted },
     historySection: { marginTop: spacing.md },
-    historyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-    historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+    historyTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, letterSpacing: 0.5 },
     historyTable: {
-      borderWidth: 0.5,
-      borderColor: colors.border,
-      borderRadius: radius.sm,
-      overflow: 'hidden',
       backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      ...shadows.sm,
     },
     historyHeader: {
       flexDirection: 'row',
-      backgroundColor: colors.surfaceSecondary,
-      paddingVertical: spacing.sm,
+      backgroundColor: colors.accentLight,
+      paddingVertical: spacing.sm + 2,
     },
     historyHeaderText: {
       ...typography.caption1,
       fontWeight: '600',
-      color: colors.muted,
+      color: colors.fgSecondary,
       textAlign: 'center',
     },
     historyItem: {
       flexDirection: 'row',
-      borderTopWidth: 0.5,
-      borderTopColor: colors.border,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.divider,
       position: 'relative',
     },
     historyItemEditing: {
@@ -203,24 +219,18 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm + 2,
       minHeight: 40,
     },
     historyText: { ...typography.callout, color: colors.fg, textAlign: 'center', fontWeight: '500' },
-    // 加载动画
     loadingContainer: {
-      height: 300,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingVertical: spacing.xxl,
       gap: spacing.md,
-      backgroundColor: colors.surfaceSecondary + '40',
-      borderRadius: radius.sm,
-      marginTop: spacing.sm,
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    loadingText: { ...typography.footnote, color: colors.muted },
-
-    // 编辑
+    loadingText: { ...typography.footnote, color: colors.fgSecondary },
     editInput: {
       ...typography.callout,
       color: colors.accent,
@@ -263,13 +273,10 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
       backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.accent,
     },
     editRowBtnDel: {
-      backgroundColor: '#FEF2F2',
-      borderWidth: 1,
-      borderColor: '#FECACA',
+      backgroundColor: colors.error + '15',
+      borderWidth: 0,
     },
     editRowBtnText: {
       fontSize: 14,

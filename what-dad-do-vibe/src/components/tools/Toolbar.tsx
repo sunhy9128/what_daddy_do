@@ -12,6 +12,10 @@ import { GrowthTracker } from './GrowthTracker';
 import { VaccineTracker } from './VaccineTracker';
 import { VaccineCalendar } from './VaccineCalendar';
 import { FoodSafetyTool } from './FoodSafety';
+import { PrenatalTimeline } from './PrenatalTimeline';
+import { ContractionTimer } from './ContractionTimer';
+import { KickCounter } from './KickCounter';
+import { MomWeightTracker } from './MomWeightTracker';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -21,6 +25,10 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'vaccine-tracker', name: '疫苗本', icon: 'medkit-outline', description: '疫苗接种记录和提醒' },
   { id: 'vaccine-calendar', name: '疫苗日历', icon: 'calendar-outline', description: '按月查看疫苗接种时间线' },
   { id: 'food-safety', name: '食物禁忌', icon: 'restaurant-outline', description: '孕期+婴儿食物安全查询' },
+  { id: 'prenatal-timeline', name: '产检时间轴', icon: 'checkmark-circle-outline', description: '标准产检流程及完成进度' },
+  { id: 'contraction-timer', name: '宫缩计时器', icon: 'fitness-outline', description: '记录宫缩持续时间和间隔' },
+  { id: 'kick-counter', name: '胎动计数器', icon: 'pulse-outline', description: '记录胎动次数和时段' },
+  { id: 'mom-weight', name: '妈妈体重', icon: 'scale-outline', description: '孕期体重记录及增长曲线' },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
@@ -29,6 +37,10 @@ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: st
   'vaccine-tracker': VaccineTracker,
   'vaccine-calendar': VaccineCalendar,
   'food-safety': FoodSafetyTool,
+  'prenatal-timeline': PrenatalTimeline,
+  'contraction-timer': ContractionTimer,
+  'kick-counter': KickCounter,
+  'mom-weight': MomWeightTracker,
 };
 
 interface ToolInstance {
@@ -142,7 +154,7 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
           <Ionicons name="add" size={18} color={colors.accent} />
           <Text style={styles.footerBtnText}>添加工具</Text>
         </TouchableOpacity>
-        {activeTools.length > 0 && (
+        {(activeTools.length > 0 || reordering) && (
           <TouchableOpacity
             style={[styles.footerBtn, reordering && styles.footerBtnActive]}
             onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setReordering(!reordering); }}

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { loadFeedingRecords, saveFeedingRecords, FeedingRecordData } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
 
@@ -118,9 +118,9 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
       marginBottom: spacing.md,
     },
     mainBtn: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
+      width: 100,
+      height: 68,
+      borderRadius: radius.md,
       backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',
@@ -130,6 +130,7 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
       backgroundColor: colors.surface,
       borderRadius: radius.md,
       overflow: 'hidden',
+      ...shadows.sm,
     },
     recordHeaderRow: {
       flexDirection: 'row',
@@ -138,31 +139,31 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 2,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      borderBottomColor: colors.divider,
     },
     dateLabel: {
       ...typography.caption1,
       fontWeight: '600',
-      color: colors.muted,
+      color: colors.fgSecondary,
     },
     btnInner: {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    btnElapsed: {
-      ...typography.caption2,
-      color: '#fff',
-      fontWeight: '600',
-      fontSize: 10,
-      marginTop: 2,
-    },
     clearBtnText: {
       ...typography.caption2,
-      color: '#E53935',
+      color: colors.error,
       fontWeight: '600',
     },
+    elapsedHeaderText: {
+      ...typography.caption2,
+      color: colors.accent,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'center',
+    },
     recordList: {
-      maxHeight: 100,
+      height: 120,
     },
     recordItem: {
       flexDirection: 'row',
@@ -170,7 +171,7 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      borderBottomColor: colors.divider,
     },
     recordTime: {
       ...typography.callout,
@@ -182,19 +183,15 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
       ...typography.caption2,
       color: colors.muted,
     },
-    emptySection: {
+    emptyState: {
+      height: 120,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: spacing.xl + 4,
-      backgroundColor: colors.accent + '12',
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.accent + '25',
-      borderStyle: 'dashed',
+      gap: spacing.xs,
     },
     emptyText: {
       ...typography.footnote,
-      color: colors.accent,
+      color: colors.muted,
       fontWeight: '500',
     },
     loadingContainer: {
@@ -204,7 +201,7 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
       gap: spacing.md,
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    loadingText: { ...typography.footnote, color: colors.muted },
+    loadingText: { ...typography.footnote, color: colors.fgSecondary },
   }), [colors]);
 
   return (
@@ -226,30 +223,29 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
             <View style={styles.topRow}>
               <TouchableOpacity style={styles.mainBtn} onPress={handleFeed} activeOpacity={0.75}>
                 <View style={styles.btnInner}>
-                  {elapsedMin === null ? (
-                    <Ionicons name="water-outline" size={30} color="#fff" />
-                  ) : (
-                    <Text style={[styles.btnElapsed, { fontSize: 12 }]}>
-                      {elapsedMin < 1
-                        ? '刚刚'
-                        : elapsedMin < 60
-                          ? `距上次\n${elapsedMin}分钟`
-                          : `距上次\n${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}
-                    </Text>
-                  )}
+                  <Ionicons name="water-outline" size={30} color="#fff" />
                 </View>
               </TouchableOpacity>
             </View>
 
             {/* 历史记录列表 */}
-            {records.length > 0 ? (
-              <View style={styles.recordSection}>
-                <View style={styles.recordHeaderRow}>
-                  <Text style={styles.dateLabel}>{dateStr} · {records.length}次</Text>
+            <View style={styles.recordSection}>
+              <View style={styles.recordHeaderRow}>
+                <Text style={styles.dateLabel}>{dateStr} · {records.length}次</Text>
+                <Text style={styles.elapsedHeaderText}>
+                  {elapsedMin === null ? '' : elapsedMin < 1
+                    ? '刚刚喂过'
+                    : elapsedMin < 60
+                      ? `距上次 ${elapsedMin}分钟`
+                      : `距上次 ${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}
+                </Text>
+                {records.length > 0 && (
                   <TouchableOpacity onPress={handleClear} activeOpacity={0.6} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Text style={styles.clearBtnText}>清除</Text>
                   </TouchableOpacity>
-                </View>
+                )}
+              </View>
+              {records.length > 0 ? (
                 <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
                   {records.map((r) => (
                     <View key={r.id} style={styles.recordItem}>
@@ -259,13 +255,13 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
                     </View>
                   ))}
                 </ScrollView>
-              </View>
-            ) : (
-              <View style={styles.emptySection}>
-                <Ionicons name="water-outline" size={20} color={colors.muted} style={{ marginBottom: 4 }} />
-                <Text style={styles.emptyText}>点击图标记录喂奶</Text>
-              </View>
-            )}
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="water-outline" size={20} color={colors.muted} style={{ marginBottom: 4 }} />
+                  <Text style={styles.emptyText}>点击图标记录喂奶</Text>
+                </View>
+              )}
+            </View>
           </View>
         </>
       )}

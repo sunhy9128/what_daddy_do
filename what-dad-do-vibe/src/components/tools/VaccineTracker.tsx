@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput,
 import { getVaccines, getUserVaccinations, setVaccinationStatus } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const CELL_H = 36;
@@ -109,23 +109,23 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
     container: { maxHeight: 360 },
     tableSection: { marginBottom: spacing.md },
     tableTitle: { ...typography.callout, fontWeight: '700', marginBottom: spacing.xs, paddingLeft: spacing.xs },
-    headerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 2 },
+    headerRow: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider, paddingBottom: 2 },
     headerCell: { alignItems: 'center', justifyContent: 'center' },
-    headerText: { ...typography.caption1, fontWeight: '600', color: colors.muted },
-    row: { flexDirection: 'row', borderLeftWidth: 3, marginBottom: 1, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' },
+    headerText: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary },
+    row: { flexDirection: 'row', borderLeftWidth: 3, marginBottom: 1, backgroundColor: colors.surface, borderRadius: radius.sm, overflow: 'hidden', ...shadows.sm },
     nameCell: { paddingHorizontal: spacing.xs, justifyContent: 'center', paddingVertical: spacing.xs },
     nameText: { ...typography.caption1, color: colors.fg, fontSize: 11, lineHeight: 14 },
-    cell: { height: CELL_H, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 0.5, borderLeftColor: colors.border },
+    cell: { height: CELL_H, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.divider },
     cellDone: { backgroundColor: colors.success + '15' },
     cellDoneText: { fontSize: 14, color: colors.success, fontWeight: '700' },
     cellDate: { fontSize: 8, color: colors.success, marginTop: 1, fontWeight: '500' },
     cellEmpty: { fontSize: 16, color: colors.muted, fontWeight: '300' },
-    ageText: { ...typography.caption1, color: colors.muted, fontSize: 10 },
+    ageText: { ...typography.caption1, color: colors.fgSecondary, fontSize: 10 },
     legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     swatch: { width: 16, height: 16, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
     swatchText: { fontSize: 10, color: '#fff', fontWeight: '700' },
-    legendText: { ...typography.caption2, color: colors.muted },
+    legendText: { ...typography.caption2, color: colors.fgSecondary },
     // 弹窗
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
     modal: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, width: '100%', maxWidth: 360 },
@@ -133,27 +133,23 @@ export function VaccineTracker({ userId }: { userId: string; babyGender?: string
     modalHint: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.md },
     dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginBottom: spacing.lg },
     dateField: { alignItems: 'center' },
-    dateLabel: { ...typography.caption1, color: colors.muted, marginBottom: spacing.xs },
-    dateInput: { ...typography.title3, fontWeight: '700', color: colors.accent, textAlign: 'center', width: 60, paddingVertical: spacing.xs, borderBottomWidth: 2, borderBottomColor: colors.border },
+    dateLabel: { ...typography.caption1, color: colors.fgSecondary, marginBottom: spacing.xs },
+    dateInput: { ...typography.title3, fontWeight: '700', color: colors.accent, textAlign: 'center', width: 60, paddingVertical: spacing.xs, borderBottomWidth: 2, borderBottomColor: colors.divider },
     dateSep: { ...typography.title3, color: colors.muted, marginTop: spacing.lg },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-    cancelBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 8 },
-    cancelText: { ...typography.callout, color: colors.muted },
-    confirmBtn: { backgroundColor: colors.accent, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 8 },
+    cancelBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radius.sm },
+    cancelText: { ...typography.callout, color: colors.fgSecondary },
+    confirmBtn: { backgroundColor: colors.accent, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radius.sm },
     confirmText: { ...typography.callout, fontWeight: '600', color: '#fff' },
     confirmBtnDisabled: { opacity: 0.5 },
-    // 加载动画
     loadingContainer: {
-      height: 300,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingVertical: spacing.xxl,
       gap: spacing.md,
-      backgroundColor: colors.surfaceSecondary + '40',
-      borderRadius: radius.sm,
-      marginTop: spacing.xs,
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    loadingText: { ...typography.footnote, color: colors.muted },
+    loadingText: { ...typography.footnote, color: colors.fgSecondary },
   }), [colors]);
 
   const renderTable = (title: string, list: (Vaccine & { doses: VaccineDose[] })[], color: string) => (

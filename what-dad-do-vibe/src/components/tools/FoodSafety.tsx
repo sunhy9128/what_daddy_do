@@ -3,7 +3,7 @@ import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { getFoodSafety } from '../../lib/api';
 import { FoodSafety } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -79,40 +79,39 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
     containerCollapsed: { maxHeight: 56 },
     containerExpanded: { maxHeight: 540 },
     searchInput: {
-      ...typography.callout, color: colors.fg,
-      backgroundColor: colors.surfaceSecondary,
-      borderRadius: radius.sm, paddingHorizontal: spacing.md,
+      ...typography.callout,
+      color: colors.fg,
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderWidth: 1, borderColor: colors.border,
+      borderWidth: 1,
+      borderColor: colors.border,
       marginBottom: spacing.md,
     },
-    empty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+    empty: { ...typography.callout, color: colors.fgSecondary, textAlign: 'center', paddingVertical: spacing.lg },
     card: {
       backgroundColor: colors.surface,
-      borderRadius: radius.sm, padding: spacing.md,
+      borderRadius: radius.md,
+      padding: spacing.md,
       marginBottom: spacing.sm,
-      borderWidth: 0.5, borderColor: colors.border,
+      ...shadows.sm,
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
     foodName: { ...typography.callout, fontWeight: '700', color: colors.fg },
-    category: { ...typography.caption1, color: colors.muted, backgroundColor: colors.surfaceSecondary, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+    category: { ...typography.caption1, color: colors.fgSecondary },
     note: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.sm, lineHeight: 18 },
     table: { gap: 3 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 3 },
     periodLabel: { ...typography.footnote, color: colors.fgSecondary, flex: 1 },
-    badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6 },
-    badgeText: { ...typography.caption1, fontWeight: '600', fontSize: 11 },
-    // 加载动画
     loadingContainer: {
-      height: 200,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingVertical: spacing.xxl,
       gap: spacing.md,
-      backgroundColor: colors.surfaceSecondary + '40',
-      borderRadius: radius.sm,
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    loadingText: { ...typography.footnote, color: colors.muted },
+    loadingText: { ...typography.footnote, color: colors.fgSecondary },
   }), [colors]);
 
   return (

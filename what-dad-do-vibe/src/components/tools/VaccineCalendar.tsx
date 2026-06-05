@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensio
 import { getVaccines, getUserVaccinations } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const NAME_W = 50; // 疫苗名称列宽度
@@ -90,40 +90,44 @@ export function VaccineCalendar({ userId }: { userId: string; babyGender?: strin
     hScroll: { flex: 1 },
     chartColumn: { },
     periodRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm },
-    periodBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: 8, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+    periodBtn: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
     periodBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-    periodText: { ...typography.footnote, color: colors.muted, fontWeight: '500' },
+    periodText: { ...typography.footnote, color: colors.fgSecondary, fontWeight: '500' },
     periodTextActive: { color: '#fff' },
-    periodTitle: { ...typography.caption2, fontWeight: '600', color: colors.muted, marginBottom: 4, textTransform: 'uppercase' },
+    periodTitle: { ...typography.caption2, fontWeight: '600', color: colors.fgSecondary, marginBottom: 4 },
     xAxis: { height: 18, position: 'relative', marginBottom: spacing.xs, marginLeft: 50 },
-    xLabel: { position: 'absolute', fontSize: 8, color: '#8A8A9A', textAlign: 'center', width: 20, marginLeft: -10 },
+    xLabel: { position: 'absolute', fontSize: 8, color: colors.muted, textAlign: 'center', width: 20, marginLeft: -10 },
     chartScroll: { height: 300 },
     chartArea: { position: 'relative' },
-    vLine: { position: 'absolute', top: 0, bottom: 0, width: 0.5, backgroundColor: '#E8E4D9' },
-    emptyText: { ...typography.footnote, color: colors.muted, textAlign: 'center', paddingVertical: spacing.md },
+    vLine: { position: 'absolute', top: 0, bottom: 0, width: 0.5, backgroundColor: colors.divider },
+    emptyText: { ...typography.footnote, color: colors.fgSecondary, textAlign: 'center', paddingVertical: spacing.md },
     vaxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, minHeight: 28 },
     vaxName: { width: 50, fontSize: 9, color: colors.fgSecondary, paddingRight: 2, fontWeight: '500' },
     barArea: { height: 26, minHeight: 26, position: 'relative', backgroundColor: colors.surfaceSecondary + '60', borderRadius: 4 },
-    gridBg: { position: 'absolute', left: 6, top: 13, right: 6, height: 1, backgroundColor: colors.border },
+    gridBg: { position: 'absolute', left: 6, top: 13, right: 6, height: 1, backgroundColor: colors.divider },
     bar: { position: 'absolute', top: 4, height: 20, borderRadius: 6, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
     barLabel: { fontSize: 10, color: '#fff', fontWeight: '700', textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
     legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, justifyContent: 'center' },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     swatch: { width: 10, height: 10, borderRadius: 3 },
-    legendText: { ...typography.caption1, color: colors.muted },
+    legendText: { ...typography.caption1, color: colors.fgSecondary },
     legendOff: { textDecorationLine: 'line-through', opacity: 0.5 },
-    // 加载动画
     loadingContainer: {
-      height: 300,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingVertical: spacing.xxl,
       gap: spacing.md,
-      backgroundColor: colors.surfaceSecondary + '40',
-      borderRadius: radius.sm,
-      marginVertical: spacing.xs,
     },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    loadingText: { ...typography.footnote, color: colors.muted },
+    loadingText: { ...typography.footnote, color: colors.fgSecondary },
   }), [colors]);
 
   return (
