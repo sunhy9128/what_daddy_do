@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 interface RecordEntryProps {
   title: string;
@@ -12,6 +13,56 @@ interface RecordEntryProps {
 }
 
 export function RecordEntry({ title, content, time, isPrivate = false, onPress, onDelete }: RecordEntryProps) {
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+    entry: {
+      paddingVertical: spacing.md + 2,
+      paddingHorizontal: spacing.lg,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    title: {
+      ...typography.callout,
+      fontWeight: '600',
+      flex: 1,
+      marginRight: spacing.sm,
+    },
+    meta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    time: {
+      ...typography.caption1,
+      color: colors.muted,
+    },
+    deleteBtn: {
+      width: 22,
+      height: 22,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surfaceSecondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    deleteIcon: {
+      fontSize: 11,
+      color: colors.muted,
+      fontWeight: '600',
+    },
+    content: {
+      ...typography.footnote,
+      color: colors.fg,
+      lineHeight: 21,
+    },
+  }), [colors]);
+
   const handleDelete = () => {
     if (Platform.OS === 'web') {
       if (window.confirm('确定要删除这条记录吗？删除后无法恢复。')) {
@@ -47,52 +98,5 @@ export function RecordEntry({ title, content, time, isPrivate = false, onPress, 
   );
 }
 
-const styles = StyleSheet.create({
-  entry: {
-    paddingVertical: spacing.md + 2,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  title: {
-    ...typography.callout,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  time: {
-    ...typography.caption1,
-    color: colors.muted,
-  },
-  deleteBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteIcon: {
-    fontSize: 11,
-    color: colors.muted,
-    fontWeight: '600',
-  },
-  content: {
-    ...typography.footnote,
-    color: colors.fg,
-    lineHeight: 21,
-  },
-});
 
 export default RecordEntry;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/lib/supabase';
 
-import { colors, spacing, radius, shadows, typography } from '../src/styles/tokens';
+import { useColors } from '../src/context/ThemeContext';
+import { spacing, radius, shadows, typography } from '../src/styles/tokens';
 
 const DEFAULT_CODE = '0000';
 
@@ -29,6 +30,60 @@ export default function LoginScreen() {
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
+  logoContainer: { alignItems: 'center', marginBottom: spacing.xxl },
+  logo: { width: 80, height: 80, borderRadius: radius.lg, marginBottom: spacing.md },
+  title: { ...typography.title1, color: colors.fg },
+  subtitle: { ...typography.callout, color: colors.fgSecondary, marginTop: spacing.xs },
+
+  // 登录方式切换
+  modeSwitch: {
+    flexDirection: 'row', backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.sm, padding: 3, marginBottom: spacing.lg,
+  },
+  modeBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 4, paddingVertical: spacing.sm + 2, borderRadius: 7,
+  },
+  modeBtnActive: { backgroundColor: colors.accent },
+  modeText: { fontSize: 14, fontWeight: '500', color: colors.accent },
+  modeTextActive: { color: '#fff' },
+
+  form: { width: '100%' },
+  input: {
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    padding: spacing.md, fontSize: 16, color: colors.fg,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+    ...shadows.sm,
+  },
+  button: {
+    backgroundColor: colors.accent, borderRadius: radius.md,
+    padding: spacing.md, alignItems: 'center', marginTop: spacing.sm,
+  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { ...typography.headline, color: '#ffffff' },
+  codeRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end', marginBottom: spacing.md },
+  codeInput: { flex: 1, marginBottom: 0 },
+  codeBtn: {
+    backgroundColor: colors.accent, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, height: 50,
+    alignItems: 'center', justifyContent: 'center',
+    minWidth: 96,
+  },
+  codeBtnDisabled: { backgroundColor: colors.muted },
+  codeBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  codeBtnTextDisabled: { color: '#fff' },
+  switchRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: spacing.md,
+  },
+  switchHint: { ...typography.callout, color: colors.fgSecondary },
+  switchAction: { ...typography.callout, color: colors.accent, fontWeight: '600', marginLeft: spacing.xs },
+}), [colors]);
 
   const startCountdown = () => {
     setCodeSent(true);
@@ -246,55 +301,3 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
-  logoContainer: { alignItems: 'center', marginBottom: spacing.xxl },
-  logo: { width: 80, height: 80, borderRadius: radius.lg, marginBottom: spacing.md },
-  title: { ...typography.title1, color: colors.fg },
-  subtitle: { ...typography.callout, color: colors.fgSecondary, marginTop: spacing.xs },
-
-  // 登录方式切换
-  modeSwitch: {
-    flexDirection: 'row', backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.sm, padding: 3, marginBottom: spacing.lg,
-  },
-  modeBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 4, paddingVertical: spacing.sm + 2, borderRadius: 7,
-  },
-  modeBtnActive: { backgroundColor: colors.accent },
-  modeText: { fontSize: 14, fontWeight: '500', color: colors.accent },
-  modeTextActive: { color: '#fff' },
-
-  form: { width: '100%' },
-  input: {
-    backgroundColor: colors.surface, borderRadius: radius.md,
-    padding: spacing.md, fontSize: 16, color: colors.fg,
-    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
-    ...shadows.sm,
-  },
-  button: {
-    backgroundColor: colors.accent, borderRadius: radius.md,
-    padding: spacing.md, alignItems: 'center', marginTop: spacing.sm,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { ...typography.headline, color: '#ffffff' },
-  codeRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end', marginBottom: spacing.md },
-  codeInput: { flex: 1, marginBottom: 0 },
-  codeBtn: {
-    backgroundColor: colors.accent, borderRadius: radius.md,
-    paddingHorizontal: spacing.md, height: 50,
-    alignItems: 'center', justifyContent: 'center',
-    minWidth: 96,
-  },
-  codeBtnDisabled: { backgroundColor: colors.muted },
-  codeBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  codeBtnTextDisabled: { color: '#fff' },
-  switchRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.md,
-  },
-  switchHint: { ...typography.callout, color: colors.fgSecondary },
-  switchAction: { ...typography.callout, color: colors.accent, fontWeight: '600', marginLeft: spacing.xs },
-});

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/lib/supabase';
-import { colors, spacing, radius, typography } from '../src/styles/tokens';
+import { useColors } from '../src/context/ThemeContext';
+import { spacing, radius, typography } from '../src/styles/tokens';
 
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
@@ -17,6 +18,83 @@ export default function ProfileEditScreen() {
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
   const [saving, setSaving] = useState(false);
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+
+  // 顶部导航
+  nav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  navBack: {
+    width: 36, height: 36, borderRadius: radius.md,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  navTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
+  content: { padding: spacing.lg },
+
+  // 分区
+  section: { marginBottom: spacing.lg },
+  sectionTitle: {
+    ...typography.caption1, fontWeight: '600', color: colors.muted,
+    marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+
+  // 信息卡片
+  infoCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 14, padding: spacing.md,
+    borderWidth: 0.5, borderColor: colors.border,
+  },
+  infoRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  infoLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  infoIcon: {
+    width: 28, height: 28, borderRadius: radius.sm,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  infoLabel: { ...typography.callout, color: colors.fgSecondary },
+  infoValue: { ...typography.callout, fontWeight: '500', color: colors.fg },
+
+  // 表单
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 14, padding: spacing.lg,
+    borderWidth: 0.5, borderColor: colors.border,
+  },
+  fieldLabel: {
+    ...typography.caption1, fontWeight: '500', color: colors.fgSecondary,
+    marginBottom: spacing.xs, marginTop: spacing.sm,
+  },
+  input: {
+    ...typography.callout, color: colors.fg,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 10,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderWidth: 1, borderColor: colors.border,
+    height: 44,
+  },
+  saveBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    height: 44,
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: spacing.lg,
+  },
+  saveBtnDisabled: { opacity: 0.6 },
+  saveBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
+}), [colors]);
 
   const safeAlert = (title: string, msg?: string) => {
     if (Platform.OS === 'web') { window.alert(msg || title); }
@@ -128,78 +206,3 @@ export default function ProfileEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-
-  // 顶部导航
-  nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  navBack: {
-    width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  navTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
-  content: { padding: spacing.lg },
-
-  // 分区
-  section: { marginBottom: spacing.lg },
-  sectionTitle: {
-    ...typography.caption1, fontWeight: '600', color: colors.muted,
-    marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5,
-  },
-
-  // 信息卡片
-  infoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14, padding: spacing.md,
-    borderWidth: 0.5, borderColor: colors.border,
-  },
-  infoRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  infoLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  infoIcon: {
-    width: 28, height: 28, borderRadius: radius.sm,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  infoLabel: { ...typography.callout, color: colors.fgSecondary },
-  infoValue: { ...typography.callout, fontWeight: '500', color: colors.fg },
-
-  // 表单
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14, padding: spacing.lg,
-    borderWidth: 0.5, borderColor: colors.border,
-  },
-  fieldLabel: {
-    ...typography.caption1, fontWeight: '500', color: colors.fgSecondary,
-    marginBottom: spacing.xs, marginTop: spacing.sm,
-  },
-  input: {
-    ...typography.callout, color: colors.fg,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 10,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderWidth: 1, borderColor: colors.border,
-    height: 44,
-  },
-  saveBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    height: 44,
-    alignItems: 'center', justifyContent: 'center',
-    marginTop: spacing.lg,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
-});

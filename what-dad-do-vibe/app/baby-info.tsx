@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { STAGES } from '../src/lib/stages';
-import { colors, spacing, radius, typography, shadows } from '../src/styles/tokens';
+import { useColors } from '../src/context/ThemeContext';
+import { spacing, radius, typography, shadows } from '../src/styles/tokens';
 
 export default function BabyInfoScreen() {
   const insets = useSafeAreaInsets();
@@ -19,6 +20,92 @@ export default function BabyInfoScreen() {
   const [month, setMonth] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[1] : '');
   const [day, setDay] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[2] : '');
   const [saving, setSaving] = useState(false);
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  nav: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  navBack: {
+    width: 36, height: 36, borderRadius: radius.md,
+    backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center',
+  },
+  navTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
+  content: { padding: spacing.lg },
+
+  // 宝宝卡片
+  babyCard: {
+    backgroundColor: '#FFF8F5', borderRadius: 20, padding: spacing.xl,
+    alignItems: 'center', marginBottom: spacing.xl,
+    borderWidth: 1, borderColor: '#F5E0D0',
+  },
+  babyEmoji: { fontSize: 56, marginBottom: spacing.sm },
+  babyName: { ...typography.title1, fontWeight: '700', color: '#5A3E2B', marginBottom: spacing.xs },
+  babyTag: {
+    backgroundColor: '#D4A574', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    borderRadius: radius.sm, marginBottom: spacing.md,
+  },
+  babyTagText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  babyDivider: { width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: '#F5E0D0', marginBottom: spacing.md },
+
+  // 孕期卡片
+  infoCard: {
+    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
+    marginBottom: spacing.xl, borderWidth: 0.5, borderColor: colors.border,
+  },
+  infoCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  infoCardTitle: { ...typography.headline, fontWeight: '600', color: colors.fg },
+  infoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  infoLabel: { ...typography.callout, color: colors.fgSecondary, flex: 1 },
+  infoValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+
+  // 表单
+  formSection: {
+    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
+    marginBottom: spacing.lg, borderWidth: 0.5, borderColor: colors.border,
+  },
+  formTitle: {
+    ...typography.headline, fontWeight: '600', color: colors.fg, marginBottom: spacing.xs,
+  },
+  formHint: {
+    ...typography.footnote, color: colors.muted, marginBottom: spacing.lg, lineHeight: 20,
+  },
+  dateCard: {
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.sm, padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  dateRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+  },
+  dateField: { alignItems: 'center', flex: 1 },
+  dateLabel: {
+    ...typography.caption2, color: colors.muted, marginTop: spacing.sm, fontWeight: '500',
+  },
+  dateInput: {
+    ...typography.title2, fontWeight: '700', color: colors.accent,
+    textAlign: 'center', width: '100%', paddingVertical: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.sm,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  dateSep: {
+    ...typography.title2, color: colors.muted, marginTop: -spacing.xl,
+  },
+  saveBtn: {
+    backgroundColor: colors.accent, borderRadius: radius.md,
+    paddingVertical: spacing.md + 2, alignItems: 'center',
+    ...shadows.sm,
+  },
+  saveBtnDisabled: { opacity: 0.6 },
+  saveText: { ...typography.callout, fontWeight: '600', color: '#fff' },
+}), [colors]);
 
   const safeAlert = (title: string, msg?: string) => {
     if (Platform.OS === 'web') { window.alert(msg || title); }
@@ -150,87 +237,3 @@ export default function BabyInfoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  nav: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  navBack: {
-    width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center',
-  },
-  navTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
-  content: { padding: spacing.lg },
-
-  // 宝宝卡片
-  babyCard: {
-    backgroundColor: '#FFF8F5', borderRadius: 20, padding: spacing.xl,
-    alignItems: 'center', marginBottom: spacing.xl,
-    borderWidth: 1, borderColor: '#F5E0D0',
-  },
-  babyEmoji: { fontSize: 56, marginBottom: spacing.sm },
-  babyName: { ...typography.title1, fontWeight: '700', color: '#5A3E2B', marginBottom: spacing.xs },
-  babyTag: {
-    backgroundColor: '#D4A574', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-    borderRadius: radius.sm, marginBottom: spacing.md,
-  },
-  babyTagText: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  babyDivider: { width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: '#F5E0D0', marginBottom: spacing.md },
-
-  // 孕期卡片
-  infoCard: {
-    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
-    marginBottom: spacing.xl, borderWidth: 0.5, borderColor: colors.border,
-  },
-  infoCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  infoCardTitle: { ...typography.headline, fontWeight: '600', color: colors.fg },
-  infoRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  infoLabel: { ...typography.callout, color: colors.fgSecondary, flex: 1 },
-  infoValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-
-  // 表单
-  formSection: {
-    backgroundColor: colors.surface, borderRadius: 14, padding: spacing.lg,
-    marginBottom: spacing.lg, borderWidth: 0.5, borderColor: colors.border,
-  },
-  formTitle: {
-    ...typography.headline, fontWeight: '600', color: colors.fg, marginBottom: spacing.xs,
-  },
-  formHint: {
-    ...typography.footnote, color: colors.muted, marginBottom: spacing.lg, lineHeight: 20,
-  },
-  dateCard: {
-    backgroundColor: colors.surfaceSecondary, borderRadius: radius.sm, padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  dateRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-  },
-  dateField: { alignItems: 'center', flex: 1 },
-  dateLabel: {
-    ...typography.caption2, color: colors.muted, marginTop: spacing.sm, fontWeight: '500',
-  },
-  dateInput: {
-    ...typography.title2, fontWeight: '700', color: colors.accent,
-    textAlign: 'center', width: '100%', paddingVertical: spacing.md,
-    backgroundColor: colors.surface, borderRadius: radius.sm,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  dateSep: {
-    ...typography.title2, color: colors.muted, marginTop: -spacing.xl,
-  },
-  saveBtn: {
-    backgroundColor: colors.accent, borderRadius: radius.md,
-    paddingVertical: spacing.md + 2, alignItems: 'center',
-    ...shadows.sm,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveText: { ...typography.callout, fontWeight: '600', color: '#fff' },
-});

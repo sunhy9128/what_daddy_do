@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 interface StageTabsProps {
   stages: string[];
@@ -14,6 +15,40 @@ export function StageTabs({ stages, activeStage, onStageChange }: StageTabsProps
   const sidePadding = spacing.xl * 2;
   const totalGap = spacing.xs * (stages.length - 1);
   const tabWidth = Math.floor((screenWidth - sidePadding - totalGap) / stages.length);
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      gap: spacing.xs,
+    },
+    tag: {
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      backgroundColor: colors.bg,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tagActive: {
+      backgroundColor: colors.fg,
+      borderColor: colors.fg,
+    },
+    tagText: {
+      ...typography.callout,
+      fontWeight: '500',
+      color: colors.muted,
+      textAlign: 'center',
+    },
+    tagTextActive: {
+      color: colors.surface,
+    },
+  }), [colors]);
 
   return (
     <View style={styles.container}>
@@ -41,37 +76,5 @@ export function StageTabs({ stages, activeStage, onStageChange }: StageTabsProps
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.xs,
-  },
-  tag: {
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.bg,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tagActive: {
-    backgroundColor: colors.fg,
-    borderColor: colors.fg,
-  },
-  tagText: {
-    ...typography.callout,
-    fontWeight: '500',
-    color: colors.muted,
-    textAlign: 'center',
-  },
-  tagTextActive: {
-    color: colors.surface,
-  },
-});
 
 export default StageTabs;

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { spacing, typography } from '../../styles/tokens';
 
 interface TabItem {
   key: string;
@@ -15,28 +16,8 @@ interface TabBarProps {
 }
 
 export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
-  return (
-    <View style={styles.container}>
-      {tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.key}
-          style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-          onPress={() => onTabChange(tab.key)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.icon, activeTab === tab.key && styles.iconActive]}>
-            {tab.icon}
-          </Text>
-          <Text style={[styles.label, activeTab === tab.key && styles.labelActive]}>
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -66,6 +47,26 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontWeight: '600',
   },
-});
+}), [colors]);
+  return (
+    <View style={styles.container}>
+      {tabs.map((tab) => (
+        <TouchableOpacity
+          key={tab.key}
+          style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+          onPress={() => onTabChange(tab.key)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.icon, activeTab === tab.key && styles.iconActive]}>
+            {tab.icon}
+          </Text>
+          <Text style={[styles.label, activeTab === tab.key && styles.labelActive]}>
+            {tab.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
 
 export default TabBar;

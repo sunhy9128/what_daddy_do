@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -12,7 +12,8 @@ import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPs
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
 import { CollapsibleGroup } from '../../src/components/organisms';
 
-import { colors, spacing, typography } from '../../src/styles/tokens';
+import { useColors } from '../../src/context/ThemeContext';
+import { spacing, typography } from '../../src/styles/tokens';
 
 import { STAGES } from '../../src/lib/stages';
 
@@ -32,6 +33,7 @@ export default function HomeScreen() {
 
   const [showUrgentModal, setShowUrgentModal] = useState(false);
   const [urgentText, setUrgentText] = useState('');
+  const [urgentLoading, setUrgentLoading] = useState(false);
   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -40,303 +42,9 @@ export default function HomeScreen() {
   const prepRef = useRef<View>(null);
   const supportRef = useRef<View>(null);
   const toolsRef = useRef<View>(null);
+  const colors = useColors();
 
-  // 物品准备 + 心理支持
-  const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
-  const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
-  const [loadingItems, setLoadingItems] = useState(false);
-  const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
-  const [loadingSupport, setLoadingSupport] = useState(false);
-
-  const periods = [state.stage];
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      setLoadingItems(true);
-      setLoadingSupport(true);
-      try {
-        const [items, support, preps] = await Promise.all([
-          getPresetItemsByPeriods(periods),
-          getPsychologicalSupportByPeriods(periods),
-          getUserPreparations(user.id),
-        ]);
-        setPresetItems(items);
-        setSupportTips(support);
-        setUserPreparations(preps);
-      } catch (e) {
-        console.error('Failed to load items/support:', e);
-      } finally {
-        setLoadingItems(false);
-        setLoadingSupport(false);
-      }
-    })();
-  }, [user, state.stage]);
-
-  const handleToggleItem = async (itemId: string) => {
-    if (!user) return;
-    const existing = userPreparations.find(p => p.item_id === itemId);
-    const newStatus = existing?.status === 'prepared' ? 'not_prepared' : 'prepared';
-    try {
-      const updated = await setUserPreparation(user.id, itemId, newStatus);
-      setUserPreparations(prev => {
-        const filtered = prev.filter(p => p.item_id !== itemId);
-        return [...filtered, updated];
-      });
-    } catch (e) {
-      console.error('Failed to update item:', e);
-    }
-  };
-
-  // 首次登录引导
-  useEffect(() => {
-    if (!user) return;
-    loadActiveTools(user.id).then(tools => setActiveTools(tools));
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const shown = await AsyncStorage.getItem(`guide_shown_${user.id}`);
-        if (!shown) setShowGuide(true);
-      } catch {}
-    })();
-  }, [user]);
-
-  const dismissGuide = async () => {
-    setShowGuide(false);
-    try {
-      await AsyncStorage.setItem(`guide_shown_${user?.id || ''}`, '1');
-    } catch {}
-  };
-
-  const activeToolsRef = useRef(activeTools);
-  activeToolsRef.current = activeTools;
-  useEffect(() => {
-    if (!user) return;
-    saveActiveTools(user.id, activeToolsRef.current);
-  }, [activeTools, user]);
-
-  if (authLoading || state.loading) {
-    return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
-  }
-
-  if (!session) {
-    return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <Text style={styles.notLoggedIn}>请先登录</Text>
-        <Link href="/login">
-          <Text style={styles.loginLink}>去登录</Text>
-        </Link>
-      </View>
-    );
-  }
-
-  const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>准爸爸，你好 👋</Text>
-          <View style={styles.stageRow}>
-            <Text style={styles.stageText}>{stageLabel}</Text>
-            {state.babies.length > 0 && (
-              <Text style={styles.weekText}>
-                {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* 紧急关注 */}
-        <View ref={urgentRef} style={styles.urgentSection} collapsable={false}>
-          {state.urgentNotes.map(note => (
-            <View key={note.id} style={styles.urgentCard}>
-              <View style={styles.urgentBody}>
-                <View style={styles.urgentDot} />
-                <Text style={styles.urgentText}>{note.content}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.urgentClose}
-                onPress={() => {
-                  if (Platform.OS === 'web') {
-                    if (window.confirm('关闭后将不再展示，确定要关闭吗？')) {
-                      dismissUrgentNote(note.id);
-                    }
-                  } else {
-                    Alert.alert(
-                      '关闭提醒',
-                      '关闭后将不再展示，确定要关闭吗？',
-                      [
-                        { text: '取消', style: 'cancel' },
-                        { text: '确定关闭', style: 'destructive', onPress: () => dismissUrgentNote(note.id) },
-                      ]
-                    );
-                  }
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text style={styles.urgentCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-          {/* 新增按钮 */}
-          <TouchableOpacity style={styles.urgentAddBtn} onPress={() => { setUrgentText(''); setShowUrgentModal(true); }}>
-            <Text style={styles.urgentAddIcon}>+</Text>
-            <Text style={styles.urgentAddText}>新增紧急关注</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== 物品准备 ===== */}
-        {presetItems.length > 0 && (
-          <CollapsibleGroup containerRef={prepRef} title="物品准备" count={presetItems.length} defaultExpanded={false}>
-            {presetItems.map(item => {
-              const prep = userPreparations.find(p => p.item_id === item.id);
-              const isPrepared = prep?.status === 'prepared';
-              const level = item.essential_level;
-              const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
-              const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
-
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[styles.prepItem, isPrepared && styles.prepItemDone]}
-                  onPress={() => handleToggleItem(item.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
-                    {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
-                  </View>
-                  <View style={styles.prepInfo}>
-                    <View style={styles.prepHeaderRow}>
-                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
-                      <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
-                    </View>
-                    {item.description && (
-                      <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={2}>
-                        {item.description}
-                      </Text>
-                    )}
-                    <View style={styles.prepMeta}>
-                      <Text style={styles.prepMetaCategory}>{item.category}</Text>
-                      {item.quantity_suggestion && (
-                        <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
-                      )}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </CollapsibleGroup>
-        )}
-
-        {/* ===== 心理支持 ===== */}
-        {supportTips.length > 0 && (
-          <CollapsibleGroup containerRef={supportRef} title="心理支持" count={supportTips.length} defaultExpanded={false}>
-            {supportTips.map(tip => {
-              const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
-              const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
-                : tip.support_type === 'communication' ? styles.supportTypeCommunication
-                : tip.support_type === 'action' ? styles.supportTypeAction
-                : styles.supportTypeKnowledge;
-
-              return (
-                <View key={tip.id} style={styles.supportCard}>
-                  <View style={styles.supportHeader}>
-                    <Text style={styles.supportTitle} numberOfLines={2}>{tip.title}</Text>
-                    <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
-                  </View>
-                  <View style={styles.supportContentBlock}>
-                    <Text style={styles.supportContent}>{tip.content}</Text>
-                  </View>
-                  {tip.tips && tip.tips.length > 0 && (
-                    <View style={styles.supportTips}>
-                      {tip.tips.map((t, i) => (
-                        <View key={i} style={styles.supportTipRow}>
-                          <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
-                          <Text style={styles.supportTipText}>{t}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </CollapsibleGroup>
-        )}
-
-        {/* 工具栏 */}
-        <Toolbar
-          wrapperRef={toolsRef}
-          activeTools={activeTools}
-          userId={user?.id || ''}
-          babyGender={state.babies[0]?.gender}
-          onAddTool={(toolId) => {
-            if (activeTools.some(t => t.toolId === toolId)) return;
-            setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
-          }}
-          onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
-          onReorder={(tools) => setActiveTools(tools)}
-        />
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* 新增紧急关注弹窗 */}
-      <Modal visible={showUrgentModal} animationType="fade" transparent>
-        <View style={styles.urgentModalOverlay}>
-          <View style={styles.urgentModalContent}>
-            <Text style={styles.urgentModalTitle}>新增紧急关注</Text>
-            <TextInput
-              style={styles.urgentModalInput}
-              placeholder="如：观察明天是否还有红疹"
-              placeholderTextColor={colors.muted}
-              value={urgentText}
-              onChangeText={setUrgentText}
-              multiline
-              autoFocus
-            />
-            <View style={styles.urgentModalActions}>
-              <TouchableOpacity
-                style={styles.urgentModalCancel}
-                onPress={() => setShowUrgentModal(false)}
-              >
-                <Text style={styles.urgentModalCancelText}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.urgentModalSave, !urgentText.trim() && styles.urgentModalSaveDisabled]}
-                onPress={async () => {
-                  if (!urgentText.trim()) return;
-                  await addUrgentNote(urgentText.trim());
-                  setUrgentText('');
-                  setShowUrgentModal(false);
-                }}
-                disabled={!urgentText.trim()}
-              >
-                <Text style={styles.urgentModalSaveText}>保存</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* 首次引导 */}
-      {showGuide && (
-        <GuideOverlay
-          onDismiss={dismissGuide}
-          targets={{ urgent: urgentRef, prep: prepRef, support: supportRef, tools: toolsRef }}
-        />
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingBottom: 100 },
@@ -649,4 +357,308 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-});
+}), [colors]);
+
+  // 物品准备 + 心理支持
+  const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
+  const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
+  const [loadingSupport, setLoadingSupport] = useState(false);
+
+  const periods = [state.stage];
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setLoadingItems(true);
+      setLoadingSupport(true);
+      try {
+        const [items, support, preps] = await Promise.all([
+          getPresetItemsByPeriods(periods),
+          getPsychologicalSupportByPeriods(periods),
+          getUserPreparations(user.id),
+        ]);
+        setPresetItems(items);
+        setSupportTips(support);
+        setUserPreparations(preps);
+      } catch (e) {
+        console.error('Failed to load items/support:', e);
+      } finally {
+        setLoadingItems(false);
+        setLoadingSupport(false);
+      }
+    })();
+  }, [user, state.stage]);
+
+  const handleToggleItem = async (itemId: string) => {
+    if (!user) return;
+    const existing = userPreparations.find(p => p.item_id === itemId);
+    const newStatus = existing?.status === 'prepared' ? 'not_prepared' : 'prepared';
+    try {
+      const updated = await setUserPreparation(user.id, itemId, newStatus);
+      setUserPreparations(prev => {
+        const filtered = prev.filter(p => p.item_id !== itemId);
+        return [...filtered, updated];
+      });
+    } catch (e) {
+      console.error('Failed to update item:', e);
+    }
+  };
+
+  // 首次登录引导
+  useEffect(() => {
+    if (!user) return;
+    loadActiveTools(user.id).then(tools => setActiveTools(tools));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const shown = await AsyncStorage.getItem(`guide_shown_${user.id}`);
+        if (!shown) setShowGuide(true);
+      } catch {}
+    })();
+  }, [user]);
+
+  const dismissGuide = async () => {
+    setShowGuide(false);
+    try {
+      await AsyncStorage.setItem(`guide_shown_${user?.id || ''}`, '1');
+    } catch {}
+  };
+
+  const activeToolsRef = useRef(activeTools);
+  activeToolsRef.current = activeTools;
+  useEffect(() => {
+    if (!user) return;
+    saveActiveTools(user.id, activeToolsRef.current);
+  }, [activeTools, user]);
+
+  if (authLoading || state.loading) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+        <Text style={styles.notLoggedIn}>请先登录</Text>
+        <Link href="/login">
+          <Text style={styles.loginLink}>去登录</Text>
+        </Link>
+      </View>
+    );
+  }
+
+  const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.greeting}>准爸爸，你好 👋</Text>
+          <View style={styles.stageRow}>
+            <Text style={styles.stageText}>{stageLabel}</Text>
+            {state.babies.length > 0 && (
+              <Text style={styles.weekText}>
+                {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* 紧急关注 */}
+        <View ref={urgentRef} style={styles.urgentSection} collapsable={false}>
+          {state.urgentNotes.map(note => (
+            <View key={note.id} style={styles.urgentCard}>
+              <View style={styles.urgentBody}>
+                <View style={styles.urgentDot} />
+                <Text style={styles.urgentText}>{note.content}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.urgentClose}
+                onPress={() => {
+                  if (Platform.OS === 'web') {
+                    if (window.confirm('关闭后将不再展示，确定要关闭吗？')) {
+                      dismissUrgentNote(note.id);
+                    }
+                  } else {
+                    Alert.alert(
+                      '关闭提醒',
+                      '关闭后将不再展示，确定要关闭吗？',
+                      [
+                        { text: '取消', style: 'cancel' },
+                        { text: '确定关闭', style: 'destructive', onPress: () => dismissUrgentNote(note.id) },
+                      ]
+                    );
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.urgentCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {/* 新增按钮 */}
+          <TouchableOpacity style={styles.urgentAddBtn} onPress={() => { setUrgentText(''); setShowUrgentModal(true); }}>
+            <Text style={styles.urgentAddIcon}>+</Text>
+            <Text style={styles.urgentAddText}>新增紧急关注</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ===== 物品准备 ===== */}
+        {presetItems.length > 0 && (
+          <CollapsibleGroup containerRef={prepRef} title="物品准备" count={presetItems.length} defaultExpanded={false}>
+            {presetItems.map(item => {
+              const prep = userPreparations.find(p => p.item_id === item.id);
+              const isPrepared = prep?.status === 'prepared';
+              const level = item.essential_level;
+              const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
+              const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.prepItem, isPrepared && styles.prepItemDone]}
+                  onPress={() => handleToggleItem(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
+                    {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
+                  </View>
+                  <View style={styles.prepInfo}>
+                    <View style={styles.prepHeaderRow}>
+                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
+                      <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
+                    </View>
+                    {item.description && (
+                      <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    )}
+                    <View style={styles.prepMeta}>
+                      <Text style={styles.prepMetaCategory}>{item.category}</Text>
+                      {item.quantity_suggestion && (
+                        <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </CollapsibleGroup>
+        )}
+
+        {/* ===== 心理支持 ===== */}
+        {supportTips.length > 0 && (
+          <CollapsibleGroup containerRef={supportRef} title="心理支持" count={supportTips.length} defaultExpanded={false}>
+            {supportTips.map(tip => {
+              const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
+              const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
+                : tip.support_type === 'communication' ? styles.supportTypeCommunication
+                : tip.support_type === 'action' ? styles.supportTypeAction
+                : styles.supportTypeKnowledge;
+
+              return (
+                <View key={tip.id} style={styles.supportCard}>
+                  <View style={styles.supportHeader}>
+                    <Text style={styles.supportTitle} numberOfLines={2}>{tip.title}</Text>
+                    <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
+                  </View>
+                  <View style={styles.supportContentBlock}>
+                    <Text style={styles.supportContent}>{tip.content}</Text>
+                  </View>
+                  {tip.tips && tip.tips.length > 0 && (
+                    <View style={styles.supportTips}>
+                      {tip.tips.map((t, i) => (
+                        <View key={i} style={styles.supportTipRow}>
+                          <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
+                          <Text style={styles.supportTipText}>{t}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </CollapsibleGroup>
+        )}
+
+        {/* 工具栏 */}
+        <Toolbar
+          wrapperRef={toolsRef}
+          activeTools={activeTools}
+          userId={user?.id || ''}
+          babyGender={state.babies[0]?.gender}
+          onAddTool={(toolId) => {
+            if (activeTools.some(t => t.toolId === toolId)) return;
+            setActiveTools(prev => [...prev, { instanceId: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, toolId }]);
+          }}
+          onRemoveTool={(instanceId) => setActiveTools(prev => prev.filter(t => t.instanceId !== instanceId))}
+          onReorder={(tools) => setActiveTools(tools)}
+        />
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* 新增紧急关注弹窗 */}
+      <Modal visible={showUrgentModal} animationType="fade" transparent>
+        <View style={styles.urgentModalOverlay}>
+          <View style={styles.urgentModalContent}>
+            <Text style={styles.urgentModalTitle}>新增紧急关注</Text>
+            <TextInput
+              style={styles.urgentModalInput}
+              placeholder="如：观察明天是否还有红疹"
+              placeholderTextColor={colors.muted}
+              value={urgentText}
+              onChangeText={setUrgentText}
+              multiline
+              autoFocus
+            />
+            <View style={styles.urgentModalActions}>
+              <TouchableOpacity
+                style={styles.urgentModalCancel}
+                onPress={() => setShowUrgentModal(false)}
+              >
+                <Text style={styles.urgentModalCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.urgentModalSave, (!urgentText.trim() || urgentLoading) && styles.urgentModalSaveDisabled]}
+                onPress={async () => {
+                  if (!urgentText.trim()) return;
+                  setUrgentLoading(true);
+                  try {
+                    await addUrgentNote(urgentText.trim());
+                    setUrgentText('');
+                    setShowUrgentModal(false);
+                  } finally {
+                    setUrgentLoading(false);
+                  }
+                }}
+                disabled={!urgentText.trim() || urgentLoading}
+              >
+                {urgentLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.urgentModalSaveText}>保存</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 首次引导 */}
+      {showGuide && (
+        <GuideOverlay
+          onDismiss={dismissGuide}
+          targets={{ urgent: urgentRef, prep: prepRef, support: supportRef, tools: toolsRef }}
+        />
+      )}
+    </View>
+  );
+}

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, Platform, useWindowDimensions, View as RNView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../styles/tokens';
+import { useColors } from '../context/ThemeContext';
+import { radius, spacing, typography } from '../styles/tokens';
 
 interface Step {
   title: string;
@@ -28,6 +29,7 @@ export function GuideOverlay({
   onDismiss: () => void;
   targets?: Partial<Record<Step['region'] & string, React.RefObject<RNView | null>>>;
 }) {
+  const colors = useColors();
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -97,6 +99,87 @@ export function GuideOverlay({
     ringStyle = { top: y, left: x, width: w, height: h };
   }
 
+  const styles = useMemo(() => StyleSheet.create({
+    mask: {
+      position: 'absolute',
+      backgroundColor: 'rgba(26,26,46,0.62)', // 墨蓝半透明，跟 kami 主色一致
+    },
+    ring: {
+      position: 'absolute',
+      borderRadius: 12,
+      borderColor: 'rgba(255,255,255,0.85)',
+      borderStyle: 'solid',
+    },
+    cardWrap: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      paddingBottom: 80,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+      marginHorizontal: spacing.xl,
+      alignItems: 'center',
+      maxWidth: 340,
+      width: '100%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.2,
+      shadowRadius: 24,
+      elevation: 10,
+    },
+    stepDots: {
+      flexDirection: 'row',
+      gap: 6,
+      marginBottom: spacing.md,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+    },
+    dotActive: {
+      backgroundColor: colors.accent,
+      width: 20,
+      borderRadius: 3,
+    },
+    iconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.lg,
+      backgroundColor: colors.accentLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    title: {
+      ...typography.title3,
+      fontWeight: '700',
+      color: colors.fg,
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    desc: {
+      ...typography.callout,
+      color: colors.fgSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: spacing.lg,
+    },
+    hintBtn: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+    },
+    hint: {
+      ...typography.footnote,
+      color: colors.muted,
+      fontWeight: '500',
+    },
+  }), [colors]);
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* 4 个 mask 拼出"挖空"区域 */}
@@ -147,86 +230,5 @@ export function GuideOverlay({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mask: {
-    position: 'absolute',
-    backgroundColor: 'rgba(26,26,46,0.62)', // 墨蓝半透明，跟 kami 主色一致
-  },
-  ring: {
-    position: 'absolute',
-    borderRadius: 12,
-    borderColor: 'rgba(255,255,255,0.85)',
-    borderStyle: 'solid',
-  },
-  cardWrap: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 80,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    marginHorizontal: spacing.xl,
-    alignItems: 'center',
-    maxWidth: 340,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  stepDots: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: spacing.md,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.accent,
-    width: 20,
-    borderRadius: 3,
-  },
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  title: {
-    ...typography.title3,
-    fontWeight: '700',
-    color: colors.fg,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  desc: {
-    ...typography.callout,
-    color: colors.fgSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: spacing.lg,
-  },
-  hintBtn: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  hint: {
-    ...typography.footnote,
-    color: colors.muted,
-    fontWeight: '500',
-  },
-});
 
 export default GuideOverlay;

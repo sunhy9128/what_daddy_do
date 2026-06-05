@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform, LayoutAnimation, UIManager } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -16,6 +17,7 @@ interface GrowthRecord {
 }
 
 export function GrowthTracker({ userId, babyGender }: { userId: string; babyGender?: string }) {
+  const colors = useColors();
   const [gender, setGender] = useState<'boy' | 'girl'>(babyGender === 'girl' ? 'girl' : 'boy');
   const [month, setMonth] = useState('');
   const [height, setHeight] = useState('');
@@ -121,6 +123,165 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
     setHeight('');
     setWeight('');
   };
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: { maxHeight: 540 },
+    genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+    genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+    genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+    genderText: { ...typography.footnote, fontWeight: '500', color: colors.muted },
+    genderTextActive: { color: '#fff' },
+    genderDisplay: { ...typography.callout, fontWeight: '600', color: colors.accent },
+    addSection: { marginTop: spacing.md, marginBottom: spacing.lg },
+    addSectionTitle: {
+      ...typography.caption1,
+      fontWeight: '600',
+      color: colors.muted,
+      marginBottom: spacing.sm,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' },
+    inputField: { flex: 1 },
+    inputLabel: { ...typography.caption2, color: colors.muted, marginBottom: 4, fontWeight: '500' },
+    input: {
+      ...typography.callout,
+      color: colors.fg,
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      textAlign: 'center',
+      height: 42,
+    },
+    addBtn: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.lg,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    addBtnDisabled: { backgroundColor: colors.border, borderColor: colors.border },
+    addBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
+    addBtnTextDisabled: { color: colors.muted },
+    historySection: { marginTop: spacing.md },
+    historyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+    historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+    historyTable: {
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+      backgroundColor: colors.surface,
+    },
+    historyHeader: {
+      flexDirection: 'row',
+      backgroundColor: colors.surfaceSecondary,
+      paddingVertical: spacing.sm,
+    },
+    historyHeaderText: {
+      ...typography.caption1,
+      fontWeight: '600',
+      color: colors.muted,
+      textAlign: 'center',
+    },
+    historyItem: {
+      flexDirection: 'row',
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
+      position: 'relative',
+    },
+    historyItemEditing: {
+      backgroundColor: colors.accentLight,
+    },
+    historyCell: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.sm,
+      minHeight: 40,
+    },
+    historyText: { ...typography.callout, color: colors.fg, textAlign: 'center', fontWeight: '500' },
+    // 加载动画
+    loadingContainer: {
+      height: 300,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surfaceSecondary + '40',
+      borderRadius: radius.sm,
+      marginTop: spacing.sm,
+    },
+    loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    loadingText: { ...typography.footnote, color: colors.muted },
+
+    // 编辑
+    editInput: {
+      ...typography.callout,
+      color: colors.accent,
+      backgroundColor: colors.bg,
+      borderRadius: radius.sm,
+      paddingHorizontal: 2,
+      paddingVertical: 2,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      textAlign: 'center',
+      width: '100%',
+      height: 32,
+      maxWidth: 64,
+      fontWeight: '500',
+    },
+    editToggleBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs + 1,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    editToggleBtnActive: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    editToggleText: {
+      ...typography.caption1,
+      color: colors.accent,
+      fontWeight: '500',
+    },
+    editToggleTextActive: {
+      color: '#fff',
+    },
+    editRowBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: radius.md,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    editRowBtnDel: {
+      backgroundColor: '#FEF2F2',
+      borderWidth: 1,
+      borderColor: '#FECACA',
+    },
+    editRowBtnText: {
+      fontSize: 14,
+      color: '#fff',
+      fontWeight: '600',
+    },
+    editRowBtnTextDel: {
+      fontSize: 13,
+      color: colors.error,
+      fontWeight: '600',
+    },
+  }), [colors]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>
@@ -243,164 +404,5 @@ export function GrowthTracker({ userId, babyGender }: { userId: string; babyGend
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { maxHeight: 540 },
-  genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  genderBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
-  genderBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  genderText: { ...typography.footnote, fontWeight: '500', color: colors.muted },
-  genderTextActive: { color: '#fff' },
-  genderDisplay: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  addSection: { marginTop: spacing.md, marginBottom: spacing.lg },
-  addSectionTitle: {
-    ...typography.caption1,
-    fontWeight: '600',
-    color: colors.muted,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' },
-  inputField: { flex: 1 },
-  inputLabel: { ...typography.caption2, color: colors.muted, marginBottom: 4, fontWeight: '500' },
-  input: {
-    ...typography.callout,
-    color: colors.fg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    textAlign: 'center',
-    height: 42,
-  },
-  addBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.lg,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  addBtnDisabled: { backgroundColor: colors.border, borderColor: colors.border },
-  addBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
-  addBtnTextDisabled: { color: colors.muted },
-  historySection: { marginTop: spacing.md },
-  historyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  historyTable: {
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceSecondary,
-    paddingVertical: spacing.sm,
-  },
-  historyHeaderText: {
-    ...typography.caption1,
-    fontWeight: '600',
-    color: colors.muted,
-    textAlign: 'center',
-  },
-  historyItem: {
-    flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: colors.border,
-    position: 'relative',
-  },
-  historyItemEditing: {
-    backgroundColor: colors.accentLight,
-  },
-  historyCell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-    minHeight: 40,
-  },
-  historyText: { ...typography.callout, color: colors.fg, textAlign: 'center', fontWeight: '500' },
-  // 加载动画
-  loadingContainer: {
-    height: 300,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceSecondary + '40',
-    borderRadius: radius.sm,
-    marginTop: spacing.sm,
-  },
-  loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  loadingText: { ...typography.footnote, color: colors.muted },
-
-  // 编辑
-  editInput: {
-    ...typography.callout,
-    color: colors.accent,
-    backgroundColor: colors.bg,
-    borderRadius: radius.sm,
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    textAlign: 'center',
-    width: '100%',
-    height: 32,
-    maxWidth: 64,
-    fontWeight: '500',
-  },
-  editToggleBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 1,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  editToggleBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  editToggleText: {
-    ...typography.caption1,
-    color: colors.accent,
-    fontWeight: '500',
-  },
-  editToggleTextActive: {
-    color: '#fff',
-  },
-  editRowBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  editRowBtnDel: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  editRowBtnText: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  editRowBtnTextDel: {
-    fontSize: 13,
-    color: colors.error,
-    fontWeight: '600',
-  },
-});
 
 export default GrowthTracker;

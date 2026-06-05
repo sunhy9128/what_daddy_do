@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Avatar, Badge } from '../atoms';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 interface PostCardProps {
   authorName: string;
@@ -24,6 +25,56 @@ export function PostCard({
   comments,
   onPress,
 }: PostCardProps) {
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    authorInfo: {
+      flex: 1,
+      marginLeft: spacing.md,
+    },
+    name: {
+      ...typography.callout,
+      fontWeight: '600',
+    },
+    meta: {
+      ...typography.caption1,
+      color: colors.muted,
+    },
+    content: {
+      ...typography.callout,
+      lineHeight: 24,
+      marginBottom: spacing.md,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.xl,
+    },
+    action: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    actionIcon: {
+      fontSize: 18,
+    },
+    actionText: {
+      ...typography.footnote,
+      color: colors.muted,
+    },
+  }), [colors]);
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
@@ -49,52 +100,5 @@ export function PostCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  authorInfo: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  name: {
-    ...typography.callout,
-    fontWeight: '600',
-  },
-  meta: {
-    ...typography.caption1,
-    color: colors.muted,
-  },
-  content: {
-    ...typography.callout,
-    lineHeight: 24,
-    marginBottom: spacing.md,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  actionIcon: {
-    fontSize: 18,
-  },
-  actionText: {
-    ...typography.footnote,
-    color: colors.muted,
-  },
-});
 
 export default PostCard;

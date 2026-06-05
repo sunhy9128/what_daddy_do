@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { getFoodSafety } from '../../lib/api';
 import { FoodSafety } from '../../lib/supabase';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -31,13 +32,14 @@ const PERIODS = [
 // 提取到组件外部，避免每次渲染重建组件类型
 function SafetyBadge({ level }: { level: string }) {
   return (
-    <View style={[styles.badge, { backgroundColor: LEVEL_COLORS[level] + '20' }]}>
-      <Text style={[styles.badgeText, { color: LEVEL_COLORS[level] }]}>{LEVEL_LABELS[level]}</Text>
+    <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, backgroundColor: LEVEL_COLORS[level] + '20' }}>
+      <Text style={{ ...typography.caption1, fontWeight: '600', fontSize: 11, color: LEVEL_COLORS[level] }}>{LEVEL_LABELS[level]}</Text>
     </View>
   );
 }
 
 export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
+  const colors = useColors();
   const [foods, setFoods] = useState<FoodSafety[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,47 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
     }
     return [...exact, ...fuzzy].slice(0, 30);
   }, [foods, search, hasSearch]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: { maxHeight: 540 },
+    containerCollapsed: { maxHeight: 56 },
+    containerExpanded: { maxHeight: 540 },
+    searchInput: {
+      ...typography.callout, color: colors.fg,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: radius.sm, paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1, borderColor: colors.border,
+      marginBottom: spacing.md,
+    },
+    empty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm, padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 0.5, borderColor: colors.border,
+    },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
+    foodName: { ...typography.callout, fontWeight: '700', color: colors.fg },
+    category: { ...typography.caption1, color: colors.muted, backgroundColor: colors.surfaceSecondary, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+    note: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.sm, lineHeight: 18 },
+    table: { gap: 3 },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 3 },
+    periodLabel: { ...typography.footnote, color: colors.fgSecondary, flex: 1 },
+    badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6 },
+    badgeText: { ...typography.caption1, fontWeight: '600', fontSize: 11 },
+    // 加载动画
+    loadingContainer: {
+      height: 200,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surfaceSecondary + '40',
+      borderRadius: radius.sm,
+    },
+    loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    loadingText: { ...typography.footnote, color: colors.muted },
+  }), [colors]);
 
   return (
     <ScrollView
@@ -125,46 +168,5 @@ export function FoodSafetyTool({}: { userId: string; babyGender?: string }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { maxHeight: 540 },
-  containerCollapsed: { maxHeight: 56 },
-  containerExpanded: { maxHeight: 540 },
-  searchInput: {
-    ...typography.callout, color: colors.fg,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.sm, paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1, borderColor: colors.border,
-    marginBottom: spacing.md,
-  },
-  empty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm, padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 0.5, borderColor: colors.border,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
-  foodName: { ...typography.callout, fontWeight: '700', color: colors.fg },
-  category: { ...typography.caption1, color: colors.muted, backgroundColor: colors.surfaceSecondary, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
-  note: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.sm, lineHeight: 18 },
-  table: { gap: 3 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 3 },
-  periodLabel: { ...typography.footnote, color: colors.fgSecondary, flex: 1 },
-  badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6 },
-  badgeText: { ...typography.caption1, fontWeight: '600', fontSize: 11 },
-  // 加载动画
-  loadingContainer: {
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceSecondary + '40',
-    borderRadius: radius.sm,
-  },
-  loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  loadingText: { ...typography.footnote, color: colors.muted },
-});
 
 export default FoodSafetyTool;

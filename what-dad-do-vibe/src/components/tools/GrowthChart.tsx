@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GrowthDataPoint, BOY_GROWTH, GIRL_GROWTH } from '../../lib/growth-chart-data';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { spacing, typography } from '../../styles/tokens';
 
 const W = 300, PANEL_H = 140, GAP = 2;
 const TOTAL_H = PANEL_H * 2 + GAP + 24;
@@ -30,6 +31,7 @@ function drawPanel(
   colorP: string, colorM: string, band1: string, band2: string,
   records: { month: number; value: number }[],
   topOffset: number,
+  s: ReturnType<typeof StyleSheet.create>,
 ) {
   const x = (m: number) => PAD_L + (m / 36) * PLOT_W;
   const yPos = (v: number) => topOffset + PAD_T + ((yMax - v) / (yMax - yMin)) * PLOT_H;
@@ -86,6 +88,7 @@ function drawPanel(
 }
 
 export function GrowthChart({ gender, records }: Props) {
+  const colors = useColors();
   const ds = gender === 'boy' ? BOY_GROWTH : GIRL_GROWTH;
   const lenData = ds.length;
   const wtData = ds.weight;
@@ -99,6 +102,22 @@ export function GrowthChart({ gender, records }: Props) {
 
   const xFn = (m: number) => PAD_L + (m / 36) * PLOT_W;
 
+  const s = useMemo(() => StyleSheet.create({
+    wrapper: { alignItems: 'center', marginVertical: spacing.sm },
+    title: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.xs },
+    bar: { position: 'absolute', opacity: 0.35 },
+    grid: { position: 'absolute', height: 0.5, backgroundColor: '#E8E4D9' },
+    yLbl: { position: 'absolute', left: 2, fontSize: 8, color: '#8A8A9A', width: 26, textAlign: 'right' },
+    xLbl: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 14, textAlign: 'center' },
+    axisTitle: { position: 'absolute', fontSize: 8, fontWeight: '600' },
+    dot: { position: 'absolute', opacity: 0.7 },
+    dataPt: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 2, backgroundColor: '#fff' },
+    legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+    legIt: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    legDot: { width: 10, height: 10, borderRadius: 5 },
+    legTxt: { ...typography.caption2, color: colors.muted },
+  }), [colors]);
+
   return (
     <View style={s.wrapper}>
       <Text style={s.title}>生长曲线</Text>
@@ -106,13 +125,13 @@ export function GrowthChart({ gender, records }: Props) {
         <View style={{ position: 'absolute', left: 0, top: 0, width: W, height: TOTAL_H, backgroundColor: '#FCFAF5', borderRadius: 8 }} />
 
         {/* 上半：身长 */}
-        {drawPanel(lenData, lenMin, lenMax, 5, '#D06060', '#CC4444', '#FFE0E0', '#E8FFE8', records.map(r => ({ month: r.month, value: r.height })), 0)}
+        {drawPanel(lenData, lenMin, lenMax, 5, '#D06060', '#CC4444', '#FFE0E0', '#E8FFE8', records.map(r => ({ month: r.month, value: r.height })), 0, s)}
 
         {/* 分隔线 */}
         <View style={{ position: 'absolute', left: PAD_L, top: PANEL_H, width: PLOT_W, height: 0.5, backgroundColor: colors.border }} />
 
         {/* 下半：体重 */}
-        {drawPanel(wtData, wtMin, wtMax, 2, '#6080C0', '#4466CC', '#E0ECFF', '#E8FFF0', records.map(r => ({ month: r.month, value: r.weight })), PANEL_H + GAP)}
+        {drawPanel(wtData, wtMin, wtMax, 2, '#6080C0', '#4466CC', '#E0ECFF', '#E8FFF0', records.map(r => ({ month: r.month, value: r.weight })), PANEL_H + GAP, s)}
 
         {/* X 轴 */}
         {[0, 6, 12, 18, 24, 30, 36].map(m => (
@@ -132,21 +151,5 @@ export function GrowthChart({ gender, records }: Props) {
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  wrapper: { alignItems: 'center', marginVertical: spacing.sm },
-  title: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.xs },
-  bar: { position: 'absolute', opacity: 0.35 },
-  grid: { position: 'absolute', height: 0.5, backgroundColor: '#E8E4D9' },
-  yLbl: { position: 'absolute', left: 2, fontSize: 8, color: '#8A8A9A', width: 26, textAlign: 'right' },
-  xLbl: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 14, textAlign: 'center' },
-  axisTitle: { position: 'absolute', fontSize: 8, fontWeight: '600' },
-  dot: { position: 'absolute', opacity: 0.7 },
-  dataPt: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 2, backgroundColor: '#fff' },
-  legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  legIt: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legDot: { width: 10, height: 10, borderRadius: 5 },
-  legTxt: { ...typography.caption2, color: colors.muted },
-});
 
 export default GrowthChart;

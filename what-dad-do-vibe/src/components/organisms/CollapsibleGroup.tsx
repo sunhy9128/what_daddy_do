@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 interface CollapsibleGroupProps {
   title: string;
@@ -14,6 +15,7 @@ interface CollapsibleGroupProps {
 }
 
 export function CollapsibleGroup({ title, count, defaultExpanded = true, children, onInit, containerRef }: CollapsibleGroupProps) {
+  const colors = useColors();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const initedRef = useRef(false);
 
@@ -24,6 +26,53 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
       onInit?.();
     }
   }, [expanded, onInit]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.md,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.lg,
+      backgroundColor: colors.surfaceSecondary,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    title: {
+      ...typography.callout,
+      fontWeight: '600',
+    },
+    badge: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.sm,
+    },
+    badgeText: {
+      ...typography.footnote,
+      fontWeight: '600',
+      color: colors.surface,
+    },
+    arrow: {
+      fontSize: 16,
+      color: colors.muted,
+    },
+    content: {
+      paddingHorizontal: spacing.sm,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
+      gap: spacing.sm,
+    },
+  }), [colors]);
 
   return (
     <View ref={containerRef} style={styles.container} collapsable={false}>
@@ -40,52 +89,5 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-    backgroundColor: colors.surfaceSecondary,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  title: {
-    ...typography.callout,
-    fontWeight: '600',
-  },
-  badge: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  badgeText: {
-    ...typography.footnote,
-    fontWeight: '600',
-    color: colors.surface,
-  },
-  arrow: {
-    fontSize: 16,
-    color: colors.muted,
-  },
-  content: {
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-});
 
 export default CollapsibleGroup;

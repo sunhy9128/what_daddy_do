@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,6 +36,7 @@ export function ToolBase({
   onMoveUp, onMoveDown,
   forceCollapsed = false,
 }: ToolBaseProps) {
+  const colors = useColors();
   const [collapsed, setCollapsed] = useState(false);
   const isCollapsed = forceCollapsed || collapsed;
 
@@ -42,6 +44,69 @@ export function ToolBase({
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCollapsed(!collapsed);
   };
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingLeft: spacing.md,
+      paddingRight: spacing.sm,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.surfaceSecondary,
+      minHeight: 40,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    reorderBtns: {
+      flexDirection: 'column',
+      gap: 1,
+    },
+    reorderBtn: {
+      width: 20,
+      height: 13,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    reorderBtnDisabled: {
+      opacity: 0.3,
+    },
+    toolName: {
+      ...typography.footnote,
+      fontWeight: '600',
+      color: colors.fg,
+    },
+    removeBtn: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    removeIcon: {
+      fontSize: 12,
+      color: colors.muted,
+      fontWeight: '600',
+    },
+    body: {
+      padding: spacing.md,
+    },
+  }), [colors]);
 
   return (
     <View style={styles.container}>
@@ -104,71 +169,9 @@ export function ToolBase({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingLeft: spacing.md,
-    paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surfaceSecondary,
-    minHeight: 40,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  reorderBtns: {
-    flexDirection: 'column',
-    gap: 1,
-  },
-  reorderBtn: {
-    width: 20,
-    height: 13,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reorderBtnDisabled: {
-    opacity: 0.3,
-  },
-  toolName: {
-    ...typography.footnote,
-    fontWeight: '600',
-    color: colors.fg,
-  },
-  removeBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeIcon: {
-    fontSize: 12,
-    color: colors.muted,
-    fontWeight: '600',
-  },
-  body: {
-    padding: spacing.md,
-  },
-});
-
 // 3-dot pulse 加载动画 — 各工具通用
 export function LoadingDot({ delay = 0, size = 8 }: { delay?: number; size?: number }) {
+  const colors = useColors();
   const opacity = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {

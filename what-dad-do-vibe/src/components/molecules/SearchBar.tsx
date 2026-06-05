@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -9,6 +10,33 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ placeholder = '搜索...', value, onChangeText }: SearchBarProps) {
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.lg,
+      paddingHorizontal: spacing.md + 2,
+      paddingVertical: spacing.sm + 2,
+      backgroundColor: colors.bg,
+      borderRadius: radius.md,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    icon: {
+      fontSize: 16,
+    },
+    input: {
+      flex: 1,
+      ...typography.callout,
+      color: colors.fg,
+      padding: 0,
+    },
+  }), [colors]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>🔍</Text>
@@ -23,29 +51,5 @@ export function SearchBar({ placeholder = '搜索...', value, onChangeText }: Se
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.sm + 2,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  icon: {
-    fontSize: 16,
-  },
-  input: {
-    flex: 1,
-    ...typography.callout,
-    color: colors.fg,
-    padding: 0,
-  },
-});
 
 export default SearchBar;

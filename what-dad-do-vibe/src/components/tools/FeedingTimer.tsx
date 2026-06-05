@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 import { loadFeedingRecords, saveFeedingRecords, FeedingRecordData } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
 
@@ -11,6 +12,7 @@ interface FeedingRecord {
 }
 
 export function FeedingTimer({ userId }: { userId: string; babyGender?: string }) {
+  const colors = useColors();
   const [records, setRecords] = useState<FeedingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const nextId = useRef(1);
@@ -103,6 +105,108 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
   const today = new Date();
   const dateStr = `${today.getMonth() + 1}月${today.getDate()}日`;
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    mainArea: {
+      flex: 1,
+    },
+    topRow: {
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    mainBtn: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+    },
+    recordSection: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+    },
+    recordHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    dateLabel: {
+      ...typography.caption1,
+      fontWeight: '600',
+      color: colors.muted,
+    },
+    btnInner: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    btnElapsed: {
+      ...typography.caption2,
+      color: '#fff',
+      fontWeight: '600',
+      fontSize: 10,
+      marginTop: 2,
+    },
+    clearBtnText: {
+      ...typography.caption2,
+      color: '#E53935',
+      fontWeight: '600',
+    },
+    recordList: {
+      maxHeight: 100,
+    },
+    recordItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    recordTime: {
+      ...typography.callout,
+      fontWeight: '600',
+      color: colors.fg,
+      flex: 1,
+    },
+    recordIndex: {
+      ...typography.caption2,
+      color: colors.muted,
+    },
+    emptySection: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl + 4,
+      backgroundColor: colors.accent + '12',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.accent + '25',
+      borderStyle: 'dashed',
+    },
+    emptyText: {
+      ...typography.footnote,
+      color: colors.accent,
+      fontWeight: '500',
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+    },
+    loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    loadingText: { ...typography.footnote, color: colors.muted },
+  }), [colors]);
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -121,7 +225,19 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
             {/* 主按钮居中 */}
             <View style={styles.topRow}>
               <TouchableOpacity style={styles.mainBtn} onPress={handleFeed} activeOpacity={0.75}>
-                <Ionicons name="water-outline" size={38} color="#fff" />
+                <View style={styles.btnInner}>
+                  {elapsedMin === null ? (
+                    <Ionicons name="water-outline" size={30} color="#fff" />
+                  ) : (
+                    <Text style={[styles.btnElapsed, { fontSize: 12 }]}>
+                      {elapsedMin < 1
+                        ? '刚刚'
+                        : elapsedMin < 60
+                          ? `距上次\n${elapsedMin}分钟`
+                          : `距上次\n${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`}
+                    </Text>
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -130,15 +246,6 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
               <View style={styles.recordSection}>
                 <View style={styles.recordHeaderRow}>
                   <Text style={styles.dateLabel}>{dateStr} · {records.length}次</Text>
-                  <Text style={styles.elapsedLabel}>
-                    {elapsedMin !== null
-                      ? elapsedMin < 1
-                        ? '刚刚'
-                        : elapsedMin < 60
-                          ? `距上次 ${elapsedMin}分钟`
-                          : `距上次 ${Math.floor(elapsedMin / 60)}小时${elapsedMin % 60}分钟`
-                      : '今天尚未记录'}
-                  </Text>
                   <TouchableOpacity onPress={handleClear} activeOpacity={0.6} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Text style={styles.clearBtnText}>清除</Text>
                   </TouchableOpacity>
@@ -165,102 +272,5 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  mainArea: {
-    flex: 1,
-  },
-  topRow: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  mainBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-  },
-  recordSection: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-  },
-  recordHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  dateLabel: {
-    ...typography.caption1,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  elapsedLabel: {
-    ...typography.caption2,
-    color: colors.accent,
-    fontWeight: '500',
-    fontSize: 10,
-  },
-  clearBtnText: {
-    ...typography.caption2,
-    color: '#E53935',
-    fontWeight: '600',
-  },
-  recordList: {
-    maxHeight: 100,
-  },
-  recordItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  recordTime: {
-    ...typography.callout,
-    fontWeight: '600',
-    color: colors.fg,
-    flex: 1,
-  },
-  recordIndex: {
-    ...typography.caption2,
-    color: colors.muted,
-  },
-  emptySection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl + 4,
-    backgroundColor: colors.accent + '12',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.accent + '25',
-    borderStyle: 'dashed',
-  },
-  emptyText: {
-    ...typography.footnote,
-    color: colors.accent,
-    fontWeight: '500',
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  loadingText: { ...typography.footnote, color: colors.muted },
-});
 
 export default FeedingTimer;

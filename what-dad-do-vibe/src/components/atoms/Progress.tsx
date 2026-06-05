@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ViewProps } from 'react-native';
-import { colors, spacing, typography } from '../../styles/tokens';
+import { spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
 
 interface ProgressBarProps extends ViewProps {
   value: number; // 0-100
@@ -8,7 +9,21 @@ interface ProgressBarProps extends ViewProps {
 }
 
 export function ProgressBar({ value, showLabel = false, style, ...props }: ProgressBarProps) {
+  const colors = useColors();
   const percent = Math.min(100, Math.max(0, value));
+  const styles = useMemo(() => StyleSheet.create({
+    track: {
+      height: 8,
+      backgroundColor: colors.border,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    fill: {
+      height: '100%',
+      backgroundColor: colors.accent,
+      borderRadius: 4,
+    },
+  }), [colors]);
   return (
     <View style={[styles.track, style]} {...props}>
       <View style={[styles.fill, { width: `${percent}%` }]} />
@@ -23,10 +38,41 @@ interface ProgressRingProps extends ViewProps {
 }
 
 export function ProgressRing({ value, size = 64, strokeWidth = 5, style, ...props }: ProgressRingProps) {
+  const colors = useColors();
   const percent = Math.min(100, Math.max(0, value));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - percent / 100);
+
+  const styles = useMemo(() => StyleSheet.create({
+    ringContainer: {
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ringSvg: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    ringBg: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      borderColor: colors.border,
+    },
+    ringFill: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+    },
+    ringText: {
+      ...typography.title3,
+      fontWeight: '600',
+    },
+  }), [colors]);
 
   return (
     <View style={[styles.ringContainer, { width: size, height: size }, style]} {...props}>
@@ -54,46 +100,5 @@ export function ProgressRing({ value, size = 64, strokeWidth = 5, style, ...prop
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  track: {
-    height: 8,
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    backgroundColor: colors.accent,
-    borderRadius: 4,
-  },
-  ringContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringSvg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  ringBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    borderColor: colors.border,
-  },
-  ringFill: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  ringText: {
-    ...typography.title3,
-    fontWeight: '600',
-  },
-});
 
 export default ProgressBar;

@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { AppProvider } from '../src/context/AppContext';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { WebScrollbarStyle } from '../src/components/WebScrollbarStyle';
 
 function AuthRedirector() {
@@ -27,25 +28,32 @@ function AuthRedirector() {
   return null;
 }
 
+function StatusBarManager() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <AppProvider>
-          <StatusBar style="dark" />
-          <Suspense fallback={null}>
-            <AuthRedirector />
-          </Suspense>
-          <WebScrollbarStyle />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="login" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="baby-info" />
-            <Stack.Screen name="congratulations" />
-            <Stack.Screen name="profile-edit" />
-          </Stack>
-        </AppProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppProvider>
+            <StatusBarManager />
+            <Suspense fallback={null}>
+              <AuthRedirector />
+            </Suspense>
+            <WebScrollbarStyle />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="login" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="baby-info" />
+              <Stack.Screen name="congratulations" />
+              <Stack.Screen name="profile-edit" />
+            </Stack>
+          </AppProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

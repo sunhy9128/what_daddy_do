@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, LayoutAnimation, Platform, UIManager, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Android 启用 LayoutAnimation
@@ -12,8 +12,8 @@ import { GrowthTracker } from './GrowthTracker';
 import { VaccineTracker } from './VaccineTracker';
 import { VaccineCalendar } from './VaccineCalendar';
 import { FoodSafetyTool } from './FoodSafety';
-import { Pressable } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'feeding-timer', name: '喂奶计时器', icon: 'timer-outline', description: '记录每次喂奶时间' },
@@ -50,6 +50,7 @@ interface ToolbarProps {
 export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTool, onReorder, wrapperRef }: ToolbarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [reordering, setReordering] = useState(false);
+  const colors = useColors();
 
   const moveUp = (index: number) => {
     if (index <= 0) return;
@@ -69,6 +70,43 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
 
   const activeToolIds = activeTools.map(t => t.toolId);
   const availableToAdd = AVAILABLE_TOOLS.filter(t => !activeToolIds.includes(t.id));
+
+  const styles = useMemo(() => StyleSheet.create({
+    wrapper: { paddingHorizontal: spacing.lg },
+    footerRow: {
+      flexDirection: 'row', gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    footerBtn: {
+      flex: 1,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 4,
+      height: 40,
+      borderRadius: radius.sm,
+      borderWidth: 1, borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    footerBtnActive: {
+      backgroundColor: colors.accent, borderColor: colors.accent,
+    },
+
+    footerBtnText: {
+      ...typography.footnote, color: colors.accent, fontWeight: '500',
+    },
+    footerBtnTextActive: {
+      color: '#fff',
+    },
+    toolItem: { marginBottom: spacing.sm },
+    pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
+    pickerContent: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, width: '100%', maxWidth: 400 },
+    pickerTitle: { ...typography.title3, fontWeight: '700', marginBottom: spacing.lg },
+    pickerEmpty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+    pickerItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: colors.border },
+    pickerItemIcon: { fontSize: 28 },
+    pickerItemInfo: { flex: 1 },
+    pickerItemName: { ...typography.callout, fontWeight: '600' },
+    pickerItemDesc: { ...typography.footnote, color: colors.muted, marginTop: 2 },
+  }), [colors]);
 
   return (
     <View ref={wrapperRef} style={styles.wrapper} collapsable={false}>
@@ -141,42 +179,5 @@ export function Toolbar({ activeTools, userId, babyGender, onAddTool, onRemoveTo
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: { paddingHorizontal: spacing.lg },
-  footerRow: {
-    flexDirection: 'row', gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  footerBtn: {
-    flex: 1,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 4,
-    height: 40,
-    borderRadius: radius.sm,
-    borderWidth: 1, borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  footerBtnActive: {
-    backgroundColor: colors.accent, borderColor: colors.accent,
-  },
-
-  footerBtnText: {
-    ...typography.footnote, color: colors.accent, fontWeight: '500',
-  },
-  footerBtnTextActive: {
-    color: '#fff',
-  },
-  toolItem: { marginBottom: spacing.sm },
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
-  pickerContent: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, width: '100%', maxWidth: 400 },
-  pickerTitle: { ...typography.title3, fontWeight: '700', marginBottom: spacing.lg },
-  pickerEmpty: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-  pickerItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  pickerItemIcon: { fontSize: 28 },
-  pickerItemInfo: { flex: 1 },
-  pickerItemName: { ...typography.callout, fontWeight: '600' },
-  pickerItemDesc: { ...typography.footnote, color: colors.muted, marginTop: 2 },
-});
 
 export default Toolbar;

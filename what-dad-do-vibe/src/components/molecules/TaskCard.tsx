@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
 import { Tag } from '../atoms';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
+import { radius, spacing, typography } from '../../styles/tokens';
 
 interface TaskCardProps {
   title: string;
@@ -56,6 +57,122 @@ export function TaskCard({
   useEffect(() => {
     return () => { mountedRef.current = false; };
   }, []);
+
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    checkboxChecked: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    checkmark: {
+      color: colors.surface,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    content: {
+      flex: 1,
+    },
+    title: {
+      ...typography.callout,
+      fontWeight: '500',
+      marginBottom: spacing.xs,
+    },
+    titleCompleted: {
+      color: colors.muted,
+    },
+    description: {
+      ...typography.footnote,
+      color: colors.fgSecondary,
+      marginBottom: spacing.xs,
+    },
+    descCompleted: {
+      color: colors.muted,
+    },
+    meta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    dueDate: {
+      ...typography.footnote,
+      color: colors.fgSecondary,
+    },
+    countCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    countText: {
+      color: colors.surface,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    countLabel: {
+      ...typography.footnote,
+      color: colors.accent,
+      fontWeight: '600',
+    },
+    circleDisabled: {
+      opacity: 0.45,
+    },
+    checkboxDisabled: {
+      opacity: 0.45,
+    },
+    streakCircle: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: colors.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    streakText: {
+      color: colors.surface,
+      fontSize: 13,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    streakLabel: {
+      ...typography.footnote,
+      color: colors.success,
+      fontWeight: '600',
+    },
+    infoButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.surfaceSecondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    infoButtonText: {
+      fontSize: 14,
+      color: colors.fgSecondary,
+      fontWeight: '600',
+    },
+  }), [colors]);
 
   const handleToggle = () => {
     if (tappingRef.current || toggling || !onToggle) return;
@@ -141,118 +258,5 @@ export function TaskCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  checkmark: {
-    color: colors.surface,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-  title: {
-    ...typography.callout,
-    fontWeight: '500',
-    marginBottom: spacing.xs,
-  },
-  titleCompleted: {
-    color: colors.muted,
-  },
-  description: {
-    ...typography.footnote,
-    color: colors.fgSecondary,
-    marginBottom: spacing.xs,
-  },
-  descCompleted: {
-    color: colors.muted,
-  },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  dueDate: {
-    ...typography.footnote,
-    color: colors.fgSecondary,
-  },
-  countCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  countText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  countLabel: {
-    ...typography.footnote,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  circleDisabled: {
-    opacity: 0.45,
-  },
-  checkboxDisabled: {
-    opacity: 0.45,
-  },
-  streakCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  streakText: {
-    color: colors.surface,
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  streakLabel: {
-    ...typography.footnote,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  infoButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoButtonText: {
-    fontSize: 14,
-    color: colors.fgSecondary,
-    fontWeight: '600',
-  },
-});
 
 export default TaskCard;

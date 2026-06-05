@@ -28,6 +28,51 @@ export const colors = {
   info: '#4A6B8A',          // oklch(48% 0.06 250) 哑钢蓝
 } as const;
 
+export type ColorScheme = {
+  accent: string;
+  accentLight: string;
+  accentDark: string;
+  bg: string;
+  surface: string;
+  surfaceSecondary: string;
+  fg: string;
+  fgSecondary: string;
+  muted: string;
+  border: string;
+  divider: string;
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+};
+
+export const darkColors: ColorScheme = {
+  // 主色调 — 亮蓝（深色背景上用更高亮度的蓝）
+  accent: '#5A8BCE',       // oklch(58% 0.10 260) 亮墨蓝
+  accentLight: '#2A2E4A',  // oklch(28% 0.04 260) 深蓝背景
+  accentDark: '#7AA8E0',   // oklch(68% 0.10 260) 更亮强调
+
+  // 背景色 — 深夜蓝
+  bg: '#121220',            // oklch(12% 0.01 270) 深夜幕
+  surface: '#1E1E30',       // oklch(16% 0.012 270) 暗面
+  surfaceSecondary: '#28283C', // oklch(20% 0.012 270) 稍亮暗面
+
+  // 文字色 — 暖白
+  fg: '#EEE8E0',            // oklch(92% 0.008 60)  暖白墨
+  fgSecondary: '#9994A0',   // oklch(62% 0.01 280) 中灰
+  muted: '#6A6A7A',         // oklch(46% 0.01 280) 暗灰
+
+  // 边框/分隔
+  border: '#333348',        // oklch(24% 0.012 280) 暗边框
+  divider: '#2A2A3E',       // oklch(20% 0.01 280)  暗分隔
+
+  // 功能色（保持辨识度，略提亮）
+  success: '#5A9E74',       // oklch(60% 0.10 150) 亮哑绿
+  warning: '#D4A84E',       // oklch(68% 0.12 85)  亮琥珀
+  error: '#D46A6A',         // oklch(55% 0.12 25)  亮哑红
+  info: '#5A8AB0',          // oklch(55% 0.08 250) 亮钢蓝
+} as const;
+
 export const fonts = {
   display: {
     fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',

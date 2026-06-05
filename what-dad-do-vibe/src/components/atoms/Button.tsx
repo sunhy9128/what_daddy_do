@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
-import { colors, radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography } from '../../styles/tokens';
+import { useColors } from '../../context/ThemeContext';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
@@ -13,14 +14,30 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-const variantStyles = {
-  primary: { backgroundColor: colors.accent, color: colors.surface },
-  secondary: { backgroundColor: colors.bg, color: colors.fg },
-  ghost: { backgroundColor: 'transparent', color: colors.accent },
-};
-
-export function Button({ variant = 'primary', title, onPress, style, loading, disabled }: ButtonProps) {
-  const variantStyle = variantStyles[variant];
+function Button({ variant = 'primary', title, onPress, style, loading, disabled }: ButtonProps) {
+  const colors = useColors();
+  const variantStyle = {
+    primary: { backgroundColor: colors.accent, color: colors.surface },
+    secondary: { backgroundColor: colors.bg, color: colors.fg },
+    ghost: { backgroundColor: 'transparent', color: colors.accent },
+  }[variant];
+  const styles = useMemo(() => StyleSheet.create({
+    base: {
+      minHeight: 44,
+      paddingVertical: spacing.sm + 4,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    text: {
+      ...typography.callout,
+      fontWeight: '600',
+    },
+    disabled: {
+      opacity: 0.6,
+    },
+  }), [colors]);
   return (
     <TouchableOpacity
       style={[
@@ -41,23 +58,5 @@ export function Button({ variant = 'primary', title, onPress, style, loading, di
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    minHeight: 44,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    ...typography.callout,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-});
 
 export default Button;

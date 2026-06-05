@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getKnowledgeArticles, getReadKnowledgeIds, markKnowledgeRead as markKnowledgeReadInDb } from '../../src/lib/api';
@@ -11,7 +11,8 @@ import { PostCard, KnowledgeCard, SearchBar } from '../../src/components/molecul
 import { StageTabs } from '../../src/components/molecules';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Badge } from '../../src/components/atoms';
-import { colors, radius, spacing, typography } from '../../src/styles/tokens';
+import { useColors } from '../../src/context/ThemeContext';
+import { radius, spacing, typography } from '../../src/styles/tokens';
 import { PostComment } from '../../src/lib/supabase';
 import { formatRelativeTime } from '../../src/lib/time';
 
@@ -139,290 +140,8 @@ export default function CommunityScreen() {
     setActiveCategory(category);
     refreshCommunityPosts(category === '推荐' ? undefined : category);
   };
-
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>社区</Text>
-          <Text style={styles.subtitle}>知识 + 爸爸经验</Text>
-        </View>
-
-        {/* Search */}
-        <SearchBar
-          placeholder="搜索知识/经验..."
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-
-        {/* Categories */}
-        <StageTabs
-          stages={CATEGORIES}
-          activeStage={activeCategory}
-          onStageChange={handleCategoryChange}
-        />
-
-        {/* 搜索过滤 */}
-        {(() => {
-          const q = searchText.trim().toLowerCase();
-          const filteredKnowledge = q
-            ? visibleKnowledge.filter(item => item.title.toLowerCase().includes(q))
-            : visibleKnowledge;
-          const filteredPosts = q
-            ? postList.filter(p =>
-                p.title.toLowerCase().includes(q) ||
-                p.content.toLowerCase().includes(q) ||
-                p.authorName.toLowerCase().includes(q)
-              )
-            : postList;
-
-          return (
-            <>
-        {/* Knowledge Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>热门知识</Text>
-        </View>
-        {filteredKnowledge.length > 0 ? (
-        <Card>
-          {filteredKnowledge.map((item) => (
-            <KnowledgeCard
-              key={item.id}
-              emoji={item.emoji}
-              title={item.title}
-              readTime={item.read_time}
-              onPress={() => setSelectedKnowledge(item)}
-            />
-          ))}
-        </Card>
-        ) : q ? (
-          <Text style={styles.emptyText}>未找到匹配的知识</Text>
-        ) : (
-          <Text style={styles.emptyText}>暂无知识文章</Text>
-        )}
-
-        {/* Community Posts */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>爸爸经验</Text>
-        </View>
-        {filteredPosts.slice(0, 5).map(post => (
-          <PostCard
-            key={post.id}
-            authorName={post.authorName}
-            stage={post.category}
-            time={formatRelativeTime(post.createdAt)}
-            category="经验"
-            content={post.content}
-            likes={post.likes}
-            comments={post.comments}
-            onPress={() => setSelectedPost(post)}
-          />
-        ))}
-        {filteredPosts.length === 0 && (
-          <Text style={styles.emptyText}>暂无爸爸经验，快来分享</Text>
-        )}
-            </>
-          );
-        })()}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* FAB — 发布帖子 */}
-      <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('提示', '发布功能即将上线')} activeOpacity={0.8}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      {/* 帖子详情弹窗 — 小红书风格 */}
-      <Modal visible={!!selectedPost} animationType="fade" transparent>
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedPost(null)}>
-          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
-            <PostDetailContent
-              post={selectedPost || lastPostRef.current}
-              liked={liked}
-              likesCount={likesCount}
-              comments={comments}
-              commentLimit={commentLimit}
-              commentText={commentText}
-              sendingComment={sendingComment}
-              onClose={() => setSelectedPost(null)}
-              onLike={handleLike}
-              onSetCommentText={setCommentText}
-              onSendComment={handleSendComment}
-              onShowMore={() => setCommentLimit(prev => prev + 5)}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* 知识详情弹窗 */}
-      <Modal visible={!!selectedKnowledge} animationType="fade" transparent>
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedKnowledge(null)}>
-          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
-            <KnowledgeDetailContent
-              item={selectedKnowledge}
-              onClose={() => setSelectedKnowledge(null)}
-              onMarkRead={() => {
-                if (selectedKnowledge) {
-                  markKnowledgeRead(selectedKnowledge.id);
-                  setSelectedKnowledge(null);
-                }
-              }}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </View>
-  );
-}
-
-function KnowledgeDetailContent({
-  item, onClose, onMarkRead,
-}: {
-  item: KnowledgeArticle | null;
-  onClose: () => void;
-  onMarkRead: () => void;
-}) {
-  if (!item) return null;
-  return (
-    <>
-      <View style={styles.modalTopBar}>
-        <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.modalCloseIcon}>✕</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.modalAuthor}>
-        <View style={styles.thumbEmoji}>
-          <Text style={styles.emojiLarge}>{item.emoji}</Text>
-        </View>
-        <Text style={styles.modalAuthorName}>{item.title}</Text>
-      </View>
-
-      <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-        <Text style={styles.modalBodyText}>{item.content}</Text>
-      </ScrollView>
-
-      <TouchableOpacity style={styles.markReadBtn} onPress={onMarkRead}>
-        <Text style={styles.markReadText}>已读</Text>
-      </TouchableOpacity>
-    </>
-  );
-}
-
-function PostDetailContent({
-  post, liked, likesCount, comments, commentLimit, commentText, sendingComment,
-  onClose, onLike, onSetCommentText, onSendComment, onShowMore,
-}: {
-  post: CommunityPost | null;
-  liked: boolean;
-  likesCount: number;
-  comments: PostComment[];
-  commentLimit: number;
-  commentText: string;
-  sendingComment: boolean;
-  onClose: () => void;
-  onLike: () => void;
-  onSetCommentText: (text: string) => void;
-  onSendComment: () => void;
-  onShowMore: () => void;
-}) {
-  const p = post;
-  if (!p) return null;
-  return (
-    <>
-      {/* 关闭按钮 */}
-      <View style={styles.modalTopBar}>
-        <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.modalCloseIcon}>✕</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 作者 */}
-      <View style={styles.modalAuthor}>
-        <Avatar name={p.authorName} size="medium" />
-        <Text style={styles.modalAuthorName}>{p.authorName}</Text>
-      </View>
-
-      {/* 标题 */}
-      <Text style={styles.modalPostTitle}>{p.title}</Text>
-
-      {/* 正文 */}
-      <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-        <Text style={styles.modalBodyText}>{p.content}</Text>
-      </ScrollView>
-
-      {/* 信息 + 操作 */}
-      <View style={styles.modalMetaRow}>
-        <Text style={styles.modalMetaText}>{p.category}</Text>
-        <Text style={styles.modalMetaDot}>·</Text>
-        <Text style={styles.modalMetaText}>{formatRelativeTime(p.createdAt)}</Text>
-      </View>
-
-      <View style={styles.modalActions}>
-        <TouchableOpacity style={styles.modalAction} onPress={onLike}>
-          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={22} color={liked ? colors.error : colors.muted} />
-          <Text style={styles.modalActionCount}>{likesCount}</Text>
-        </TouchableOpacity>
-        <View style={styles.modalAction}>
-          <Ionicons name="chatbubble-outline" size={21} color={colors.muted} />
-          <Text style={styles.modalActionCount}>{comments.length}</Text>
-        </View>
-      </View>
-
-      {/* 评论列表 */}
-      <View style={styles.commentDivider} />
-      <View style={styles.commentList}>
-        <ScrollView style={styles.commentScroll} nestedScrollEnabled>
-          {comments.length > 0 ? (
-            comments.slice(0, commentLimit).map(c => (
-              <View key={c.id} style={styles.commentItem}>
-                <Text style={styles.commentAuthor}>{c.user_id.slice(0, 8)}</Text>
-                <Text style={styles.commentContent}>{c.content}</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.commentEmpty}>暂无评论</Text>
-          )}
-        </ScrollView>
-        {comments.length > commentLimit && (
-          <TouchableOpacity style={styles.commentMoreBtn} onPress={onShowMore}>
-            <Text style={styles.commentMoreText}>查看更多评论（共 {comments.length} 条）</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* 评论输入 */}
-      <View style={styles.commentInputRow}>
-        <TextInput
-          style={styles.commentInput}
-          placeholder="写评论..."
-          placeholderTextColor={colors.muted}
-          value={commentText}
-          onChangeText={onSetCommentText}
-          multiline={false}
-        />
-        <TouchableOpacity
-          style={[styles.commentSend, (!commentText.trim() || sendingComment) && styles.commentSendDisabled]}
-          onPress={onSendComment}
-          disabled={!commentText.trim() || sendingComment}
-        >
-          <Text style={styles.commentSendText}>{sendingComment ? '…' : '发送'}</Text>
-        </TouchableOpacity>
-      </View>
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
+  const colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingBottom: 100 },
@@ -646,4 +365,286 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-});
+}), [colors]);
+
+  function KnowledgeDetailContent({
+  item, onClose, onMarkRead,
+}: {
+  item: KnowledgeArticle | null;
+  onClose: () => void;
+  onMarkRead: () => void;
+}) {
+  if (!item) return null;
+  return (
+    <>
+      <View style={styles.modalTopBar}>
+        <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Text style={styles.modalCloseIcon}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.modalAuthor}>
+        <View style={styles.thumbEmoji}>
+          <Text style={styles.emojiLarge}>{item.emoji}</Text>
+        </View>
+        <Text style={styles.modalAuthorName}>{item.title}</Text>
+      </View>
+
+      <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+        <Text style={styles.modalBodyText}>{item.content}</Text>
+      </ScrollView>
+
+      <TouchableOpacity style={styles.markReadBtn} onPress={onMarkRead}>
+        <Text style={styles.markReadText}>已读</Text>
+      </TouchableOpacity>
+    </>
+  );
+}
+
+function PostDetailContent({
+  post, liked, likesCount, comments, commentLimit, commentText, sendingComment,
+  onClose, onLike, onSetCommentText, onSendComment, onShowMore,
+}: {
+  post: CommunityPost | null;
+  liked: boolean;
+  likesCount: number;
+  comments: PostComment[];
+  commentLimit: number;
+  commentText: string;
+  sendingComment: boolean;
+  onClose: () => void;
+  onLike: () => void;
+  onSetCommentText: (text: string) => void;
+  onSendComment: () => void;
+  onShowMore: () => void;
+}) {
+  const p = post;
+  if (!p) return null;
+  return (
+    <>
+      {/* 关闭按钮 */}
+      <View style={styles.modalTopBar}>
+        <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Text style={styles.modalCloseIcon}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 作者 */}
+      <View style={styles.modalAuthor}>
+        <Avatar name={p.authorName} size="medium" />
+        <Text style={styles.modalAuthorName}>{p.authorName}</Text>
+      </View>
+
+      {/* 标题 */}
+      <Text style={styles.modalPostTitle}>{p.title}</Text>
+
+      {/* 正文 */}
+      <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+        <Text style={styles.modalBodyText}>{p.content}</Text>
+      </ScrollView>
+
+      {/* 信息 + 操作 */}
+      <View style={styles.modalMetaRow}>
+        <Text style={styles.modalMetaText}>{p.category}</Text>
+        <Text style={styles.modalMetaDot}>·</Text>
+        <Text style={styles.modalMetaText}>{formatRelativeTime(p.createdAt)}</Text>
+      </View>
+
+      <View style={styles.modalActions}>
+        <TouchableOpacity style={styles.modalAction} onPress={onLike}>
+          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={22} color={liked ? colors.error : colors.muted} />
+          <Text style={styles.modalActionCount}>{likesCount}</Text>
+        </TouchableOpacity>
+        <View style={styles.modalAction}>
+          <Ionicons name="chatbubble-outline" size={21} color={colors.muted} />
+          <Text style={styles.modalActionCount}>{comments.length}</Text>
+        </View>
+      </View>
+
+      {/* 评论列表 */}
+      <View style={styles.commentDivider} />
+      <View style={styles.commentList}>
+        <ScrollView style={styles.commentScroll} nestedScrollEnabled>
+          {comments.length > 0 ? (
+            comments.slice(0, commentLimit).map(c => (
+              <View key={c.id} style={styles.commentItem}>
+                <Text style={styles.commentAuthor}>{c.user_id.slice(0, 8)}</Text>
+                <Text style={styles.commentContent}>{c.content}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.commentEmpty}>暂无评论</Text>
+          )}
+        </ScrollView>
+        {comments.length > commentLimit && (
+          <TouchableOpacity style={styles.commentMoreBtn} onPress={onShowMore}>
+            <Text style={styles.commentMoreText}>查看更多评论（共 {comments.length} 条）</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* 评论输入 */}
+      <View style={styles.commentInputRow}>
+        <TextInput
+          style={styles.commentInput}
+          placeholder="写评论..."
+          placeholderTextColor={colors.muted}
+          value={commentText}
+          onChangeText={onSetCommentText}
+          multiline={false}
+        />
+        <TouchableOpacity
+          style={[styles.commentSend, (!commentText.trim() || sendingComment) && styles.commentSendDisabled]}
+          onPress={onSendComment}
+          disabled={!commentText.trim() || sendingComment}
+        >
+          <Text style={styles.commentSendText}>{sendingComment ? '…' : '发送'}</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+}
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>社区</Text>
+          <Text style={styles.subtitle}>知识 + 爸爸经验</Text>
+        </View>
+
+        {/* Search */}
+        <SearchBar
+          placeholder="搜索知识/经验..."
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+
+        {/* Categories */}
+        <StageTabs
+          stages={CATEGORIES}
+          activeStage={activeCategory}
+          onStageChange={handleCategoryChange}
+        />
+
+        {/* 搜索过滤 */}
+        {(() => {
+          const q = searchText.trim().toLowerCase();
+          const filteredKnowledge = q
+            ? visibleKnowledge.filter(item => item.title.toLowerCase().includes(q))
+            : visibleKnowledge;
+          const filteredPosts = q
+            ? postList.filter(p =>
+                p.title.toLowerCase().includes(q) ||
+                p.content.toLowerCase().includes(q) ||
+                p.authorName.toLowerCase().includes(q)
+              )
+            : postList;
+
+          return (
+            <>
+        {/* Knowledge Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>热门知识</Text>
+        </View>
+        {filteredKnowledge.length > 0 ? (
+        <Card>
+          {filteredKnowledge.map((item) => (
+            <KnowledgeCard
+              key={item.id}
+              emoji={item.emoji}
+              title={item.title}
+              readTime={item.read_time}
+              onPress={() => setSelectedKnowledge(item)}
+            />
+          ))}
+        </Card>
+        ) : q ? (
+          <Text style={styles.emptyText}>未找到匹配的知识</Text>
+        ) : (
+          <Text style={styles.emptyText}>暂无知识文章</Text>
+        )}
+
+        {/* Community Posts */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>爸爸经验</Text>
+        </View>
+        {filteredPosts.slice(0, 5).map(post => (
+          <PostCard
+            key={post.id}
+            authorName={post.authorName}
+            stage={post.category}
+            time={formatRelativeTime(post.createdAt)}
+            category="经验"
+            content={post.content}
+            likes={post.likes}
+            comments={post.comments}
+            onPress={() => setSelectedPost(post)}
+          />
+        ))}
+        {filteredPosts.length === 0 && (
+          <Text style={styles.emptyText}>暂无爸爸经验，快来分享</Text>
+        )}
+            </>
+          );
+        })()}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* FAB — 发布帖子 */}
+      <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('提示', '发布功能即将上线')} activeOpacity={0.8}>
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
+
+      {/* 帖子详情弹窗 — 小红书风格 */}
+      <Modal visible={!!selectedPost} animationType="fade" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setSelectedPost(null)}>
+          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
+            <PostDetailContent
+              post={selectedPost || lastPostRef.current}
+              liked={liked}
+              likesCount={likesCount}
+              comments={comments}
+              commentLimit={commentLimit}
+              commentText={commentText}
+              sendingComment={sendingComment}
+              onClose={() => setSelectedPost(null)}
+              onLike={handleLike}
+              onSetCommentText={setCommentText}
+              onSendComment={handleSendComment}
+              onShowMore={() => setCommentLimit(prev => prev + 5)}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* 知识详情弹窗 */}
+      <Modal visible={!!selectedKnowledge} animationType="fade" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setSelectedKnowledge(null)}>
+          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
+            <KnowledgeDetailContent
+              item={selectedKnowledge}
+              onClose={() => setSelectedKnowledge(null)}
+              onMarkRead={() => {
+                if (selectedKnowledge) {
+                  markKnowledgeRead(selectedKnowledge.id);
+                  setSelectedKnowledge(null);
+                }
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}

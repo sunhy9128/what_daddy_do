@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,7 +6,8 @@ import { useApp } from '../../src/context/AppContext';
 import { Card } from '../../src/components/atoms';
 import { RecordEntry } from '../../src/components/molecules';
 import { SegmentControl } from '../../src/components/organisms';
-import { colors, spacing, radius, typography } from '../../src/styles/tokens';
+import { useColors } from '../../src/context/ThemeContext';
+import { spacing, radius, typography } from '../../src/styles/tokens';
 
 export default function RecordsScreen() {
   const insets = useSafeAreaInsets();
@@ -15,6 +16,44 @@ export default function RecordsScreen() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [filter, setFilter] = useState('all');
   const postingRef = useRef(false);
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  centered: { justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingBottom: 120 },
+  header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
+  title: { ...typography.largeTitle, fontWeight: '700' },
+  subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
+  newPostCard: { marginTop: 0 },
+  newPostInput: {
+    ...typography.callout,
+    color: colors.fg,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  newPostFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  postTools: { flexDirection: 'row', gap: spacing.md },
+  toolBtn: { padding: spacing.xs },
+
+  postBtn: {
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.sm,
+  },
+  postBtnText: {
+    color: colors.surface,
+    ...typography.footnote,
+    fontWeight: '600',
+  },
+  emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+}), [colors]);
 
   // 快速发布：直接保存 inline 内容，自动用首段文字做标题
   const handleQuickPost = async () => {
@@ -110,39 +149,3 @@ export default function RecordsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centered: { justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 120 },
-  header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
-  title: { ...typography.largeTitle, fontWeight: '700' },
-  subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
-  newPostCard: { marginTop: 0 },
-  newPostInput: {
-    ...typography.callout,
-    color: colors.fg,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  newPostFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  postTools: { flexDirection: 'row', gap: spacing.md },
-  toolBtn: { padding: spacing.xs },
-
-  postBtn: {
-    backgroundColor: colors.accent,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.sm,
-  },
-  postBtnText: {
-    color: colors.surface,
-    ...typography.footnote,
-    fontWeight: '600',
-  },
-  emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-});

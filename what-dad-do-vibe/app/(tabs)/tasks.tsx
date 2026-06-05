@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
@@ -11,7 +11,8 @@ import { TaskCard } from '../../src/components/molecules';
 import { StageTabs } from '../../src/components/molecules';
 import { CollapsibleGroup } from '../../src/components/organisms';
 // 物品准备/心理支持已迁移到首页（index.tsx）
-import { colors, radius, spacing, shadows, typography } from '../../src/styles/tokens';
+import { useColors } from '../../src/context/ThemeContext';
+import { radius, spacing, shadows, typography } from '../../src/styles/tokens';
 import { Ionicons } from '@expo/vector-icons';
 
 // 孕期阶段顺序（用于判断是否为已过阶段）
@@ -51,8 +52,297 @@ export default function TasksScreen() {
   const [savingTask, setSavingTask] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const taskBusy = useRef(false);
+  const colors = useColors();
 
+  const styles = useMemo(() => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  centered: { justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingBottom: 100 },
+  taskScroll: { maxHeight: 280 },
+  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
+  title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
+  subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
+  progressCard: {
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    ...shadows.sm,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  progressTitle: { ...typography.callout, fontWeight: '500', color: colors.fg },
+  progressValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
+  // 可添加任务分组
+  presetGroup: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  presetGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+    backgroundColor: colors.surfaceSecondary,
+  },
+  presetGroupTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  presetGroupTitle: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+  },
+  presetGroupBadge: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  presetGroupBadgeText: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  presetGroupArrow: {
+    fontSize: 16,
+    color: colors.muted,
+  },
+  presetGroupContent: {
+    paddingHorizontal: spacing.sm,
+  },
+  emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+  presetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  presetIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  presetIconText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
+  presetInfo: { flex: 1 },
+  presetTitle: { ...typography.callout, fontWeight: '500', color: colors.fg, marginBottom: 2 },
+  presetDesc: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 18 },
+  fab: {
+    position: 'absolute',
+    bottom: 90,
+    right: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.lg,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  fabIcon: { fontSize: 26, color: '#fff', lineHeight: 28, fontWeight: '300' },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    ...shadows.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    ...typography.title3,
+    fontWeight: '700',
+    color: colors.fg,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseIcon: {
+    fontSize: 15,
+    color: colors.muted,
+    fontWeight: '600',
+  },
+  modalLabel: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: colors.fgSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalInput: {
+    ...typography.callout,
+    color: colors.fg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  // 类型选择器
+  typeSelector: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.sm,
+    padding: 3,
+    marginBottom: spacing.xl,
+  },
+  typeOption: {
+    flex: 1,
+    paddingVertical: spacing.sm + 1,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+  },
+  typeOptionActive: {
+    backgroundColor: colors.accent,
+  },
+  typeOptionText: {
+    ...typography.footnote,
+    fontWeight: '500',
+    color: colors.fgSecondary,
+  },
+  typeOptionTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  // 底部操作按钮组
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  modalActionBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: radius.sm,
+  },
+  // 任务详情 - 新设计
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  detailTitle: {
+    ...typography.title2,
+    fontWeight: '700',
+    color: colors.fg,
+    flex: 1,
+  },
+  detailStatusBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.full,
+  },
+  detailStatusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  detailTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  detailSection: {
+    marginBottom: spacing.lg,
+  },
+  detailSectionLabel: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  detailDesc: {
+    ...typography.callout,
+    color: colors.fg,
+    lineHeight: 22,
+    backgroundColor: colors.bg,
+    padding: spacing.md,
+    borderRadius: radius.sm,
+  },
+  detailInfoGroup: {
+    backgroundColor: colors.bg,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
+  detailInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  detailInfoLabel: {
+    ...typography.callout,
+    color: colors.muted,
+  },
+  detailInfoValue: {
+    ...typography.callout,
+    color: colors.fg,
+    fontWeight: '600',
+  },
+  flexButton: { flex: 1, minHeight: 44, borderRadius: radius.sm },
+  deleteButton: { backgroundColor: colors.error },
+  actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
+  readOnlyNotice: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bg,
+    borderRadius: radius.sm,
+  },
+  readOnlyNoticeText: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
 
+}), [colors]);
 
   // 根据任务标题自动分类（产后阶段不返回 prenatal）
   const detectTaskType = (title: string): 'prenatal' | 'daily' | 'checkin' => {
@@ -484,18 +774,18 @@ export default function TasksScreen() {
                   </>
                 ) : (
                   <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-                    {/* 任务标题 */}
+                    {/* 任务标题 + 完成状态 */}
                     <View style={styles.detailHeader}>
                       <Text style={styles.detailTitle}>{selectedTask.title}</Text>
-                    </View>
-
-                    {/* 状态 + 类型标签 — 同一行 */}
-                    <View style={styles.detailTagRow}>
                       <View style={[styles.detailStatusBadge, { backgroundColor: selectedTask.isCompleted ? colors.success + '20' : colors.surfaceSecondary }]}>
                         <Text style={[styles.detailStatusText, { color: selectedTask.isCompleted ? colors.success : colors.muted }]}>
                           {selectedTask.isCompleted ? '✓ 已完成' : '待完成'}
                         </Text>
                       </View>
+                    </View>
+
+                    {/* 类型标签 */}
+                    <View style={styles.detailTagRow}>
                       <Tag label={TASK_TYPE_LABELS[selectedTask.type] || selectedTask.type} variant={selectedTask.type === 'prenatal' ? 'short' : 'long'} />
                     </View>
 
@@ -553,291 +843,3 @@ export default function TasksScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centered: { justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 100 },
-  taskScroll: { maxHeight: 280 },
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
-  title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
-  subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
-  progressCard: {
-    marginTop: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    ...shadows.sm,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  progressTitle: { ...typography.callout, fontWeight: '500', color: colors.fg },
-  progressValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  // 可添加任务分组
-  presetGroup: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  presetGroupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-    backgroundColor: colors.surfaceSecondary,
-  },
-  presetGroupTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  presetGroupTitle: {
-    ...typography.callout,
-    fontWeight: '600',
-    color: colors.fg,
-  },
-  presetGroupBadge: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  presetGroupBadgeText: {
-    ...typography.footnote,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  presetGroupArrow: {
-    fontSize: 16,
-    color: colors.muted,
-  },
-  presetGroupContent: {
-    paddingHorizontal: spacing.sm,
-  },
-  emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-  presetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  presetIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  presetIconText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
-  presetInfo: { flex: 1 },
-  presetTitle: { ...typography.callout, fontWeight: '500', color: colors.fg, marginBottom: 2 },
-  presetDesc: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 18 },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.lg,
-    ...Platform.select({ web: { cursor: 'pointer' } }),
-  },
-  fabIcon: { fontSize: 26, color: '#fff', lineHeight: 28, fontWeight: '300' },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-    ...shadows.lg,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  modalTitle: {
-    ...typography.title3,
-    fontWeight: '700',
-    color: colors.fg,
-  },
-  modalCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCloseIcon: {
-    fontSize: 15,
-    color: colors.muted,
-    fontWeight: '600',
-  },
-  modalLabel: {
-    ...typography.footnote,
-    fontWeight: '600',
-    color: colors.fgSecondary,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  modalInput: {
-    ...typography.callout,
-    color: colors.fg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  // 类型选择器
-  typeSelector: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.sm,
-    padding: 3,
-    marginBottom: spacing.xl,
-  },
-  typeOption: {
-    flex: 1,
-    paddingVertical: spacing.sm + 1,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-  },
-  typeOptionActive: {
-    backgroundColor: colors.accent,
-  },
-  typeOptionText: {
-    ...typography.footnote,
-    fontWeight: '500',
-    color: colors.fgSecondary,
-  },
-  typeOptionTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  // 底部操作按钮组
-  modalActions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  modalActionBtn: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radius.sm,
-  },
-  // 任务详情 - 新设计
-  detailHeader: {
-    marginBottom: spacing.sm,
-  },
-  detailTitle: {
-    ...typography.title2,
-    fontWeight: '700',
-    color: colors.fg,
-    marginBottom: spacing.xs,
-  },
-  detailStatusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.full,
-  },
-  detailStatusText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  detailTagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  detailSection: {
-    marginBottom: spacing.lg,
-  },
-  detailSectionLabel: {
-    ...typography.footnote,
-    color: colors.fgSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  detailDesc: {
-    ...typography.callout,
-    color: colors.fg,
-    lineHeight: 22,
-    backgroundColor: colors.bg,
-    padding: spacing.md,
-    borderRadius: radius.sm,
-  },
-  detailInfoGroup: {
-    backgroundColor: colors.bg,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    marginBottom: spacing.sm,
-  },
-  detailInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  detailInfoLabel: {
-    ...typography.callout,
-    color: colors.muted,
-  },
-  detailInfoValue: {
-    ...typography.callout,
-    color: colors.fg,
-    fontWeight: '600',
-  },
-  flexButton: { flex: 1, minHeight: 44, borderRadius: radius.sm },
-  deleteButton: { backgroundColor: colors.error },
-  actionButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
-  readOnlyNotice: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-    backgroundColor: colors.bg,
-    borderRadius: radius.sm,
-  },
-  readOnlyNoticeText: {
-    ...typography.footnote,
-    color: colors.muted,
-  },
-
-});
