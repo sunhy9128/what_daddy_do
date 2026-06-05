@@ -79,24 +79,46 @@ export default function BabyInfoScreen() {
     ...typography.footnote, color: colors.muted, marginBottom: spacing.lg, lineHeight: 20,
   },
   dateCard: {
-    backgroundColor: colors.surfaceSecondary, borderRadius: radius.sm, padding: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.lg,
     marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   dateRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
-  dateField: { alignItems: 'center', flex: 1 },
-  dateLabel: {
-    ...typography.caption2, color: colors.muted, marginTop: spacing.sm, fontWeight: '500',
+  dateField: {
+    alignItems: 'center',
+  },
+  dateFieldYear: {
+    flex: 1.6,
+  },
+  dateFieldMD: {
+    flex: 1,
   },
   dateInput: {
-    ...typography.title2, fontWeight: '700', color: colors.accent,
-    textAlign: 'center', width: '100%', paddingVertical: spacing.md,
-    backgroundColor: colors.surface, borderRadius: radius.sm,
-    borderWidth: 1, borderColor: colors.border,
+    ...typography.title1,
+    fontWeight: '700',
+    color: colors.accent,
+    textAlign: 'center',
+    width: '100%',
+    paddingVertical: spacing.md + 2,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
   dateSep: {
-    ...typography.title2, color: colors.muted, marginTop: -spacing.xl,
+    ...typography.title2,
+    fontWeight: '300',
+    color: colors.muted,
+    opacity: 0.6,
+    alignSelf: 'center',
   },
   saveBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
@@ -211,20 +233,18 @@ export default function BabyInfoScreen() {
 
         <View style={styles.dateCard}>
           <View style={styles.dateRow}>
-            <View style={styles.dateField}>
+            <View style={[styles.dateField, styles.dateFieldYear]}>
               <TextInput style={styles.dateInput} value={year} onChangeText={setYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
-              <Text style={styles.dateLabel}>年</Text>
             </View>
-            <Text style={styles.dateSep}>/</Text>
-            <View style={styles.dateField}>
+            <Text style={styles.dateSep}>年</Text>
+            <View style={[styles.dateField, styles.dateFieldMD]}>
               <TextInput style={styles.dateInput} value={month} onChangeText={setMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
-              <Text style={styles.dateLabel}>月</Text>
             </View>
-            <Text style={styles.dateSep}>/</Text>
-            <View style={styles.dateField}>
+            <Text style={styles.dateSep}>月</Text>
+            <View style={[styles.dateField, styles.dateFieldMD]}>
               <TextInput style={styles.dateInput} value={day} onChangeText={setDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
-              <Text style={styles.dateLabel}>日</Text>
             </View>
+            <Text style={styles.dateSep}>日</Text>
           </View>
         </View>
 
