@@ -1,9 +1,6 @@
 // 孕期阶段工具 — 统一的类型、标签、映射和计算
 
 export type PregnancyStage = 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
-
-export const STAGE_KEYS: PregnancyStage[] = ['preconception', 'first', 'second', 'third', 'postpartum'];
-
 export const STAGE_LABELS: Record<PregnancyStage, string> = {
   preconception: '备孕',
   first: '孕早期',
@@ -19,10 +16,6 @@ export const STAGES = [
   { key: 'third' as const, label: '孕晚期', weeks: '28-40周' },
   { key: 'postpartum' as const, label: '产后', weeks: '41周+' },
 ];
-
-export function getStageLabel(stage: PregnancyStage): string {
-  return STAGE_LABELS[stage] || '未知';
-}
 
 /**
  * 计算宝宝出生后的年龄显示文本

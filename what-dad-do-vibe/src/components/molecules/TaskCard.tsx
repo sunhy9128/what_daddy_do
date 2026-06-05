@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Tag } from '../atoms';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';

@@ -1,4 +1,4 @@
-import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostLike, PostComment, KnowledgeArticle, KnowledgeRead, Vaccine, VaccineDose, UserVaccination, PregnancyStage, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety } from '../lib/supabase';
+import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostComment, KnowledgeArticle, Vaccine, VaccineDose, UserVaccination, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety } from '../lib/supabase';
 
 // 预设任务类型
 export interface PresetTask {
@@ -30,15 +30,6 @@ export async function getPresetTasks(): Promise<PresetTask[]> {
 }
 
 // 孕期阶段
-export async function getPregnancyStages(): Promise<PregnancyStage[]> {
-  const { data, error } = await supabase
-    .from('pregnancy_stages')
-    .select('*')
-    .order('weeks_start');
-  if (error) throw error;
-  return data || [];
-}
-
 // 任务 CRUD
 export async function getTasks(userId: string): Promise<Task[]> {
   const { data, error } = await supabase
@@ -207,9 +198,6 @@ export async function updateBaby(id: string, updates: Partial<Baby>): Promise<Ba
 }
 
 // 孕期阶段计算
-import { calculateStageFromDueDate } from './stages';
-export { calculateStageFromDueDate };
-
 // 帖子互动
 export async function toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
   // 检查是否已点赞

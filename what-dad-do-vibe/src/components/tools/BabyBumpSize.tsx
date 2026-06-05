@@ -14,7 +14,6 @@ export function BabyBumpSize({ userId: _userId }: { userId: string; babyGender?:
   const current = useMemo(() => getBumpSizeForWeek(currentWeek), [currentWeek]);
 
   // Auto-scroll to current week on mount
-  const itemHeights = useRef<number[]>([]);
   useEffect(() => {
     if (current) {
       const idx = BUMP_SIZE_DATA.findIndex(e => e.week === current.week);
