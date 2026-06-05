@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     爸爸去哪了 (DadCare) — 宣传落地页
+     kami design system · warm parchment · ink-blue accent
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>爸爸去哪了 — 给新手爸爸的孕产期陪伴助手</title>
+<meta name="description" content="给准爸爸和新手爸爸的孕产期全程陪伴助手。覆盖备孕到产后的五阶段任务管理、产检提醒、记录工具、知识社区。">
+<meta name="generator" content="Kami">
+<style>
+  /* ============================================================
+     RESET + BASE
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --sand:      #e8e6dc;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --brand-light: #2D5A8A;
+    --tag-bg:    #EEF2F7;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --radius:    12px;
+    --radius-sm: 8px;
+    --font-serif: Charter, Georgia, Palatino, "Times New Roman", serif;
+    --font-sans:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--near-black);
+    background: var(--parchment);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--brand); text-decoration: none; }
+  a:hover { color: var(--brand-light); }
+
+  /* ============================================================
+     TYPOGRAPHY
+     ============================================================ */
+  h1, h2, h3, .serif {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    color: var(--near-black);
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1.25;
+    margin-bottom: 12px;
+    border-left: 3px solid var(--brand);
+    border-radius: 2px;
+    padding-left: 14px;
+  }
+
+  @media (min-width: 768px) {
+    .section-title { font-size: 32px; }
+  }
+
+  .section-sub {
+    font-size: 15px;
+    color: var(--olive);
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  .label {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--tag-bg);
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+  }
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  section { padding: 80px 0; }
+
+  @media (min-width: 768px) {
+    section { padding: 100px 0; }
+  }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero {
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 60px 0;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(27,54,93,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-grid {
+    display: grid;
+    gap: 48px;
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .hero-grid { grid-template-columns: 1fr 1fr; gap: 64px; }
+  }
+
+  .hero-tagline {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--brand);
+    margin-bottom: 16px;
+  }
+
+  .hero-title {
+    font-family: var(--font-serif);
+    font-size: 40px;
+    font-weight: 500;
+    line-height: 1.12;
+    color: var(--near-black);
+    margin-bottom: 20px;
+  }
+
+  .hero-title em {
+    font-style: normal;
+    color: var(--brand);
+  }
+
+  .hero-desc {
+    font-size: 17px;
+    color: var(--olive);
+    line-height: 1.65;
+    margin-bottom: 32px;
+    max-width: 480px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--brand);
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    box-shadow: 0 0 0 1px var(--brand);
+  }
+
+  .btn-primary:hover {
+    background: var(--brand-light);
+    color: #fff;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--dark-warm);
+    background: var(--sand);
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    box-shadow: 0 0 0 1px var(--border);
+  }
+
+  .btn-secondary:hover { background: #dddace; }
+
+  .hero-phone {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .phone-frame {
+    width: 280px;
+    height: 560px;
+    background: var(--ivory);
+    border-radius: 36px;
+    box-shadow:
+      0 4px 24px rgba(0,0,0,0.06),
+      0 0 0 1px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phone-notch {
+    width: 120px;
+    height: 6px;
+    background: var(--near-black);
+    border-radius: 3px;
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.15;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .phone-screen .app-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .phone-screen .app-icon span {
+    font-size: 32px;
+    color: #fff;
+  }
+
+  .phone-screen h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 18px;
+  }
+
+  .phone-screen p {
+    font-size: 13px;
+    color: var(--olive);
+    line-height: 1.5;
+  }
+
+  .phone-preview-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .phone-preview-pill {
+    font-size: 11px;
+    color: var(--dark-warm);
+    background: var(--sand);
+    padding: 5px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .phone-preview-pill.highlight {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  /* ============================================================
+     METRICS
+     ============================================================ */
+  .metrics {
+    background: var(--ivory);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    text-align: center;
+  }
+
+  @media (min-width: 640px) {
+    .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .metric-value {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+  }
+
+  .metric-label {
+    font-size: 13px;
+    color: var(--olive);
+  }
+
+  /* ============================================================
+     FEATURES
+     ============================================================ */
+  .features-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  @media (min-width: 640px) {
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (min-width: 900px) {
+    .features-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .feature-card {
+    background: var(--ivory);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    border: 1px solid var(--border-soft);
+    transition: box-shadow 0.2s;
+  }
+
+  .feature-card:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--tag-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 22px;
+  }
+
+  .feature-name {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .feature-desc {
+    font-size: 14px;
+    color: var(--olive);
+    line-height: 1.6;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--tag-bg);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 12px;
+  }
+
+  /* ============================================================
+     STAGES TIMELINE
+     ============================================================ */
+  .stage-timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+
+  .stage-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .stage-item {
+    position: relative;
+    margin-bottom: 28px;
+    padding-left: 20px;
+  }
+
+  .stage-item:last-child { margin-bottom: 0; }
+
+  .stage-dot {
+    position: absolute;
+    left: -24px;
+    top: 6px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: 2px solid var(--ivory);
+    box-shadow: 0 0 0 1px var(--brand);
+    z-index: 1;
+  }
+
+  .stage-item:nth-child(2) .stage-dot { background: var(--olive); box-shadow: 0 0 0 1px var(--olive); }
+  .stage-item:nth-child(3) .stage-dot { background: var(--stone); box-shadow: 0 0 0 1px var(--stone); }
+  .stage-item:nth-child(4) .stage-dot { background: var(--dark-warm); box-shadow: 0 0 0 1px var(--dark-warm); }
+  .stage-item:nth-child(5) .stage-dot { background: var(--near-black); box-shadow: 0 0 0 1px var(--near-black); }
+
+  .stage-name {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .stage-desc {
+    font-size: 14px;
+    color: var(--olive);
+    line-height: 1.6;
+  }
+
+  /* ============================================================
+     TOOLS SHOWCASE
+     ============================================================ */
+  .tools-showcase {
+    display: grid;
+    gap: 12px;
+  }
+
+  @media (min-width: 640px) {
+    .tools-showcase { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .tool-chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ivory);
+    padding: 16px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-soft);
+    transition: box-shadow 0.2s;
+  }
+
+  .tool-chip:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  .tool-chip-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+  }
+
+  .tool-chip-name {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .tool-chip-desc {
+    font-size: 13px;
+    color: var(--olive);
+  }
+
+  /* ============================================================
+     STACK
+     ============================================================ */
+  .stack-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .stack-item {
+    font-size: 13px;
+    color: var(--dark-warm);
+    background: var(--sand);
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+
+  .stack-item.brand {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 13px;
+    color: var(--stone);
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 640px) {
+    .hero-title { font-size: 32px; }
+    .hero { min-height: auto; padding: 40px 0; }
+    section { padding: 60px 0; }
+    .phone-frame { width: 240px; height: 480px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <p class="hero-tagline">给爸爸的全程陪伴助手</p>
+      <h1 class="hero-title">
+        从备孕到产后<br>
+        <em>爸爸去哪了</em>
+      </h1>
+      <p class="hero-desc">
+        一款专门为新手爸爸和准爸爸设计的孕产期陪伴助手。<br>
+        任务管理、产检提醒、记录工具、知识社区——<br>
+        让爸爸在每个阶段都知道该做什么。
+      </p>
+      <div class="hero-actions">
+        <a href="#features" class="btn-primary">了解功能</a>
+        <a href="#stages" class="btn-secondary">孕期路线</a>
+      </div>
+    </div>
+    <div class="hero-phone">
+      <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="app-icon"><span>👶</span></div>
+          <h3>爸爸去哪了</h3>
+          <p>孕 24 周 · 孕中期<br>距预产期还有 112 天</p>
+          <div class="phone-preview-row">
+            <span class="phone-preview-pill highlight">今日任务 3</span>
+            <span class="phone-preview-pill">胎动 12 次</span>
+          </div>
+          <div class="phone-preview-row">
+            <span class="phone-preview-pill">体重 +6.2 kg</span>
+            <span class="phone-preview-pill">产检 6/12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     METRICS
+     ============================================================ -->
+<div class="metrics">
+  <div class="container metrics-grid" style="padding: 40px 24px;">
+    <div>
+      <div class="metric-value">5</div>
+      <div class="metric-label">孕育阶段覆盖</div>
+    </div>
+    <div>
+      <div class="metric-value">14+</div>
+      <div class="metric-label">实用工具</div>
+    </div>
+    <div>
+      <div class="metric-value">100+</div>
+      <div class="metric-label">预设任务</div>
+    </div>
+    <div>
+      <div class="metric-value">∞</div>
+      <div class="metric-label">自由记录</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     FEATURES
+     ============================================================ -->
+<section id="features">
+  <div class="container">
+    <span class="label">核心功能</span>
+    <h2 class="section-title">爸爸的孕产工具箱</h2>
+    <p class="section-sub">
+      从任务提醒到记录工具，每个功能都围绕「让爸爸知道该做什么」设计。
+    </p>
+
+    <div class="features-grid" style="margin-top: 40px;">
+
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3 class="feature-name">阶段任务</h3>
+        <p class="feature-desc">
+          按备孕/孕早/中/晚期/产后五阶段自动分配任务。产检提醒、每日打卡、日常任务，完成进度一目了然。
+        </p>
+        <span class="feature-tag">Task Manager</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🩺</div>
+        <h3 class="feature-name">产检时间轴</h3>
+        <p class="feature-desc">
+          从早期唐筛到晚期 B 超，标准产检流程尽在掌握。标记已完成，进度自动追踪，不错过任何一次。
+        </p>
+        <span class="feature-tag">Timeline</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3 class="feature-name">妈妈体重曲线</h3>
+        <p class="feature-desc">
+          记录孕期体重变化，叠加 IOM 推荐增重范围曲线。BMI 自动分型，超出范围时一目了然。
+        </p>
+        <span class="feature-tag">Mom Weight</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">👶</div>
+        <h3 class="feature-name">生长曲线</h3>
+        <p class="feature-desc">
+          记录宝宝身高体重，叠加 WHO 生长标准百分位曲线。每次体检后录入，趋势尽在掌握。
+        </p>
+        <span class="feature-tag">Growth Chart</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🍼</div>
+        <h3 class="feature-name">喂奶计时器</h3>
+        <p class="feature-desc">
+          记录每次喂奶时间，自动显示距上次喂奶间隔。一天喂几次、间隔多久，数据全记录。
+        </p>
+        <span class="feature-tag">Feeding</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">❤️</div>
+        <h3 class="feature-name">胎动计数器</h3>
+        <p class="feature-desc">
+          一键计数胎动，60 分钟计时时段。今日计数时段列表汇总，历史记录可回溯。
+        </p>
+        <span class="feature-tag">Kick Counter</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">💊</div>
+        <h3 class="feature-name">疫苗本 + 日历</h3>
+        <p class="feature-desc">
+          免费/自费疫苗区分管理，按月龄查看接种时间线。已接种记录日期，未接种显示缺口。
+        </p>
+        <span class="feature-tag">Vaccine</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⏱️</div>
+        <h3 class="feature-name">宫缩计时器</h3>
+        <p class="feature-desc">
+          临近预产期的必备工具。记录每次宫缩的持续时间和间隔，帮助判断产程进展。
+        </p>
+        <span class="feature-tag">Contraction</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🍎</div>
+        <h3 class="feature-name">食物禁忌查询</h3>
+        <p class="feature-desc">
+          搜索食材，显示备孕/孕期/产后/婴儿各阶段的食用建议。可以吃、适量吃、绝对不能吃。
+        </p>
+        <span class="feature-tag">Food Safety</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🍊</div>
+        <h3 class="feature-name">胎儿大小对比</h3>
+        <p class="feature-desc">
+          每周用水果类比胎儿大小——"像柠檬一样大"、"像椰子一样大"。本周身长体重一目了然。
+        </p>
+        <span class="feature-tag">Bump Size</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3 class="feature-name">爸爸社区</h3>
+        <p class="feature-desc">
+          准爸爸和新手爸爸的交流社区。知识文章、经验分享、点赞评论，不再一个人面对。
+        </p>
+        <span class="feature-tag">Community</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎒</div>
+        <h3 class="feature-name">物品准备 + 心理支持</h3>
+        <p class="feature-desc">
+          待产包清单、婴儿用品准备、产后爸爸心理调节文章——让你不只准备好物品，也准备好心态。
+        </p>
+        <span class="feature-tag">Prep &amp; Support</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STAGES
+     ============================================================ -->
+<section id="stages" style="background: var(--ivory);">
+  <div class="container">
+    <span class="label">全周期覆盖</span>
+    <h2 class="section-title">从备孕到育儿，一路陪伴</h2>
+    <p class="section-sub">
+      每个阶段都有专属的任务和工具——不早不晚，刚好出现。
+    </p>
+
+    <div style="display: grid; gap: 48px; margin-top: 40px; grid-template-columns: 1fr 1fr; align-items: start;">
+      <div class="stage-timeline">
+        <div class="stage-item">
+          <div class="stage-dot"></div>
+          <div class="stage-name">备孕期</div>
+          <div class="stage-desc">孕前检查准备、叶酸补充打卡、排卵期提醒、健康习惯建立。</div>
+        </div>
+        <div class="stage-item">
+          <div class="stage-dot"></div>
+          <div class="stage-name">孕早期 · 1-12 周</div>
+          <div class="stage-desc">确认妊娠、早孕反应应对、NT 检查、建档准备。</div>
+        </div>
+        <div class="stage-item">
+          <div class="stage-dot"></div>
+          <div class="stage-name">孕中期 · 13-27 周</div>
+          <div class="stage-desc">唐筛/大排畸/糖耐关键检查、胎动感知、孕期运动建议。</div>
+        </div>
+        <div class="stage-item">
+          <div class="stage-dot"></div>
+          <div class="stage-name">孕晚期 · 28-40 周</div>
+          <div class="stage-desc">胎心监护、宫缩计时、待产包准备、分娩计划制定。</div>
+        </div>
+        <div class="stage-item">
+          <div class="stage-dot"></div>
+          <div class="stage-name">产后育儿</div>
+          <div class="stage-desc">疫苗管理、喂奶记录、生长曲线、产后妈妈恢复支持。</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tools-showcase">
+          <div class="tool-chip">
+            <span class="tool-chip-icon">📋</span>
+            <div><div class="tool-chip-name">任务管理</div><div class="tool-chip-desc">五阶段自动分类</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">📊</span>
+            <div><div class="tool-chip-name">妈妈体重</div><div class="tool-chip-desc">IOM 标准曲线</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">👶</span>
+            <div><div class="tool-chip-name">生长曲线</div><div class="tool-chip-desc">WHO 百分位标准</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">🍼</span>
+            <div><div class="tool-chip-name">喂奶计时</div><div class="tool-chip-desc">间隔自动计算</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">❤️</span>
+            <div><div class="tool-chip-name">胎动计数</div><div class="tool-chip-desc">时段管理</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">💊</span>
+            <div><div class="tool-chip-name">疫苗管理</div><div class="tool-chip-desc">免费/自费分类</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">⏱️</span>
+            <div><div class="tool-chip-name">宫缩计时</div><div class="tool-chip-desc">持续+间隔</div></div>
+          </div>
+          <div class="tool-chip">
+            <span class="tool-chip-icon">🍊</span>
+            <div><div class="tool-chip-name">胎儿大小</div><div class="tool-chip-desc">水果类比</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     TECH STACK
+     ============================================================ -->
+<section>
+  <div class="container">
+    <span class="label">技术栈</span>
+    <h2 class="section-title">现代 · 原生体验</h2>
+    <p class="section-sub">
+      基于最前沿的移动端技术栈构建，Expo + Supabase 全栈架构，iOS / Android / Web 三端覆盖。
+    </p>
+    <div class="stack-list">
+      <span class="stack-item brand">TypeScript 5.9</span>
+      <span class="stack-item brand">Expo SDK 54</span>
+      <span class="stack-item brand">React Native 0.81</span>
+      <span class="stack-item">Supabase</span>
+      <span class="stack-item">expo-router</span>
+      <span class="stack-item">AsyncStorage</span>
+      <span class="stack-item">Ionicons</span>
+      <span class="stack-item">WHO Growth Standards</span>
+      <span class="stack-item">IOM Guidelines</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <div class="container">
+    <p>爸爸去哪了 · DadCare — 给准爸爸和新手爸爸的孕产期陪伴助手</p>
+    <p style="margin-top: 4px;">Built with the Kami design system · Warm parchment · Ink-blue accent</p>
+  </div>
+</footer>
+
+</body>
+</html>

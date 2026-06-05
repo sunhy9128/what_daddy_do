@@ -453,7 +453,7 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
                 </View>
                 {[...records].reverse().map((r, i) => {
                   const origIdx = records.length - 1 - i;
-                  const gain = +(r.weight - (config?.prePregnancyWeight || 0)).toFixed(1);
+                  const gain = +(r.weight - (config?.prePregnancyWeight || 0)).toFixed(2);
                   const { min, max } = bmi ? getRecommendedGain(r.week, bmi) : { min: 0, max: 0 };
                   const ok = gain >= min && gain <= max;
                   return (
@@ -463,12 +463,12 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
                       </View>
                       <View style={[styles.historyCell, { flex: 3 }]}>
                         <Text style={[styles.historyText, ok ? styles.historyGainOk : styles.historyGainWarn]}>
-                          {gain > 0 ? `+${gain}` : gain.toFixed(1)}
+                          {gain > 0 ? `+${gain.toFixed(2)}` : gain.toFixed(2)}
                         </Text>
                       </View>
                       <View style={[styles.historyCell, { flex: 3 }]}>
                         <Text style={styles.historyRange}>
-                          {min.toFixed(1)}-{max.toFixed(1)}
+                          {min.toFixed(2)}-{max.toFixed(2)}
                         </Text>
                       </View>
                       <View style={[styles.historyCell, { flex: 2 }]}>
