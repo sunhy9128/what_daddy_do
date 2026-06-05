@@ -34,7 +34,7 @@ function getRecommendedGain(week: number, bmi: number): { min: number; max: numb
   };
 }
 
-function MomWeightChart({ records, bmi }: { records: MomWeightRecord[]; bmi: number }) {
+function MomWeightChart({ records, bmi, prePregnancyWeight }: { records: MomWeightRecord[]; bmi: number; prePregnancyWeight: number }) {
   const colors = useColors();
   const CHART_H = 160;
   const CHART_W = 260;
@@ -42,7 +42,7 @@ function MomWeightChart({ records, bmi }: { records: MomWeightRecord[]; bmi: num
   const maxWeek = Math.max(40, ...records.map(r => r.week));
   const maxGain = Math.max(
     20,
-    ...records.map(r => r.weight),
+    ...records.map(r => r.weight - prePregnancyWeight),
     getRecommendedGain(maxWeek, bmi).max + 2,
   );
 
@@ -114,11 +114,12 @@ function MomWeightChart({ records, bmi }: { records: MomWeightRecord[]; bmi: num
 
         {/* 用户数据点 */}
         {records.map((r, i) => {
-          if (r.weight <= 0) return null;
+          const gain = r.weight - prePregnancyWeight;
+          if (gain <= 0) return null;
           const { min, max } = getRecommendedGain(r.week, bmi);
-          const inRange = r.weight >= min && r.weight <= max;
+          const inRange = gain >= min && gain <= max;
           return (
-            <View key={i} style={[chartStyles.dataPoint, inRange ? chartStyles.dataPointOk : chartStyles.dataPointWarn, { left: 24 + toX(r.week) - 4, top: toY(r.weight) - 4 }]} />
+            <View key={i} style={[chartStyles.dataPoint, inRange ? chartStyles.dataPointOk : chartStyles.dataPointWarn, { left: 24 + toX(r.week) - 4, top: toY(gain) - 4 }]} />
           );
         })}
 
@@ -219,8 +220,7 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
     if (!canAdd) return;
     const w = parseInt(weekStr, 10);
     const wt = parseFloat(weightStr);
-    const gain = config ? +(wt - config.prePregnancyWeight).toFixed(1) : 0;
-    const newRecord: MomWeightRecord = { week: w, weight: gain };
+    const newRecord: MomWeightRecord = { week: w, weight: wt };
     const newRecords = [...records, newRecord].sort((a, b) => a.week - b.week);
     setRecords(newRecords);
     persistRecords(newRecords);
@@ -415,7 +415,7 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
 
           {/* 图表 */}
           {config && records.length > 0 && (
-            <MomWeightChart records={records} bmi={bmi} />
+            <MomWeightChart records={records} bmi={bmi} prePregnancyWeight={config.prePregnancyWeight} />
           )}
 
           {/* 新增记录 */}
@@ -453,8 +453,9 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
                 </View>
                 {[...records].reverse().map((r, i) => {
                   const origIdx = records.length - 1 - i;
+                  const gain = +(r.weight - (config?.prePregnancyWeight || 0)).toFixed(1);
                   const { min, max } = bmi ? getRecommendedGain(r.week, bmi) : { min: 0, max: 0 };
-                  const ok = r.weight >= min && r.weight <= max;
+                  const ok = gain >= min && gain <= max;
                   return (
                     <View key={i} style={styles.historyItem}>
                       <View style={[styles.historyCell, { flex: 2 }]}>
@@ -462,7 +463,7 @@ export function MomWeightTracker({ userId }: { userId: string; babyGender?: stri
                       </View>
                       <View style={[styles.historyCell, { flex: 3 }]}>
                         <Text style={[styles.historyText, ok ? styles.historyGainOk : styles.historyGainWarn]}>
-                          {r.weight > 0 ? `+${r.weight}` : '-'}
+                          {gain > 0 ? `+${gain}` : gain.toFixed(1)}
                         </Text>
                       </View>
                       <View style={[styles.historyCell, { flex: 3 }]}>

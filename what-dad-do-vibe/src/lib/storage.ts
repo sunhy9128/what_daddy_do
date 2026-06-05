@@ -119,10 +119,10 @@ export async function saveKickRecords(userId: string, records: KickRecordData[])
   try { await AsyncStorage.setItem(`kick_records_${userId}`, JSON.stringify(records)); } catch (e) { console.error('saveKickRecords failed', e); }
 }
 
-// 妈妈体重记录
+// 妈妈体重记录（存储绝对体重，增重在展示时计算）
 export interface MomWeightRecord {
-  week: number;    // 孕周 0-40
-  weight: number;  // 体重 kg
+  week: number;    // 孕周 0-42
+  weight: number;  // 当前体重 kg（绝对值）
 }
 
 export interface MomWeightConfig {
