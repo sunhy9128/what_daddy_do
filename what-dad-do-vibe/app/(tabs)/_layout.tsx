@@ -30,16 +30,12 @@ export default function TabLayout() {
   const styles = useMemo(() => StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
-    borderTopWidth: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.surface,
     elevation: 0,
     height: Platform.OS === 'ios' ? 72 : 60,
     paddingTop: spacing.sm,
     paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.xs,
-    // Kami 柔和顶阴影替代硬边框
-    shadowColor: '#1A1A2E',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
   },
   tabBarItem: {
     paddingVertical: 0,

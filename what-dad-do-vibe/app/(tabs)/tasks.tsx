@@ -14,6 +14,7 @@ import { CollapsibleGroup } from '../../src/components/organisms';
 import { useColors } from '../../src/context/ThemeContext';
 import { radius, spacing, shadows, typography } from '../../src/styles/tokens';
 import { Ionicons } from '@expo/vector-icons';
+import { DatePicker } from '../../src/components/DatePicker';
 
 // 孕期阶段顺序（用于判断是否为已过阶段）
 const STAGE_ORDER: PregnancyStage[] = ['preconception', 'first', 'second', 'third', 'postpartum'];
@@ -42,17 +43,13 @@ export default function TasksScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskType, setNewTaskType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
-  const [newTaskDateYear, setNewTaskDateYear] = useState('');
-  const [newTaskDateMonth, setNewTaskDateMonth] = useState('');
-  const [newTaskDateDay, setNewTaskDateDay] = useState('');
+  const [newTaskDate, setNewTaskDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editType, setEditType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
-  const [editDateYear, setEditDateYear] = useState('');
-  const [editDateMonth, setEditDateMonth] = useState('');
-  const [editDateDay, setEditDateDay] = useState('');
+  const [editDate, setEditDate] = useState('');
   const [presetTasks, setPresetTasks] = useState<PresetTask[]>([]);
   const [loadingPresets, setLoadingPresets] = useState(true);
   const [savingTask, setSavingTask] = useState(false);
@@ -483,6 +480,18 @@ export default function TasksScreen() {
   const existingTitles = filteredTasks.map(t => t.title);
   const availablePresets = presetsForStage.filter(p => !existingTitles.includes(p.title));
 
+  // 获取该任务所在阶段之前的所有产检中最晚的日期（作为最小允许日期）
+  const getMinPrenatalDate = useCallback((stage: string, excludeTaskId?: string) => {
+    const currentIdx = STAGE_ORDER.indexOf(stage as PregnancyStage);
+    if (currentIdx <= 0) return '';
+    const earlier = state.tasks
+      .filter(t => t.type === 'prenatal' && t.dueDate && t.id !== excludeTaskId)
+      .filter(t => STAGE_ORDER.indexOf(t.stage as PregnancyStage) < currentIdx)
+      .map(t => t.dueDate!);
+    if (earlier.length === 0) return '';
+    return earlier.reduce((max, d) => d > max ? d : max, earlier[0]);
+  }, [state.tasks]);
+
   const handleAddPreset = async (task: PresetTask) => {
     if (taskBusy.current) return;
     taskBusy.current = true;
@@ -511,10 +520,8 @@ export default function TasksScreen() {
     const detectedType = detectTaskType(newTaskTitle.trim());
     // 构建日期
     let dueDate: string | undefined;
-    if (newTaskDateYear && newTaskDateMonth && newTaskDateDay) {
-      const m = newTaskDateMonth.padStart(2, '0');
-      const d = newTaskDateDay.padStart(2, '0');
-      dueDate = `${newTaskDateYear}-${m}-${d}`;
+    if (newTaskDate) {
+      dueDate = newTaskDate;
     }
     try {
       await addTask({
@@ -524,9 +531,7 @@ export default function TasksScreen() {
         ...(dueDate ? { dueDate } : {}),
       });
       setNewTaskTitle('');
-      setNewTaskDateYear('');
-      setNewTaskDateMonth('');
-      setNewTaskDateDay('');
+      setNewTaskDate(new Date().toISOString().split('T')[0]);
       setShowAddModal(false);
       const typeLabelMap: Record<string, string> = { prenatal: '产检', daily: '日常', checkin: '打卡' };
       safeAlert('成功', `任务已添加（${typeLabelMap[detectedType] || '日常'}）`);
@@ -561,10 +566,7 @@ export default function TasksScreen() {
     if (selectedTask) {
       setEditTitle(selectedTask.title);
       setEditType(selectedTask.type as 'checkin' | 'prenatal' | 'daily');
-      const parts = selectedTask.dueDate?.split('-') || [];
-      setEditDateYear(parts[0] || '');
-      setEditDateMonth(parts[1] || '');
-      setEditDateDay(parts[2] || '');
+      setEditDate(selectedTask.dueDate || new Date().toISOString().split('T')[0]);
       setIsEditMode(true);
     }
   };
@@ -576,16 +578,22 @@ export default function TasksScreen() {
       return;
     }
     if (!selectedTask) return;
+    // 产检任务日期校验：不能早于前面阶段的最晚产检日期
+    if (selectedTask.type === 'prenatal' && editDate) {
+      const minDate = getMinPrenatalDate(selectedTask.stage, selectedTask.id);
+      if (minDate && editDate < minDate) {
+        safeAlert('日期无效', `该产检的预约日期不能早于 ${minDate}（前面阶段的产检日期）`);
+        return;
+      }
+    }
     taskBusy.current = true;
     try {
       const editUpdates: { title: string; type: 'checkin' | 'prenatal' | 'daily'; dueDate?: string } = {
         title: editTitle.trim(),
         type: editType,
       };
-      if (editDateYear && editDateMonth && editDateDay) {
-        const m = editDateMonth.padStart(2, '0');
-        const d = editDateDay.padStart(2, '0');
-        editUpdates.dueDate = `${editDateYear}-${m}-${d}`;
+      if (editDate) {
+        editUpdates.dueDate = editDate;
       }
       await updateTask(selectedTask.id, editUpdates);
       setIsEditMode(false);
@@ -777,15 +785,13 @@ export default function TasksScreen() {
             </View>
 
             {/* 预约日期 */}
-            <Text style={styles.modalLabel}>预约日期（可选）</Text>
-            <View style={styles.dateInputRow}>
-              <TextInput style={[styles.dateInput, styles.dateInputYear]} value={newTaskDateYear} onChangeText={setNewTaskDateYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
-              <Text style={styles.dateSep}>年</Text>
-              <TextInput style={[styles.dateInput, styles.dateInputMonth]} value={newTaskDateMonth} onChangeText={setNewTaskDateMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
-              <Text style={styles.dateSep}>月</Text>
-              <TextInput style={[styles.dateInput, styles.dateInputDay]} value={newTaskDateDay} onChangeText={setNewTaskDateDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
-              <Text style={styles.dateSep}>日</Text>
-            </View>
+            <Text style={styles.modalLabel}>预约日期</Text>
+            <DatePicker
+              value={newTaskDate}
+              onChange={setNewTaskDate}
+              minDate={getMinPrenatalDate(currentStageKey)}
+              label="预约日期"
+            />
 
             {/* 底部操作区 */}
             <View style={styles.modalActions}>
@@ -844,15 +850,13 @@ export default function TasksScreen() {
                     </View>
 
                     {/* 预约日期 */}
-                    <Text style={styles.modalLabel}>预约日期（可选）</Text>
-                    <View style={styles.dateInputRow}>
-                      <TextInput style={[styles.dateInput, styles.dateInputYear]} value={editDateYear} onChangeText={setEditDateYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
-                      <Text style={styles.dateSep}>年</Text>
-                      <TextInput style={[styles.dateInput, styles.dateInputMonth]} value={editDateMonth} onChangeText={setEditDateMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
-                      <Text style={styles.dateSep}>月</Text>
-                      <TextInput style={[styles.dateInput, styles.dateInputDay]} value={editDateDay} onChangeText={setEditDateDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
-                      <Text style={styles.dateSep}>日</Text>
-                    </View>
+                    <Text style={styles.modalLabel}>预约日期</Text>
+                    <DatePicker
+                      value={editDate}
+                      onChange={setEditDate}
+                      minDate={getMinPrenatalDate(selectedTask?.stage || currentStageKey, selectedTask?.id)}
+                      label="预约日期"
+                    />
 
                     <Button title="保存" variant="primary" onPress={handleSaveEdit} />
                   </>
@@ -861,11 +865,13 @@ export default function TasksScreen() {
                     {/* 任务标题 + 完成状态 */}
                     <View style={styles.detailHeader}>
                       <Text style={styles.detailTitle}>{selectedTask.title}</Text>
-                      <View style={[styles.detailStatusBadge, { backgroundColor: selectedTask.isCompleted ? colors.success + '20' : colors.surfaceSecondary }]}>
-                        <Text style={[styles.detailStatusText, { color: selectedTask.isCompleted ? colors.success : colors.muted }]}>
-                          {selectedTask.isCompleted ? '✓ 已完成' : '待完成'}
-                        </Text>
-                      </View>
+                      {(!(selectedTask.type === 'daily') || selectedTask.isCompleted) && (
+                        <View style={[styles.detailStatusBadge, { backgroundColor: selectedTask.isCompleted ? colors.success + '20' : colors.surfaceSecondary }]}>
+                          <Text style={[styles.detailStatusText, { color: selectedTask.isCompleted ? colors.success : colors.muted }]}>
+                            {selectedTask.isCompleted ? '✓ 已完成' : '待完成'}
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     {/* 类型标签 */}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { useApp } from '../../src/context/AppContext';
@@ -294,25 +295,36 @@ export default function HomeScreen() {
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  checkupHeader: {
+    backgroundColor: colors.surfaceSecondary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  checkupHeaderTitle: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: colors.accent,
+    letterSpacing: 0.3,
+  },
   checkupBody: {
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
+  checkupIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F0EDE6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
   checkupRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-  },
-  checkupIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkupIcon: {
-    fontSize: 20,
   },
   checkupInfo: {
     flex: 1,
@@ -322,6 +334,7 @@ export default function HomeScreen() {
     color: colors.muted,
     fontWeight: '500',
     marginBottom: 2,
+    letterSpacing: 0.5,
   },
   checkupName: {
     ...typography.callout,
@@ -330,6 +343,17 @@ export default function HomeScreen() {
   },
   checkupCountdownWrap: {
     alignItems: 'center',
+    backgroundColor: colors.accentLight,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minWidth: 64,
+  },
+  checkupCountdownUrgent: {
+    backgroundColor: '#FEF2F2',
+  },
+  checkupCountdownSoon: {
+    backgroundColor: '#FFFBEB',
   },
   checkupDaysNum: {
     ...typography.title2,
@@ -345,13 +369,31 @@ export default function HomeScreen() {
   checkupDaysLabel: {
     ...typography.caption2,
     color: colors.muted,
+    marginTop: 1,
+  },
+  checkupDaysLabelUrgent: {
+    color: '#DC2626',
   },
   checkupDesc: {
     ...typography.footnote,
     color: colors.fgSecondary,
-    lineHeight: 18,
-    marginTop: spacing.sm,
-    marginLeft: 52,
+    lineHeight: 20,
+    marginTop: spacing.md,
+    marginLeft: 0,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  checkupFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  checkupHint: {
+    ...typography.caption2,
+    color: colors.muted,
   },
 
   // ===== 物品准备样式 =====
@@ -717,38 +759,53 @@ export default function HomeScreen() {
 
         {/* ===== 下次产检倒计时 ===== */}
         {state.stage !== 'preconception' && state.stage !== 'postpartum' && nextPrenatal && (
-          <View style={styles.checkupCard}>
-            <TouchableOpacity
-              style={styles.checkupBody}
-              onPress={() => router.push('/tasks')}
-              activeOpacity={0.7}
-            >
+          <TouchableOpacity
+            style={styles.checkupCard}
+            onPress={() => router.push('/tasks')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.checkupHeader}>
+              <Ionicons name="calendar-outline" size={14} color={colors.accent} />
+              <Text style={styles.checkupHeaderTitle}>下次产检</Text>
+            </View>
+            <View style={styles.checkupBody}>
               <View style={styles.checkupRow}>
                 <View style={styles.checkupIconWrap}>
-                  <Text style={styles.checkupIcon}>📋</Text>
+                  <Ionicons name="document-text-outline" size={22} color={colors.accent} />
                 </View>
                 <View style={styles.checkupInfo}>
-                  <Text style={styles.checkupLabel}>下次产检</Text>
+                  <Text style={styles.checkupLabel}>检查项目</Text>
                   <Text style={styles.checkupName}>{nextPrenatal.title}</Text>
                 </View>
-                <View style={styles.checkupCountdownWrap}>
+                <View style={[
+                  styles.checkupCountdownWrap,
+                  daysUntilNextPrenatal! <= 0 && styles.checkupCountdownUrgent,
+                  daysUntilNextPrenatal! <= 3 && daysUntilNextPrenatal! > 0 && styles.checkupCountdownSoon,
+                ]}>
                   <Text style={[
                     styles.checkupDaysNum,
                     daysUntilNextPrenatal! <= 0 && styles.checkupDaysUrgent,
                     daysUntilNextPrenatal! <= 3 && daysUntilNextPrenatal! > 0 && styles.checkupDaysSoon,
                   ]}>
-                    {daysUntilNextPrenatal! <= 0 ? '今天' : `${daysUntilNextPrenatal}天`}
+                    {daysUntilNextPrenatal! <= 0 ? '今天' : `${daysUntilNextPrenatal}`}
                   </Text>
-                  <Text style={styles.checkupDaysLabel}>
-                    {daysUntilNextPrenatal! <= 0 ? '检查日' : '后'}
+                  <Text style={[
+                    styles.checkupDaysLabel,
+                    daysUntilNextPrenatal! <= 0 && styles.checkupDaysLabelUrgent,
+                  ]}>
+                    {daysUntilNextPrenatal! <= 0 ? '检查日' : '天后'}
                   </Text>
                 </View>
               </View>
               {nextPrenatal.description ? (
                 <Text style={styles.checkupDesc}>{nextPrenatal.description}</Text>
               ) : null}
-            </TouchableOpacity>
-          </View>
+            </View>
+            <View style={styles.checkupFooter}>
+              <Text style={styles.checkupHint}>点击查看全部产检</Text>
+              <Ionicons name="chevron-forward" size={12} color={colors.muted} />
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* ===== 物品准备 ===== */}
