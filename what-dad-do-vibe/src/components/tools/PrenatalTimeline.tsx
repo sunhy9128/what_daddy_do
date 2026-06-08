@@ -6,6 +6,7 @@ import { useApp, Task } from '../../context/AppContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 
 const STAGE_ORDER = ['first', 'second', 'third'] as const;
+const FULL_STAGE_ORDER = ['preconception', 'first', 'second', 'third', 'postpartum'];
 const STAGE_LABELS: Record<string, string> = { first: '孕早期', second: '孕中期', third: '孕晚期' };
 const STAGE_COLORS: Record<string, string> = {
   first: '#4A6B8A',
@@ -16,6 +17,13 @@ const STAGE_COLORS: Record<string, string> = {
 export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const { state, toggleTask } = useApp();
+
+  // 判断任务是否为已过阶段（当前阶段之前）
+  const currentStageIndex = FULL_STAGE_ORDER.indexOf(state.stage);
+  const isPastStageTask = useCallback((taskStage: string) => {
+    const taskIndex = FULL_STAGE_ORDER.indexOf(taskStage);
+    return taskIndex >= 0 && taskIndex < currentStageIndex;
+  }, [currentStageIndex]);
 
   // 从待办清单中过滤出产检任务（type='prenatal'，仅孕期阶段）
   const prenatalTasks = useMemo(() => {
@@ -47,9 +55,10 @@ export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string
   const totalCount = prenatalTasks.length;
   const progress = totalCount > 0 ? completedCount / totalCount : 0;
 
-  const handleToggle = useCallback((id: string) => {
+  const handleToggle = useCallback((id: string, taskStage: string) => {
+    if (isPastStageTask(taskStage)) return;
     toggleTask(id);
-  }, [toggleTask]);
+  }, [toggleTask, isPastStageTask]);
 
   const styles = useMemo(() => StyleSheet.create({
     wrapper: { minHeight: 120 },
@@ -125,6 +134,14 @@ export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string
     },
     checkBtnTextDone: { color: colors.success },
     checkBtnTextPending: { color: colors.fgSecondary },
+    itemPast: {
+      opacity: 0.5,
+    },
+    checkBtnDisabled: {
+      borderColor: colors.divider,
+      backgroundColor: colors.surfaceSecondary + '60',
+    },
+    checkBtnTextDisabled: { color: colors.muted },
     emptyState: {
       alignItems: 'center',
       justifyContent: 'center',
@@ -166,7 +183,7 @@ export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string
               {items.map((task, idx) => {
                 const showLine = idx < items.length - 1;
                 return (
-                  <View key={task.id} style={styles.item}>
+                  <View key={task.id} style={[styles.item, isPastStageTask(task.stage) && styles.itemPast]}>
                     <View style={styles.lineCol}>
                       <View style={[styles.dot, task.isCompleted ? styles.dotCompleted : styles.dotPending]}>
                         {task.isCompleted && <Ionicons name="checkmark" size={10} color="#fff" />}
@@ -179,17 +196,22 @@ export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string
                       )}
                     </View>
                     <View style={styles.content}>
-                      <Text style={styles.title}>{task.title}</Text>
+                      <Text style={[styles.title, isPastStageTask(task.stage) && { color: colors.muted }]}>{task.title}</Text>
                       {task.description ? (
                         <Text style={styles.desc}>{task.description}</Text>
                       ) : null}
                       <TouchableOpacity
-                        style={[styles.checkBtn, task.isCompleted ? styles.checkBtnDone : styles.checkBtnPending]}
-                        onPress={() => handleToggle(task.id)}
-                        activeOpacity={0.7}
+                        style={[
+                          styles.checkBtn,
+                          task.isCompleted ? styles.checkBtnDone : styles.checkBtnPending,
+                          isPastStageTask(task.stage) && styles.checkBtnDisabled,
+                        ]}
+                        onPress={() => handleToggle(task.id, task.stage)}
+                        activeOpacity={isPastStageTask(task.stage) ? 1 : 0.7}
+                        disabled={isPastStageTask(task.stage)}
                       >
-                        <Text style={[styles.checkBtnText, task.isCompleted ? styles.checkBtnTextDone : styles.checkBtnTextPending]}>
-                          {task.isCompleted ? '✓ 已完成' : '标记完成'}
+                        <Text style={[styles.checkBtnText, isPastStageTask(task.stage) ? styles.checkBtnTextDisabled : (task.isCompleted ? styles.checkBtnTextDone : styles.checkBtnTextPending)]}>
+                          {isPastStageTask(task.stage) ? '已过期' : (task.isCompleted ? '✓ 已完成' : '标记完成')}
                         </Text>
                       </TouchableOpacity>
                     </View>

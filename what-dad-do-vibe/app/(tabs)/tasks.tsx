@@ -42,11 +42,17 @@ export default function TasksScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskType, setNewTaskType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
+  const [newTaskDateYear, setNewTaskDateYear] = useState('');
+  const [newTaskDateMonth, setNewTaskDateMonth] = useState('');
+  const [newTaskDateDay, setNewTaskDateDay] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editType, setEditType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
+  const [editDateYear, setEditDateYear] = useState('');
+  const [editDateMonth, setEditDateMonth] = useState('');
+  const [editDateDay, setEditDateDay] = useState('');
   const [presetTasks, setPresetTasks] = useState<PresetTask[]>([]);
   const [loadingPresets, setLoadingPresets] = useState(true);
   const [savingTask, setSavingTask] = useState(false);
@@ -243,6 +249,37 @@ export default function TasksScreen() {
   typeOptionTextActive: {
     color: '#fff',
     fontWeight: '600',
+  },
+  // 日期输入行
+  dateInputRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+    alignItems: 'center',
+  },
+  dateInput: {
+    ...typography.callout,
+    color: colors.fg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlign: 'center',
+  },
+  dateInputYear: {
+    width: 80,
+  },
+  dateInputMonth: {
+    width: 60,
+  },
+  dateInputDay: {
+    width: 60,
+  },
+  dateSep: {
+    ...typography.callout,
+    color: colors.muted,
   },
   // 底部操作按钮组
   modalActions: {
@@ -472,13 +509,24 @@ export default function TasksScreen() {
     }
     setSavingTask(true);
     const detectedType = detectTaskType(newTaskTitle.trim());
+    // 构建日期
+    let dueDate: string | undefined;
+    if (newTaskDateYear && newTaskDateMonth && newTaskDateDay) {
+      const m = newTaskDateMonth.padStart(2, '0');
+      const d = newTaskDateDay.padStart(2, '0');
+      dueDate = `${newTaskDateYear}-${m}-${d}`;
+    }
     try {
       await addTask({
         title: newTaskTitle.trim(),
         stage: currentStageKey,
         type: detectedType,
+        ...(dueDate ? { dueDate } : {}),
       });
       setNewTaskTitle('');
+      setNewTaskDateYear('');
+      setNewTaskDateMonth('');
+      setNewTaskDateDay('');
       setShowAddModal(false);
       const typeLabelMap: Record<string, string> = { prenatal: '产检', daily: '日常', checkin: '打卡' };
       safeAlert('成功', `任务已添加（${typeLabelMap[detectedType] || '日常'}）`);
@@ -513,6 +561,10 @@ export default function TasksScreen() {
     if (selectedTask) {
       setEditTitle(selectedTask.title);
       setEditType(selectedTask.type as 'checkin' | 'prenatal' | 'daily');
+      const parts = selectedTask.dueDate?.split('-') || [];
+      setEditDateYear(parts[0] || '');
+      setEditDateMonth(parts[1] || '');
+      setEditDateDay(parts[2] || '');
       setIsEditMode(true);
     }
   };
@@ -526,7 +578,16 @@ export default function TasksScreen() {
     if (!selectedTask) return;
     taskBusy.current = true;
     try {
-      await updateTask(selectedTask.id, { title: editTitle.trim(), type: editType });
+      const editUpdates: { title: string; type: 'checkin' | 'prenatal' | 'daily'; dueDate?: string } = {
+        title: editTitle.trim(),
+        type: editType,
+      };
+      if (editDateYear && editDateMonth && editDateDay) {
+        const m = editDateMonth.padStart(2, '0');
+        const d = editDateDay.padStart(2, '0');
+        editUpdates.dueDate = `${editDateYear}-${m}-${d}`;
+      }
+      await updateTask(selectedTask.id, editUpdates);
       setIsEditMode(false);
       setShowInfoModal(false);
     } catch (error: any) {
@@ -715,6 +776,17 @@ export default function TasksScreen() {
               ))}
             </View>
 
+            {/* 预约日期 */}
+            <Text style={styles.modalLabel}>预约日期（可选）</Text>
+            <View style={styles.dateInputRow}>
+              <TextInput style={[styles.dateInput, styles.dateInputYear]} value={newTaskDateYear} onChangeText={setNewTaskDateYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
+              <Text style={styles.dateSep}>年</Text>
+              <TextInput style={[styles.dateInput, styles.dateInputMonth]} value={newTaskDateMonth} onChangeText={setNewTaskDateMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
+              <Text style={styles.dateSep}>月</Text>
+              <TextInput style={[styles.dateInput, styles.dateInputDay]} value={newTaskDateDay} onChangeText={setNewTaskDateDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
+              <Text style={styles.dateSep}>日</Text>
+            </View>
+
             {/* 底部操作区 */}
             <View style={styles.modalActions}>
               <Button title="取消" variant="ghost" onPress={() => setShowAddModal(false)} style={styles.modalActionBtn} />
@@ -770,6 +842,18 @@ export default function TasksScreen() {
                         </TouchableOpacity>
                       ))}
                     </View>
+
+                    {/* 预约日期 */}
+                    <Text style={styles.modalLabel}>预约日期（可选）</Text>
+                    <View style={styles.dateInputRow}>
+                      <TextInput style={[styles.dateInput, styles.dateInputYear]} value={editDateYear} onChangeText={setEditDateYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
+                      <Text style={styles.dateSep}>年</Text>
+                      <TextInput style={[styles.dateInput, styles.dateInputMonth]} value={editDateMonth} onChangeText={setEditDateMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
+                      <Text style={styles.dateSep}>月</Text>
+                      <TextInput style={[styles.dateInput, styles.dateInputDay]} value={editDateDay} onChangeText={setEditDateDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
+                      <Text style={styles.dateSep}>日</Text>
+                    </View>
+
                     <Button title="保存" variant="primary" onPress={handleSaveEdit} />
                   </>
                 ) : (
@@ -799,12 +883,12 @@ export default function TasksScreen() {
 
                     {/* 信息行 */}
                     <View style={styles.detailInfoGroup}>
-                      {selectedTask.dueDate && (
-                        <View style={styles.detailInfoRow}>
-                          <Text style={styles.detailInfoLabel}>截止日期</Text>
-                          <Text style={styles.detailInfoValue}>{selectedTask.dueDate}</Text>
-                        </View>
-                      )}
+                      <View style={styles.detailInfoRow}>
+                        <Text style={styles.detailInfoLabel}>截止日期</Text>
+                        <Text style={[styles.detailInfoValue, !selectedTask.dueDate && { color: colors.muted }]}>
+                          {selectedTask.dueDate || '未预约'}
+                        </Text>
+                      </View>
                       {selectedTask.type === 'checkin' && (
                         <View style={styles.detailInfoRow}>
                           <Text style={styles.detailInfoLabel}>连续打卡</Text>

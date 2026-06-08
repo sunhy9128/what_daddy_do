@@ -80,6 +80,8 @@ export default function ToolDetailPage() {
 
     // 工具卡片容器
     scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
       padding: spacing.lg,
       paddingBottom: spacing.xxl + insets.bottom,
     },

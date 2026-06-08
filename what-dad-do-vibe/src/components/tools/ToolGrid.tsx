@@ -15,12 +15,13 @@ interface ToolGridItem {
 
 interface ToolGridProps {
   tools: ToolGridItem[];
+  currentStage?: string;
   onToolPress: (toolId: string) => void;
   onAddTool: (toolId: string) => void;
   onRemoveTool?: (instanceId: string) => void;
 }
 
-export function ToolGrid({ tools, onToolPress, onAddTool, onRemoveTool }: ToolGridProps) {
+export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemoveTool }: ToolGridProps) {
   const colors = useColors();
   const [showPicker, setShowPicker] = useState(false);
 
@@ -72,8 +73,12 @@ export function ToolGrid({ tools, onToolPress, onAddTool, onRemoveTool }: ToolGr
 
   const activeToolIds = useMemo(() => new Set(tools.map(t => t.toolId)), [tools]);
   const availableToAdd = useMemo(
-    () => AVAILABLE_TOOLS.filter(t => !activeToolIds.has(t.id)),
-    [activeToolIds]
+    () => AVAILABLE_TOOLS.filter(t => {
+      if (activeToolIds.has(t.id)) return false;
+      if (t.hideInStages && currentStage && t.hideInStages.includes(currentStage)) return false;
+      return true;
+    }),
+    [activeToolIds, currentStage]
   );
 
   const rippleScale = rippleAnim.interpolate({
@@ -147,6 +152,7 @@ export function ToolGrid({ tools, onToolPress, onAddTool, onRemoveTool }: ToolGr
       flexDirection: 'row',
       flexWrap: 'wrap',
       marginHorizontal: -spacing.xs,
+      zIndex: 2,
     },
     gridItem: {
       width: '33.333%',
@@ -203,12 +209,13 @@ export function ToolGrid({ tools, onToolPress, onAddTool, onRemoveTool }: ToolGr
       backgroundColor: colors.error,
     },
     deleteBtn: {
-      ...StyleSheet.absoluteFillObject,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.md,
       backgroundColor: colors.error,
-      zIndex: 2,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.xs,
+      aspectRatio: 1,
     },
     deleteLabel: {
       ...typography.caption1,
@@ -266,6 +273,9 @@ export function ToolGrid({ tools, onToolPress, onAddTool, onRemoveTool }: ToolGr
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>工具箱</Text>
       <View style={{ position: 'relative', overflow: 'visible' }}>
+        {deleteReady && (
+          <Pressable style={styles.dismissOverlay} onPress={resetReveal} />
+        )}
         <View style={styles.grid}>
           {tools.map(renderToolItem)}
           <View style={styles.gridItem}>
@@ -279,9 +289,6 @@ export function ToolGrid({ tools, onToolPress, onAddTool, onRemoveTool }: ToolGr
             </TouchableOpacity>
           </View>
         </View>
-        {deleteReady && (
-          <Pressable style={styles.dismissOverlay} onPress={resetReveal} />
-        )}
       </View>
 
       <Modal visible={showPicker} animationType="fade" transparent>

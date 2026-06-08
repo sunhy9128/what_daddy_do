@@ -504,7 +504,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     dispatch({ type: 'UPDATE_TASK', payload: { id, updates } });
-    await updateTaskInDb(id, updates);
+    // 映射 camelCase → snake_case 以匹配 DB 列名
+    const dbUpdates: { [key: string]: any } = {};
+    for (const [key, value] of Object.entries(updates)) {
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      dbUpdates[snakeKey] = value;
+    }
+    await updateTaskInDb(id, dbUpdates as any);
   }, []);
 
   const addRecord = useCallback(async (record: Partial<Record>) => {

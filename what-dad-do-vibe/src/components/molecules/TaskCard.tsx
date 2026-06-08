@@ -114,6 +114,9 @@ export function TaskCard({
       ...typography.footnote,
       color: colors.fgSecondary,
     },
+    dueDateEmpty: {
+      color: colors.muted,
+    },
     countCircle: {
       width: 40,
       height: 40,
@@ -246,6 +249,8 @@ export function TaskCard({
             <Text style={styles.dueDate}>
               {isCompleted ? '已完成' : dueDate}
             </Text>
+          ) : type === 'prenatal' ? (
+            <Text style={[styles.dueDate, styles.dueDateEmpty]}>未预约</Text>
           ) : null}
         </View>
       </View>

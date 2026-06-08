@@ -45,6 +45,24 @@ export default function HomeScreen() {
   const toolsRef = useRef<View>(null);
   const colors = useColors();
 
+  // 下次产检倒计时（放在早期 return 之前，避免 hook 数量变化）
+  const nextPrenatal = useMemo(() => {
+    if (state.stage === 'postpartum' || state.stage === 'preconception') return null;
+    const upcoming = state.tasks
+      .filter(t => t.type === 'prenatal' && !t.isCompleted && t.dueDate)
+      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+    return upcoming[0] || null;
+  }, [state.tasks, state.stage]);
+
+  const daysUntilNextPrenatal = useMemo(() => {
+    if (!nextPrenatal?.dueDate) return null;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const due = new Date(nextPrenatal.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  }, [nextPrenatal]);
+
   const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { justifyContent: 'center', alignItems: 'center' },
@@ -264,6 +282,76 @@ export default function HomeScreen() {
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: spacing.sm,
+  },
+
+  // ===== 下次产检倒计时 =====
+  checkupCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    marginBottom: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  checkupBody: {
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  checkupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  checkupIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkupIcon: {
+    fontSize: 20,
+  },
+  checkupInfo: {
+    flex: 1,
+  },
+  checkupLabel: {
+    ...typography.caption2,
+    color: colors.muted,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  checkupName: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+  },
+  checkupCountdownWrap: {
+    alignItems: 'center',
+  },
+  checkupDaysNum: {
+    ...typography.title2,
+    fontWeight: '700',
+    color: colors.accent,
+  },
+  checkupDaysUrgent: {
+    color: '#DC2626',
+  },
+  checkupDaysSoon: {
+    color: '#D97706',
+  },
+  checkupDaysLabel: {
+    ...typography.caption2,
+    color: colors.muted,
+  },
+  checkupDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    lineHeight: 18,
+    marginTop: spacing.sm,
+    marginLeft: 52,
   },
 
   // ===== 物品准备样式 =====
@@ -528,6 +616,7 @@ export default function HomeScreen() {
   }
 
   const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -626,6 +715,42 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ===== 下次产检倒计时 ===== */}
+        {state.stage !== 'preconception' && state.stage !== 'postpartum' && nextPrenatal && (
+          <View style={styles.checkupCard}>
+            <TouchableOpacity
+              style={styles.checkupBody}
+              onPress={() => router.push('/tasks')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.checkupRow}>
+                <View style={styles.checkupIconWrap}>
+                  <Text style={styles.checkupIcon}>📋</Text>
+                </View>
+                <View style={styles.checkupInfo}>
+                  <Text style={styles.checkupLabel}>下次产检</Text>
+                  <Text style={styles.checkupName}>{nextPrenatal.title}</Text>
+                </View>
+                <View style={styles.checkupCountdownWrap}>
+                  <Text style={[
+                    styles.checkupDaysNum,
+                    daysUntilNextPrenatal! <= 0 && styles.checkupDaysUrgent,
+                    daysUntilNextPrenatal! <= 3 && daysUntilNextPrenatal! > 0 && styles.checkupDaysSoon,
+                  ]}>
+                    {daysUntilNextPrenatal! <= 0 ? '今天' : `${daysUntilNextPrenatal}天`}
+                  </Text>
+                  <Text style={styles.checkupDaysLabel}>
+                    {daysUntilNextPrenatal! <= 0 ? '检查日' : '后'}
+                  </Text>
+                </View>
+              </View>
+              {nextPrenatal.description ? (
+                <Text style={styles.checkupDesc}>{nextPrenatal.description}</Text>
+              ) : null}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ===== 物品准备 ===== */}
         {presetItems.length > 0 && (
           <CollapsibleGroup containerRef={prepRef} title="物品准备" count={presetItems.length} defaultExpanded={false}>
@@ -708,6 +833,7 @@ export default function HomeScreen() {
         <View ref={toolsRef} collapsable={false}>
           <ToolGrid
             tools={activeTools}
+            currentStage={state.stage}
             onToolPress={(toolId) => router.push(`/tool-detail?toolId=${toolId}`)}
             onAddTool={(toolId) => {
               if (activeTools.some(t => t.toolId === toolId)) return;

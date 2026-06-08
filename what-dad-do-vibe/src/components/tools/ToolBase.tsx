@@ -13,6 +13,8 @@ export interface ToolDefinition {
   name: string;
   icon: string;
   description: string;
+  /** 在该阶段列表中隐藏此工具（不填则全阶段可见） */
+  hideInStages?: string[];
 }
 
 interface ToolBaseProps {
