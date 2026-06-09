@@ -161,7 +161,7 @@ export function ContractionTimer({ userId }: { userId: string; babyGender?: stri
       color: colors.fgSecondary,
     },
     clearBtn: { ...typography.caption2, color: colors.error, fontWeight: '600' },
-    recordList: { maxHeight: 160 },
+    recordList: { maxHeight: 160, minHeight: 154 },
     recordItem: {
       flexDirection: 'row',
       alignItems: 'center',
