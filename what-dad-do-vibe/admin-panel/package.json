@@ -4,60 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "db:pull": "prisma db pull",
-    "db:generate": "prisma generate",
-    "setup": "prisma db pull && prisma generate",
-    "postinstall": "prisma generate"
+    "dev": "node server/index.js",
+    "start": "node server/index.js"
   },
   "dependencies": {
-    "@adminjs/express": "^6.1.1",
-    "@adminjs/prisma": "^5.0.4",
-    "adminjs": "^7.8.17",
+    "@supabase/supabase-js": "^2.0.0",
     "dotenv": "^16.0.0",
     "express": "^4.21.0",
-    "express-session": "^1.18.1",
-    "@prisma/client": "^6.5.0"
-  },
-  "devDependencies": {
-    "prisma": "^6.5.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "@tiptap/core": "^2.27.0",
-      "@tiptap/extension-blockquote": "^2.27.0",
-      "@tiptap/extension-bold": "^2.27.0",
-      "@tiptap/extension-bullet-list": "^2.27.0",
-      "@tiptap/extension-code": "^2.27.0",
-      "@tiptap/extension-code-block": "^2.27.0",
-      "@tiptap/extension-document": "^2.27.0",
-      "@tiptap/extension-dropcursor": "^2.27.0",
-      "@tiptap/extension-gapcursor": "^2.27.0",
-      "@tiptap/extension-hard-break": "^2.27.0",
-      "@tiptap/extension-heading": "^2.27.0",
-      "@tiptap/extension-history": "^2.27.0",
-      "@tiptap/extension-horizontal-rule": "^2.27.0",
-      "@tiptap/extension-italic": "^2.27.0",
-      "@tiptap/extension-list-item": "^2.27.0",
-      "@tiptap/extension-ordered-list": "^2.27.0",
-      "@tiptap/extension-paragraph": "^2.27.0",
-      "@tiptap/extension-strike": "^2.27.0",
-      "@tiptap/extension-text": "^2.27.0",
-      "@tiptap/pm": "^2.27.0",
-      "@tiptap/react": "^2.27.0",
-      "@tiptap/starter-kit": "^2.27.0",
-      "@tiptap/extension-bubble-menu": "^2.27.0",
-      "@tiptap/extension-character-count": "^2.27.0",
-      "@tiptap/extension-floating-menu": "^2.27.0",
-      "@tiptap/extension-image": "^2.27.0",
-      "@tiptap/extension-link": "^2.27.0",
-      "@tiptap/extension-table": "^2.27.0",
-      "@tiptap/extension-table-cell": "^2.27.0",
-      "@tiptap/extension-table-header": "^2.27.0",
-      "@tiptap/extension-table-row": "^2.27.0",
-      "@tiptap/extension-text-align": "^2.27.0",
-      "@tiptap/extension-typography": "^2.27.0"
-    }
+    "express-session": "^1.18.1"
   }
 }

@@ -46,3 +46,5 @@ package-lock.json
 what-dad-do-vibe/supabase/migrations/*
 **/.codewhale/*
 !**/.codewhale/constitution.json
+
+# AdminJS generated

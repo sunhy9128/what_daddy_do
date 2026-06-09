@@ -1,0 +1,4 @@
+# AdminJS generated bundle
+.adminjs/
+node_modules/
+.env
