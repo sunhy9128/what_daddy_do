@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 数据库模型 — 对应 Supabase 所有业务表
+// 注意：auth.users 是 Supabase 内置表，只声明需要的字段
+// ============================================================
+
+model users {
+  id        String   @id
+  email     String?
+  createdAt DateTime @map("created_at")
+
+  @@map("auth.users")
+}
+
+model urgent_note {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  content     String
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  dismissedAt DateTime? @map("dismissed_at")
+
+  @@map("urgent_notes")
+}
+
+model baby {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  dueDate   DateTime?  @map("due_date")
+  birthDate DateTime? @map("birth_date")
+  name      String?   @default("宝宝")
+  gender    String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @map("updated_at")
+
+  @@map("babies")
+}
+
+model task {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  title           String
+  description     String?
+  stage           String
+  type            String
+  taskSubtype     String?   @default("one_time") @map("task_subtype")
+  dueDate         String?   @map("due_date")
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  completedAt     String?   @map("completed_at")
+  dailyCount      Int       @default(0) @map("daily_count")
+  dailyDate       String?   @map("daily_date")
+  streakCount     Int       @default(0) @map("streak_count")
+  lastCheckinDate String?   @map("last_checkin_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("tasks")
+}
+
+model record {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  content   String
+  isPrivate Boolean  @default(false) @map("is_private")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("records")
+}
+
+model community_post {
+  id         String   @id @default(uuid())
+  authorName String   @map("author_name")
+  title      String
+  content    String
+  category   String
+  likes      Int      @default(0)
+  comments   Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("community_posts")
+}
+
+model post_like {
+  id        String   @id @default(uuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+model post_comment {
+  id          String   @id @default(uuid())
+  postId      String   @map("post_id")
+  userId      String   @map("user_id")
+  content     String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("post_comments")
+}
+
+model user_knowledge_read {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  articleId Int      @map("article_id")
+  readAt    DateTime @default(now()) @map("read_at")
+
+  @@map("user_knowledge_reads")
+}
+
+model knowledge_article {
+  id          Int      @id @default(autoincrement())
+  emoji       String   @default("📖")
+  title       String
+  content     String
+  readTime    String   @default("3分钟阅读") @map("read_time")
+  category    String   @default("知识")
+  stage       String?
+  source      String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isPublished Boolean  @default(true) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("knowledge_articles")
+}
+
+model preset_item {
+  id                   String   @id @default(uuid())
+  name                 String
+  description          String?
+  category             String
+  period               String
+  quantitySuggestion   String?  @map("quantity_suggestion")
+  preparationTiming    String?  @map("preparation_timing")
+  essentialLevel       String   @default("recommended") @map("essential_level")
+  sortOrder            Int      @default(0) @map("sort_order")
+  recommendationType   String?  @map("recommendation_type")
+  source               String?
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  @@map("preset_items")
+}
+
+model user_preparation {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  itemId      String    @map("item_id")
+  status      String    @default("not_prepared")
+  preparedAt  DateTime? @map("prepared_at")
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
+
+  @@unique([userId, itemId])
+  @@map("user_preparations")
+}
+
+model psychological_support {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  period      String
+  supportType String   @map("support_type")
+  tips        String[]
+  sortOrder   Int      @default(0) @map("sort_order")
+  isPublished Boolean  @default(true) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("psychological_support")
+}
+
+model pregnancy_stage {
+  id         Int    @id
+  name       String
+  weeksStart Int    @map("weeks_start")
+  weeksEnd   Int    @map("weeks_end")
+
+  @@map("pregnancy_stages")
+}
+
+model vaccine {
+  id         Int      @id @default(autoincrement())
+  name       String
+  disease    String
+  category   String
+  totalDoses Int      @map("total_doses")
+  notes      String?
+
+  @@map("vaccines")
+}
+
+model vaccine_dose {
+  id              Int    @id @default(autoincrement())
+  vaccineId       Int    @map("vaccine_id")
+  doseNumber      Int    @map("dose_number")
+  minAgeMonths    Int    @map("min_age_months")
+  maxAgeMonths    Int?   @map("max_age_months")
+  minIntervalDays Int    @map("min_interval_days")
+  notes           String?
+
+  @@map("vaccine_doses")
+}
+
+model user_vaccination {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  doseId       Int       @map("dose_id")
+  vaccinatedAt String?   @map("vaccinated_at")
+  isVaccinated Boolean   @default(false) @map("is_vaccinated")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @map("updated_at")
+
+  @@unique([userId, doseId])
+  @@map("user_vaccinations")
+}
+
+model food_safety {
+  id            String   @id @default(uuid())
+  name          String
+  category      String
+  preconception String @default("safe")
+  first         String @default("safe")
+  second        String @default("safe")
+  third         String @default("safe")
+  postpartum    String @default("safe")
+  baby0_3m      String @default("forbidden") @map("baby_0_3m")
+  baby3_12m     String @default("forbidden") @map("baby_3_12m")
+  baby1_3y      String @default("caution") @map("baby_1_3y")
+  note          String?
+  sortOrder     Int    @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("food_safety")
+}
+
+model preset_task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  stage       String
+  type        String
+  dueDate     String?  @map("due_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("preset_tasks")
+}
