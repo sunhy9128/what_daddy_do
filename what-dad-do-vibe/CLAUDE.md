@@ -147,3 +147,7 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 - **`src/navigation/`** 存在但为空目录
 - **`app/login.tsx`** 内联了一份 colors 对象，属于遗留代码，不要照搬
 - **类型检查** — 改完跑 `npx tsc --noEmit`，这是项目唯一的"lint"
+
+## 项目规范
+
+- **禁止使用 Emoji** — 所有图标、装饰性元素统一使用 `@expo/vector-icons`（Ionicons）替代 emoji，确保跨平台一致性。

@@ -1,25 +1,40 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
+import { useAuth } from '../src/context/AuthContext';
 import { STAGES } from '../src/lib/stages';
 import { useColors } from '../src/context/ThemeContext';
 import { spacing, radius, typography, shadows } from '../src/styles/tokens';
+import { loadMomWeightConfig, saveMomWeightConfig } from '../src/lib/storage';
+import { DatePicker } from '../src/components/DatePicker';
 
 export default function BabyInfoScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, addBaby, updateBabyGender } = useApp();
+  const { user } = useAuth();
 
   const existingBaby = state.babies[0];
   const isPostpartum = state.stage === 'postpartum';
 
-  const [year, setYear] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[0] : '');
-  const [month, setMonth] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[1] : '');
-  const [day, setDay] = useState(existingBaby?.dueDate ? existingBaby.dueDate.split('-')[2] : '');
+  const [dueDate, setDueDate] = useState(existingBaby?.dueDate || new Date().toISOString().split('T')[0]);
+  const [preWeight, setPreWeight] = useState('');
+  const [height, setHeight] = useState('');
   const [saving, setSaving] = useState(false);
+  // 加载孕前体重/身高配置
+  useEffect(() => {
+    if (!user) return;
+    loadMomWeightConfig(user.id).then(cfg => {
+      if (cfg) {
+        setPreWeight(String(cfg.prePregnancyWeight));
+        setHeight(String(cfg.height));
+      }
+    }).catch(() => {});
+  }, [user]);
+
   const colors = useColors();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -120,6 +135,30 @@ export default function BabyInfoScreen() {
     opacity: 0.6,
     alignSelf: 'center',
   },
+  motherRow: {
+    flexDirection: 'row',
+    marginTop: spacing.sm,
+  },
+  motherField: {
+    flex: 1,
+  },
+  motherLabel: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: colors.fgSecondary,
+    marginBottom: spacing.sm,
+  },
+  motherInput: {
+    ...typography.callout,
+    color: colors.fg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlign: 'center',
+  },
   saveBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
     paddingVertical: spacing.md + 2, alignItems: 'center',
@@ -135,18 +174,19 @@ export default function BabyInfoScreen() {
   };
 
   const handleSave = async () => {
-    if (!year || !month || !day) { safeAlert('请填写完整'); return; }
-    const y = parseInt(year, 10); const m = parseInt(month, 10); const d = parseInt(day, 10);
-    if (isNaN(y) || isNaN(m) || isNaN(d)) { safeAlert('格式错误', '请输入有效数字'); return; }
-    if (m < 1 || m > 12) { safeAlert('月份错误', '月份应在 1-12 之间'); return; }
-    if (d < 1 || d > 31) { safeAlert('日期错误', '日期应在 1-31 之间'); return; }
-    const dueDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (!dueDate) { safeAlert('请选择预产期'); return; }
     setSaving(true);
     try {
       if (existingBaby) {
         await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate);
       } else {
         await addBaby(dueDate);
+      }
+      // 保存孕前体重/身高配置
+      const pw = parseFloat(preWeight);
+      const h = parseFloat(height);
+      if (!isNaN(pw) && pw > 0 && !isNaN(h) && h > 0 && user) {
+        await saveMomWeightConfig(user.id, { prePregnancyWeight: pw, height: h });
       }
       safeAlert('保存成功', '孕期信息已更新');
       router.back();
@@ -222,6 +262,25 @@ export default function BabyInfoScreen() {
           </View>
         ) : null}
 
+        {/* 母亲信息 */}
+        <View style={styles.formSection}>
+          <Text style={styles.formTitle}>母亲信息</Text>
+          <Text style={styles.formHint}>
+            设置孕前体重和身高，用于孕期体重管理参考
+          </Text>
+          <View style={styles.motherRow}>
+            <View style={styles.motherField}>
+              <Text style={styles.motherLabel}>孕前体重(kg)</Text>
+              <TextInput style={styles.motherInput} value={preWeight} onChangeText={setPreWeight} keyboardType="decimal-pad" placeholder="55" placeholderTextColor={colors.muted} />
+            </View>
+            <View style={{ width: spacing.md }} />
+            <View style={styles.motherField}>
+              <Text style={styles.motherLabel}>身高(cm)</Text>
+              <TextInput style={styles.motherInput} value={height} onChangeText={setHeight} keyboardType="decimal-pad" placeholder="165" placeholderTextColor={colors.muted} />
+            </View>
+          </View>
+        </View>
+
         {/* 修改预产期 */}
         <View style={styles.formSection}>
         <Text style={styles.formTitle}>
@@ -232,20 +291,7 @@ export default function BabyInfoScreen() {
         </Text>
 
         <View style={styles.dateCard}>
-          <View style={styles.dateRow}>
-            <View style={[styles.dateField, styles.dateFieldYear]}>
-              <TextInput style={styles.dateInput} value={year} onChangeText={setYear} keyboardType="number-pad" placeholder="2026" placeholderTextColor={colors.muted} maxLength={4} />
-            </View>
-            <Text style={styles.dateSep}>年</Text>
-            <View style={[styles.dateField, styles.dateFieldMD]}>
-              <TextInput style={styles.dateInput} value={month} onChangeText={setMonth} keyboardType="number-pad" placeholder="09" placeholderTextColor={colors.muted} maxLength={2} />
-            </View>
-            <Text style={styles.dateSep}>月</Text>
-            <View style={[styles.dateField, styles.dateFieldMD]}>
-              <TextInput style={styles.dateInput} value={day} onChangeText={setDay} keyboardType="number-pad" placeholder="15" placeholderTextColor={colors.muted} maxLength={2} />
-            </View>
-            <Text style={styles.dateSep}>日</Text>
-          </View>
+          <DatePicker value={dueDate} onChange={setDueDate} label="预产期" />
         </View>
 
         <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>

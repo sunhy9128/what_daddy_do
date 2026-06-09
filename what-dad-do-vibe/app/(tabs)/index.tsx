@@ -234,38 +234,52 @@ export default function HomeScreen() {
     color: colors.accent,
   },
   bumpBody: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
+    flexDirection: 'row',
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
+    gap: spacing.lg,
+  },
+  bumpEmojiCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 72,
   },
   bumpEmoji: {
-    fontSize: 48,
-    marginBottom: spacing.sm,
+    fontSize: 52,
+  },
+  bumpInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bumpFruitRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   bumpFruit: {
-    ...typography.title2,
+    ...typography.title3,
     fontWeight: '700',
     color: colors.fg,
-    marginBottom: spacing.xs,
   },
   bumpWeek: {
     ...typography.subhead,
     color: colors.fgSecondary,
-    marginBottom: spacing.md,
   },
   bumpMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
     marginBottom: spacing.sm,
   },
   bumpMetaItem: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
   },
   bumpMetaLabel: {
     ...typography.caption2,
     color: colors.muted,
-    marginBottom: 2,
   },
   bumpMetaValue: {
     ...typography.callout,
@@ -274,15 +288,13 @@ export default function HomeScreen() {
   },
   bumpMetaDivider: {
     width: 1,
-    height: 24,
+    height: 14,
     backgroundColor: colors.border,
   },
   bumpDesc: {
     ...typography.footnote,
     color: colors.fgSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: spacing.sm,
+    lineHeight: 18,
   },
 
   // ===== 下次产检倒计时 =====
@@ -675,6 +687,49 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* ===== 宝宝大小对比 ===== */}
+        {state.stage !== 'preconception' && state.stage !== 'postpartum' && state.weeksPregnant > 0 && (
+          <View style={styles.bumpCard}>
+            <View style={styles.bumpHeader}>
+              <Text style={styles.bumpTitle}>宝宝现在多大？</Text>
+            </View>
+            <View style={styles.bumpBody}>
+              {(() => {
+                const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
+                  !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
+                , null as typeof BUMP_SIZE_DATA[0] | null);
+                const emoji = entry?.emoji || '🫐';
+                if (!entry) return null;
+                return (
+                  <>
+                    <View style={styles.bumpEmojiCol}>
+                      <Text style={styles.bumpEmoji}>{emoji}</Text>
+                    </View>
+                    <View style={styles.bumpInfo}>
+                      <View style={styles.bumpFruitRow}>
+                        <Text style={styles.bumpFruit}>像 {entry.fruit} 一样大</Text>
+                        <Text style={styles.bumpWeek}>第 {state.weeksPregnant} 周</Text>
+                      </View>
+                      <View style={styles.bumpMeta}>
+                        <View style={styles.bumpMetaItem}>
+                          <Text style={styles.bumpMetaLabel}>身长</Text>
+                          <Text style={styles.bumpMetaValue}>{entry.lengthCm} cm</Text>
+                        </View>
+                        <View style={styles.bumpMetaDivider} />
+                        <View style={styles.bumpMetaItem}>
+                          <Text style={styles.bumpMetaLabel}>体重</Text>
+                          <Text style={styles.bumpMetaValue}>{entry.weightG} g</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.bumpDesc}>{entry.description}</Text>
+                    </View>
+                  </>
+                );
+              })()}
+            </View>
+          </View>
+        )}
+
         {/* 紧急关注 */}
         <View ref={urgentRef} style={styles.urgentSection} collapsable={false}>
           {state.urgentNotes.map(note => (
@@ -713,49 +768,6 @@ export default function HomeScreen() {
             <Text style={styles.urgentAddText}>新增紧急关注</Text>
           </TouchableOpacity>
         </View>
-
-        {/* ===== 宝宝大小对比 ===== */}
-        {state.stage !== 'preconception' && state.stage !== 'postpartum' && state.weeksPregnant > 0 && (
-          <View style={styles.bumpCard}>
-            <View style={styles.bumpHeader}>
-              <Text style={styles.bumpTitle}>宝宝现在多大？</Text>
-            </View>
-            <View style={styles.bumpBody}>
-              <Text style={styles.bumpEmoji}>
-                {(() => {
-                  const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
-                    !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
-                  , null as typeof BUMP_SIZE_DATA[0] | null);
-                  return entry?.emoji || '🫐';
-                })()}
-              </Text>
-              {(() => {
-                const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
-                  !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
-                , null as typeof BUMP_SIZE_DATA[0] | null);
-                if (!entry) return null;
-                return (
-                  <>
-                    <Text style={styles.bumpFruit}>像 {entry.fruit} 一样大</Text>
-                    <Text style={styles.bumpWeek}>第 {state.weeksPregnant} 周</Text>
-                    <View style={styles.bumpMeta}>
-                      <View style={styles.bumpMetaItem}>
-                        <Text style={styles.bumpMetaLabel}>身长</Text>
-                        <Text style={styles.bumpMetaValue}>{entry.lengthCm} cm</Text>
-                      </View>
-                      <View style={styles.bumpMetaDivider} />
-                      <View style={styles.bumpMetaItem}>
-                        <Text style={styles.bumpMetaLabel}>体重</Text>
-                        <Text style={styles.bumpMetaValue}>{entry.weightG} g</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.bumpDesc}>{entry.description}</Text>
-                  </>
-                );
-              })()}
-            </View>
-          </View>
-        )}
 
         {/* ===== 下次产检倒计时 ===== */}
         {state.stage !== 'preconception' && state.stage !== 'postpartum' && nextPrenatal && (

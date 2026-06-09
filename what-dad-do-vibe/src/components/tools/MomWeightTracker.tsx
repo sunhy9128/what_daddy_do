@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import {
   loadMomWeightRecords, saveMomWeightRecords, MomWeightRecord,
-  loadMomWeightConfig, saveMomWeightConfig, MomWeightConfig,
+  loadMomWeightConfig, MomWeightConfig,
 } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
 
@@ -147,11 +147,8 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
   const [loading, setLoading] = useState(true);
 
   // 表单状态
-  const [preWeightStr, setPreWeightStr] = useState('');
-  const [heightStr, setHeightStr] = useState('');
   const [weekStr, setWeekStr] = useState('');
   const [weightStr, setWeightStr] = useState('');
-  const [showConfigModal, setShowConfigModal] = useState(false);
 
   // 加载数据
   useEffect(() => {
@@ -165,8 +162,6 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
         ]);
         if (cfg) {
           setConfig(cfg);
-          setPreWeightStr(String(cfg.prePregnancyWeight));
-          setHeightStr(String(cfg.height));
         }
         setRecords(recs.sort((a, b) => a.week - b.week));
       } catch (e) {
@@ -175,11 +170,6 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
         setLoading(false);
       }
     })();
-  }, [userId]);
-
-  const persistConfig = useCallback((cfg: MomWeightConfig) => {
-    if (!userId) return;
-    saveMomWeightConfig(userId, cfg);
   }, [userId]);
 
   const persistRecords = useCallback((recs: MomWeightRecord[]) => {
@@ -199,16 +189,6 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
     if (bmi < 30) return '偏胖';
     return '肥胖';
   }, [bmi, config]);
-
-  const handleSaveConfig = () => {
-    const pw = parseFloat(preWeightStr);
-    const h = parseFloat(heightStr);
-    if (isNaN(pw) || pw <= 0 || isNaN(h) || h <= 0) return;
-    const cfg = { prePregnancyWeight: pw, height: h };
-    setConfig(cfg);
-    persistConfig(cfg);
-    setShowConfigModal(false);
-  };
 
   const canAdd = useMemo(() => {
     const w = parseInt(weekStr, 10);
@@ -265,6 +245,7 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
       borderColor: colors.accent,
     },
     configBtnText: { ...typography.caption1, color: colors.accent, fontWeight: '500' },
+  configNote: { ...typography.caption2, color: colors.muted, marginTop: spacing.xs },
     addSection: { marginBottom: spacing.lg },
     sectionTitle: {
       ...typography.caption1,
@@ -399,16 +380,12 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
                 <Text style={styles.configValue}>
                   {config.prePregnancyWeight}kg · {config.height}cm（BMI {bmi.toFixed(1)} · {bmiLabel}）
                 </Text>
-                <TouchableOpacity style={styles.configBtn} onPress={() => { setShowConfigModal(true); }}>
-                  <Text style={styles.configBtnText}>修改</Text>
-                </TouchableOpacity>
+                <Text style={styles.configNote}>可在「个人资料」中修改</Text>
               </>
             ) : (
               <>
-                <Text style={styles.configLabel}>请设置孕前体重和身高</Text>
-                <TouchableOpacity style={styles.configBtn} onPress={() => { setShowConfigModal(true); }}>
-                  <Text style={styles.configBtnText}>去设置</Text>
-                </TouchableOpacity>
+                <Text style={styles.configLabel}>请先设置孕前体重和身高</Text>
+                <Text style={styles.configNote}>请在「个人资料」中设置</Text>
               </>
             )}
           </View>
@@ -447,7 +424,8 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
               <View style={styles.historyTable}>
                 <View style={styles.historyHeader}>
                   <Text style={[styles.historyHeaderText, { flex: 2 }]}>孕周</Text>
-                  <Text style={[styles.historyHeaderText, { flex: 3 }]}>增重(kg)</Text>
+                  <Text style={[styles.historyHeaderText, { flex: 2.5 }]}>体重(kg)</Text>
+                  <Text style={[styles.historyHeaderText, { flex: 2.5 }]}>增重(kg)</Text>
                   <Text style={[styles.historyHeaderText, { flex: 3 }]}>范围(kg)</Text>
                   <Text style={[styles.historyHeaderText, { flex: 2 }]}>操作</Text>
                 </View>
@@ -461,7 +439,10 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
                       <View style={[styles.historyCell, { flex: 2 }]}>
                         <Text style={styles.historyText}>{r.week}周</Text>
                       </View>
-                      <View style={[styles.historyCell, { flex: 3 }]}>
+                      <View style={[styles.historyCell, { flex: 2.5 }]}>
+                        <Text style={styles.historyText}>{r.weight.toFixed(1)}</Text>
+                      </View>
+                      <View style={[styles.historyCell, { flex: 2.5 }]}>
                         <Text style={[styles.historyText, ok ? styles.historyGainOk : styles.historyGainWarn]}>
                           {gain > 0 ? `+${gain.toFixed(2)}` : gain.toFixed(2)}
                         </Text>
@@ -491,35 +472,9 @@ export function MomWeightTracker({ userId, expanded }: { userId: string; babyGen
           )}
         </>
       )}
-
-      {/* 配置弹窗 */}
-      <Modal visible={showConfigModal} animationType="fade" transparent>
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>设置孕前信息</Text>
-            <View style={styles.modalRow}>
-              <View style={styles.modalField}>
-                <Text style={styles.modalLabel}>孕前体重(kg)</Text>
-                <TextInput style={styles.modalInput} value={preWeightStr} onChangeText={setPreWeightStr} keyboardType="decimal-pad" placeholder="55" placeholderTextColor={colors.muted} />
-              </View>
-              <View style={styles.modalField}>
-                <Text style={styles.modalLabel}>身高(cm)</Text>
-                <TextInput style={styles.modalInput} value={heightStr} onChangeText={setHeightStr} keyboardType="decimal-pad" placeholder="165" placeholderTextColor={colors.muted} />
-              </View>
-            </View>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowConfigModal(false)}>
-                <Text style={styles.modalCancelText}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalBtn} onPress={handleSaveConfig}>
-                <Text style={styles.modalBtnText}>保存</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
 
 export default MomWeightTracker;
+
