@@ -37,6 +37,11 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'hospital-bag': HospitalBag,
 };
 
+// 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中
+const TOOL_JUSTIFY: Record<string, 'center' | 'flex-start'> = {
+  'hospital-bag': 'flex-start',
+};
+
 export default function ToolDetailPage() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -46,6 +51,7 @@ export default function ToolDetailPage() {
 
   const def = useMemo(() => AVAILABLE_TOOLS.find(t => t.id === toolId), [toolId]);
   const Component = toolId ? TOOL_COMPONENTS[toolId] : undefined;
+  const justify = toolId ? (TOOL_JUSTIFY[toolId] || 'center') : 'center';
 
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
@@ -83,7 +89,6 @@ export default function ToolDetailPage() {
     // 工具卡片容器
     scrollContent: {
       flexGrow: 1,
-      justifyContent: 'center',
       padding: spacing.lg,
       paddingBottom: spacing.xxl + insets.bottom,
     },
@@ -165,7 +170,7 @@ export default function ToolDetailPage() {
       </View>
 
       {/* 工具内容 — 暖羊皮纸背景上置入暖白卡片 */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { justifyContent: justify }]} showsVerticalScrollIndicator={false}>
         <View style={styles.toolCard}>
           <Component userId={user?.id || ''} expanded />
         </View>
