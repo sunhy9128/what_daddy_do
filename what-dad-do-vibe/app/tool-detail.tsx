@@ -40,6 +40,7 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
 // 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中
 const TOOL_JUSTIFY: Record<string, 'center' | 'flex-start'> = {
   'hospital-bag': 'flex-start',
+  'food-safety': 'flex-start',
 };
 
 export default function ToolDetailPage() {
