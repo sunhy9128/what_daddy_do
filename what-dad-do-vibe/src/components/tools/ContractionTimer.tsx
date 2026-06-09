@@ -175,7 +175,7 @@ export function ContractionTimer({ userId }: { userId: string; babyGender?: stri
     recordDuration: { ...typography.callout, fontWeight: '600', color: colors.fg, flex: 1 },
     recordInterval: { ...typography.footnote, color: colors.muted },
     emptyState: {
-      height: 154,
+      height: 160,
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.xs,
@@ -221,7 +221,7 @@ export function ContractionTimer({ userId }: { userId: string; babyGender?: stri
             </Text>
           </View>
 
-          {/* 记录列表 */}
+          {/* 记录列表 — 始终渲染 ScrollView，内容条件切换，防止 DOM 结构变动导致高度跳动 */}
           <View style={styles.recordSection}>
             <View style={styles.recordHeader}>
               <Text style={styles.recordTitle}>{dateStr} · {records.length}次</Text>
@@ -231,9 +231,9 @@ export function ContractionTimer({ userId }: { userId: string; babyGender?: stri
                 <View style={{ width: 32 }} />
               )}
             </View>
-            {records.length > 0 ? (
-              <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
-                {records.map((r, idx) => (
+            <ScrollView style={styles.recordList} showsVerticalScrollIndicator={false}>
+              {records.length > 0 ? (
+                records.map((r, idx) => (
                   <View key={r.id} style={[styles.recordItem, idx === records.length - 1 && styles.recordItemLast]}>
                     <Text style={styles.recordTime}>
                       {new Date(r.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
@@ -243,14 +243,14 @@ export function ContractionTimer({ userId }: { userId: string; babyGender?: stri
                       {idx < records.length - 1 ? `间隔 ${formatElapsed(r.interval)}` : ''}
                     </Text>
                   </View>
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="time-outline" size={20} color={colors.muted} style={{ marginBottom: 4 }} />
-                <Text style={styles.emptyText}>还没有宫缩记录</Text>
-              </View>
-            )}
+                ))
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="time-outline" size={20} color={colors.muted} style={{ marginBottom: 4 }} />
+                  <Text style={styles.emptyText}>还没有宫缩记录</Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </>
       )}
