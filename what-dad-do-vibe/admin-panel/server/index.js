@@ -444,6 +444,14 @@ const FIELD_LABELS = {
   email: '邮箱',
 };
 
+// 用户/行为相关表不显示「新增」按钮（数据由 App 生成，后台只做维护）
+const NO_CREATE = new Set([
+  'users', 'babies', 'tasks', 'records',
+  'user_preparations', 'urgent_notes',
+  'post_comments', 'post_likes',
+  'user_knowledge_reads', 'user_vaccinations',
+]);
+
 // 每个资源在表格中显示的字段（控制列数，无需横向滚动）
 const TABLE_COLUMNS = {
   users: ['id', 'email', 'created_at'],
@@ -569,7 +577,7 @@ function renderList(data, total) {
     </div>
     <div class="toolbar">
       <input class="search-input" placeholder="搜索 \${label}..." value="\${currentSearch}" onchange="currentSearch=this.value;currentPage=1;loadList()">
-      <button class="btn btn-primary" onclick="openCreate()">+ 新增</button>
+      \${NO_CREATE.has(currentResource) ? '' : '<button class="btn btn-primary" onclick="openCreate()">+ 新增</button>'}
     </div>
     <table>
       <thead><tr>
