@@ -356,6 +356,90 @@ const LABELS = {
   food_safety: '食物安全',
 };
 
+const FIELD_LABELS = {
+  // 通用
+  id: 'ID', user_id: '用户ID', created_at: '创建时间', updated_at: '更新时间',
+  // 宝宝
+  due_date: '预产期', birth_date: '出生日期', name: '名称', gender: '性别',
+  // 任务
+  title: '标题', description: '描述', stage: '阶段', type: '类型',
+  is_completed: '已完成', completed_at: '完成时间', task_subtype: '子类型',
+  due_date_text: '截止日期', daily_count: '每日次数', daily_date: '每日日期',
+  streak_count: '连续天数', last_checkin_date: '最后打卡',
+  // 记录
+  content: '内容', is_private: '私密',
+  // 预设任务
+  // 物品
+  item_id: '物品ID', category: '分类', period: '阶段',
+  quantity_suggestion: '数量建议', preparation_timing: '准备时间',
+  essential_level: '必需等级', sort_order: '排序',
+  recommendation_type: '建议类型', source: '来源',
+  // 物品状态
+  status: '状态', prepared_at: '准备日期', notes: '备注',
+  // 紧急关注
+  is_active: '活跃', dismissed_at: '关闭时间',
+  // 社区
+  author_name: '作者', likes: '点赞', comments: '评论',
+  post_id: '帖子ID',
+  // 知识文章
+  emoji: '图标', read_time: '阅读时间', is_published: '已发布',
+  // 阅读记录
+  article_id: '文章ID', read_at: '阅读时间',
+  // 心理支持
+  support_type: '支持类型', tips: '建议',
+  // 孕期阶段
+  weeks_start: '起始周', weeks_end: '结束周',
+  // 疫苗
+  disease: '预防疾病', total_doses: '总剂次',
+  vaccine_id: '疫苗ID', dose_number: '第几剂',
+  min_age_months: '最小月龄', max_age_months: '最大月龄',
+  min_interval_days: '最小间隔(天)',
+  dose_id: '剂次ID', is_vaccinated: '已接种', vaccinated_at: '接种日期',
+  // 食物安全
+  preconception: '备孕', first: '孕早期', second: '孕中期',
+  third: '孕晚期', postpartum: '产后',
+  baby_0_3m: '0-3月', baby_3_12m: '3-12月', baby_1_3y: '1-3岁',
+  note: '备注',
+  // auth
+  email: '邮箱',
+};
+
+// 每个资源在表格中显示的字段（控制列数，无需横向滚动）
+const TABLE_COLUMNS = {
+  users: ['id', 'email', 'created_at'],
+  babies: ['name', 'due_date', 'gender', 'created_at'],
+  tasks: ['title', 'stage', 'type', 'is_completed', 'created_at'],
+  records: ['title', 'is_private', 'created_at'],
+  preset_tasks: ['title', 'stage', 'type'],
+  preset_items: ['name', 'category', 'period', 'essential_level', 'sort_order'],
+  user_preparations: ['item_id', 'status', 'prepared_at'],
+  urgent_notes: ['content', 'is_active', 'created_at'],
+  community_posts: ['title', 'author_name', 'category', 'likes', 'created_at'],
+  post_comments: ['post_id', 'content', 'created_at'],
+  post_likes: ['post_id', 'user_id'],
+  knowledge_articles: ['title', 'category', 'stage', 'is_published', 'sort_order'],
+  user_knowledge_reads: ['user_id', 'article_id', 'read_at'],
+  psychological_support: ['title', 'period', 'support_type', 'is_published'],
+  pregnancy_stages: ['name', 'weeks_start', 'weeks_end'],
+  vaccines: ['name', 'disease', 'category', 'total_doses'],
+  vaccine_doses: ['vaccine_id', 'dose_number', 'min_age_months', 'max_age_months'],
+  user_vaccinations: ['dose_id', 'is_vaccinated', 'vaccinated_at'],
+  food_safety: ['name', 'category', 'preconception', 'first', 'second', 'third', 'postpartum'],
+};
+
+const VALUE_LABELS = {
+  safe: '安全', caution: '慎食', forbidden: '禁止',
+  male: '男', female: '女', girl: '女', boy: '男',
+  yes: '是', no: '否',
+  prenatal: '产检', daily: '日常', checkin: '打卡',
+  preconception: '备孕', first: '孕早期', second: '孕中期', third: '孕晚期', postpartum: '产后',
+  essential: '必需', recommended: '推荐', optional: '可选',
+  not_prepared: '未准备', prepared: '已准备', not_needed: '不需要',
+  emotion: '情绪', communication: '沟通', action: '行动', knowledge: '知识',
+  suggested: '建议', caution_item: '谨慎',
+  one_time: '一次性', recurring: '每日重复',
+};
+
 function $(s, p) { return (p||document).querySelector(s); }
 function $$(s, p) { return [...(p||document).querySelectorAll(s)]; }
 
@@ -412,13 +496,14 @@ function loadList() {
 
 function renderList(data, total) {
   if (!currentResource) return;
-  const columns = data.length > 0 ? Object.keys(data[0]).filter(k => !k.includes('password')) : ['id'];
+  // 使用预定义的表格列，每张表只显示最关键字段
+  const columns = TABLE_COLUMNS[currentResource] || (data.length > 0 ? Object.keys(data[0]).filter(k => !k.includes('password')).slice(0, 6) : ['id']);
 
   const app = $('#app');
   const label = LABELS[currentResource] || currentResource;
 
-  // 过滤长字段
-  const hiddenCols = ['content', 'description', 'note', 'tips', 'notes'];
+  // 长文本字段不在表格中展示原始值
+  const textCols = ['content', 'description', 'note', 'tips', 'notes'];
 
   app.innerHTML = \`
     <div class="header">
@@ -431,20 +516,33 @@ function renderList(data, total) {
     </div>
     <table>
       <thead><tr>
-        \${columns.map(c => '<th onclick="sortBy(\\'' + c + '\\')">' + c + (currentSort === c ? (currentOrder === 'ASC' ? ' ▲' : ' ▼') : '') + '</th>').join('')}
+        \${columns.map(c => '<th onclick="sortBy(\\'' + c + '\\')">' + (FIELD_LABELS[c] || c) + (currentSort === c ? (currentOrder === 'ASC' ? ' ▲' : ' ▼') : '') + '</th>').join('')}
         <th style="width:80px">操作</th>
       </tr></thead>
       <tbody>
+        \${data.length === 0 ? '<tr><td colspan="' + (columns.length + 1) + '" style="text-align:center;color:#86868b;padding:40px">暂无数据</td></tr>' : ''}
         \${data.map(row => '<tr>' +
           columns.map(c => {
             let val = row[c];
             if (val === null || val === undefined) return '<td>—</td>';
             const str = String(val);
-            if (hiddenCols.includes(c) && str.length > 80) return '<td title="' + str.replace(/"/g,'&quot;') + '">' + str.slice(0, 80) + '…</td>';
+            // 长文本列只显示占位符
+            if (textCols.includes(c)) return '<td title="' + str.replace(/"/g,'&quot;') + '"><span class="badge badge-blue">查看</span></td>';
+            // 布尔值
             if (val === true) return '<td><span class="badge badge-green">是</span></td>';
             if (val === false) return '<td><span class="badge badge-red">否</span></td>';
-            if (c === 'category' || c === 'stage' || c === 'type' || c === 'period' || c === 'essential_level') return '<td><span class="badge badge-blue">' + str + '</span></td>';
-            if (str.length > 100) return '<td title="' + str.replace(/"/g,'&quot;') + '">' + str.slice(0, 100) + '…</td>';
+            // 枚举/分类/阶段 显示为中文
+            if (['category','stage','type','period','essential_level','support_type','gender','status','task_subtype'].includes(c)) {
+              const display = VALUE_LABELS[str] || str;
+              return '<td><span class="badge badge-blue">' + display + '</span></td>';
+            }
+            // 安全等级着色
+            if (['safe','caution','forbidden'].includes(str)) {
+              const cls = str === 'safe' ? 'green' : str === 'caution' ? 'orange' : 'red';
+              const display = VALUE_LABELS[str] || str;
+              return '<td><span class="badge badge-' + cls + '">' + display + '</span></td>';
+            }
+            if (str.length > 80) return '<td title="' + str.replace(/"/g,'&quot;') + '">' + str.slice(0, 80) + '…</td>';
             return '<td title="' + str.replace(/"/g,'&quot;') + '">' + str + '</td>';
           }).join('') +
           '<td><button class="btn btn-outline" onclick="openEdit(\\'' + row.id + '\\')" style="padding:4px 8px;font-size:11px">编辑</button></td>' +
@@ -466,7 +564,7 @@ function sortBy(col) {
 
 // 字段类型到表单控件的映射
 function renderFormField(name, value, type) {
-  const label = name.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
+  const label = FIELD_LABELS[name] || name.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
   const str = value === null || value === undefined ? '' : String(value);
 
   // 布尔值
@@ -492,7 +590,7 @@ function renderFormField(name, value, type) {
   const enumValues = enums[name] || enums[name.replace('_', '')] || null;
   if (enumValues) {
     return \`<div class="form-row"><label>\${label}</label><select name="\${name}">
-      \${enumValues.map(v => '<option value="' + v + '"' + (str === v ? ' selected' : '') + '>' + v + '</option>').join('')}
+      \${enumValues.map(v => '<option value="' + v + '"' + (str === v ? ' selected' : '') + '>' + (VALUE_LABELS[v] || v) + '</option>').join('')}
     </select></div>\`;
   }
 
@@ -511,19 +609,26 @@ function renderFormField(name, value, type) {
 
 function openCreate() {
   const app = $('#app');
-  const columns = ['id']; // 最少字段
+  const label = LABELS[currentResource] || currentResource;
 
   api('GET', '/' + currentResource + '?perPage=1')
     .then(({ data }) => {
       const sample = data[0] || {};
-      const fields = Object.keys(sample).filter(k => !['created_at','updated_at','id'].includes(k));
+      // 用 TABLE_COLUMNS 字段 + 其他非自动字段
+      const preferred = TABLE_COLUMNS[currentResource] || Object.keys(sample);
+      const autoFields = ['id','created_at','updated_at','completed_at','prepared_at','dismissed_at','read_at'];
+      const fields = preferred.filter(k => !autoFields.includes(k) && k in sample);
+      // 补上不在列配置中但非自动的字段
+      for (const k of Object.keys(sample)) {
+        if (!autoFields.includes(k) && !fields.includes(k)) fields.push(k);
+      }
       const formFields = fields.map(k => {
         const val = sample[k];
         const type = typeof val === 'boolean' ? 'boolean' : (typeof val === 'string' && val.length > 80 ? 'textarea' : 'string');
         return { name: k, type, value: '' };
       });
 
-      renderModal('新增 ' + (LABELS[currentResource] || currentResource),
+      renderModal('新增 ' + label,
         formFields.map(f => renderFormField(f.name, '', f.type)).join(''),
         async () => {
           const data = {};
@@ -542,16 +647,22 @@ function openCreate() {
 }
 
 function openEdit(id) {
+  const label = LABELS[currentResource] || currentResource;
   api('GET', '/' + currentResource + '/' + id)
     .then(({ data }) => {
-      const fields = Object.keys(data).filter(k => !['created_at','updated_at'].includes(k));
+      const preferred = TABLE_COLUMNS[currentResource] || Object.keys(data);
+      const autoFields = ['id','created_at','updated_at'];
+      const fields = preferred.filter(k => !autoFields.includes(k) && k in data);
+      for (const k of Object.keys(data)) {
+        if (!autoFields.includes(k) && !fields.includes(k)) fields.push(k);
+      }
       const formFields = fields.map(k => {
         const val = data[k];
         const type = typeof val === 'boolean' ? 'boolean' : (val && String(val).length > 80 ? 'textarea' : 'string');
         return { name: k, type, value: val };
       });
 
-      renderModal('编辑 ' + (LABELS[currentResource] || currentResource),
+      renderModal('编辑 ' + label,
         formFields.map(f => renderFormField(f.name, f.value, f.type)).join(''),
         async () => {
           const body = {};
