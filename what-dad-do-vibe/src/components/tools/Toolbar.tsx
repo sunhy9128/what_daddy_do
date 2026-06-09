@@ -16,6 +16,7 @@ import { PrenatalTimeline } from './PrenatalTimeline';
 import { ContractionTimer } from './ContractionTimer';
 import { KickCounter } from './KickCounter';
 import { MomWeightTracker } from './MomWeightTracker';
+import { HospitalBag } from './HospitalBag';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -29,6 +30,7 @@ export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'contraction-timer', name: '宫缩计时器', icon: 'fitness-outline', description: '记录宫缩持续时间和间隔', hideInStages: ['postpartum'] },
   { id: 'kick-counter', name: '胎动计数器', icon: 'pulse-outline', description: '记录胎动次数和时段', hideInStages: ['postpartum'] },
   { id: 'mom-weight', name: '妈妈体重记录', icon: 'scale-outline', description: '孕期体重记录及增长曲线', hideInStages: ['postpartum'] },
+  { id: 'hospital-bag', name: '待产包清单', icon: 'bag-check-outline', description: '待产物品准备清单及进度', hideInStages: ['preconception', 'first', 'second'] },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
@@ -41,6 +43,7 @@ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: st
   'contraction-timer': ContractionTimer,
   'kick-counter': KickCounter,
   'mom-weight': MomWeightTracker,
+  'hospital-bag': HospitalBag,
 };
 
 interface ToolInstance {

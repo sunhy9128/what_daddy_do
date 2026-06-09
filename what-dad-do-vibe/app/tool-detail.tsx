@@ -16,6 +16,7 @@ import { PrenatalTimeline } from '../src/components/tools/PrenatalTimeline';
 import { ContractionTimer } from '../src/components/tools/ContractionTimer';
 import { KickCounter } from '../src/components/tools/KickCounter';
 import { MomWeightTracker } from '../src/components/tools/MomWeightTracker';
+import { HospitalBag } from '../src/components/tools/HospitalBag';
 
 interface ToolComponentProps {
   userId: string;
@@ -33,6 +34,7 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'contraction-timer': ContractionTimer,
   'kick-counter': KickCounter,
   'mom-weight': MomWeightTracker,
+  'hospital-bag': HospitalBag,
 };
 
 export default function ToolDetailPage() {
