@@ -126,6 +126,46 @@ app.get('/logout', (req, res) => {
 // API 路由（所有 CRUD）
 // ============================================================
 
+// ============================================================
+// 工具函数
+// ============================================================
+
+// 统一时间格式化：ISO → "YYYY-MM-DD HH:mm"
+function fmtTime(iso) {
+  if (!iso) return null;
+  // 纯日期（YYYY-MM-DD）不加时间
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const Y = d.getFullYear();
+    const M = String(d.getMonth() + 1).padStart(2, '0');
+    const D = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${Y}-${M}-${D} ${h}:${m}`;
+  } catch { return iso; }
+}
+
+// 递归将对象中所有 ISO 时间字段格式化到分钟
+function transformRow(row) {
+  if (!row || typeof row !== 'object') return row;
+  const out = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v && typeof v === 'string' && (k.endsWith('_at') || k.endsWith('_date') || k === 'due_date' || k === 'birth_date' || k === 'vaccinated_at')) {
+      out[k] = fmtTime(v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+function transformRows(rows) {
+  if (!Array.isArray(rows)) return transformRow(rows);
+  return rows.map(transformRow);
+}
+
 // 解析 ra-data-simple-rest 参数
 function parseQuery(query) {
   let sort = 'id';
@@ -180,7 +220,7 @@ app.get('/api/:resource', requireAuth, async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
 
   res.json({
-    data: data || [],
+    data: transformRows(data || []),
     total: count || 0,
   });
 });
@@ -196,7 +236,7 @@ app.get('/api/:resource/:id', requireAuth, async (req, res) => {
 
   const { data, error } = await query.single();
   if (error) return res.status(400).json({ error: error.message });
-  res.json({ data });
+  res.json({ data: transformRows(data) });
 });
 
 // 创建
@@ -215,7 +255,7 @@ app.post('/api/:resource', requireAuth, async (req, res) => {
   const { data, error } = await query;
 
   if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json({ data });
+  res.status(201).json({ data: transformRows(data) });
 });
 
 // 更新
@@ -239,7 +279,7 @@ app.put('/api/:resource/:id', requireAuth, async (req, res) => {
   const { data, error } = await query;
 
   if (error) return res.status(400).json({ error: error.message });
-  res.json({ data });
+  res.json({ data: transformRows(data) });
 });
 
 // 删除
@@ -443,6 +483,23 @@ const VALUE_LABELS = {
 function $(s, p) { return (p||document).querySelector(s); }
 function $$(s, p) { return [...(p||document).querySelectorAll(s)]; }
 
+// 统一时间格式化：ISO → "YYYY-MM-DD HH:mm"
+function formatTime(iso) {
+  if (!iso) return '—';
+  // 纯日期（YYYY-MM-DD）不加时间
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const Y = d.getFullYear();
+    const M = String(d.getMonth() + 1).padStart(2, '0');
+    const D = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return Y + '-' + M + '-' + D + ' ' + h + ':' + m;
+  } catch { return iso; }
+}
+
 function toast(msg) {
   const t = $('#toast');
   t.textContent = msg; t.className = 'toast show';
@@ -542,6 +599,10 @@ function renderList(data, total) {
               const display = VALUE_LABELS[str] || str;
               return '<td><span class="badge badge-' + cls + '">' + display + '</span></td>';
             }
+            // 时间字段统一格式化到分钟
+            if (c.endsWith('_at') || c.endsWith('_date') || c === 'due_date' || c === 'birth_date' || c === 'vaccinated_at') {
+              return '<td style="white-space:nowrap">' + formatTime(str) + '</td>';
+            }
             if (str.length > 80) return '<td title="' + str.replace(/"/g,'&quot;') + '">' + str.slice(0, 80) + '…</td>';
             return '<td title="' + str.replace(/"/g,'&quot;') + '">' + str + '</td>';
           }).join('') +
@@ -599,9 +660,10 @@ function renderFormField(name, value, type) {
     return \`<div class="form-row"><label>\${label}</label><textarea name="\${name}" rows="3">\${str}</textarea></div>\`;
   }
 
-  // 日期
-  if (name.endsWith('_at') || name.endsWith('_date') || name === 'due_date' || name === 'birth_date') {
-    return \`<div class="form-row"><label>\${label}</label><input name="\${name}" type="text" value="\${str}" placeholder="\${type || 'text'}"></div>\`;
+  // 日期/时间字段（精度到分钟）
+  if (name.endsWith('_at') || name.endsWith('_date') || name === 'due_date' || name === 'birth_date' || name === 'vaccinated_at') {
+    const val = type === 'date' ? str.slice(0, 10) : formatTime(str);
+    return \`<div class="form-row"><label>\${label}</label><input name="\${name}" type="text" value="\${val === '—' ? '' : val}" placeholder="YYYY-MM-DD HH:mm"></div>\`;
   }
 
   return \`<div class="form-row"><label>\${label}</label><input name="\${name}" type="text" value="\${str}"></div>\`;
