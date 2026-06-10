@@ -13,7 +13,7 @@ import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPs
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
 import { CollapsibleGroup } from '../../src/components/organisms';
 
-import { useColors } from '../../src/context/ThemeContext';
+import { useColors, useTheme } from '../../src/context/ThemeContext';
 import { spacing, typography, radius } from '../../src/styles/tokens';
 
 import { STAGES } from '../../src/lib/stages';
@@ -45,6 +45,7 @@ export default function HomeScreen() {
   const supportRef = useRef<View>(null);
   const toolsRef = useRef<View>(null);
   const colors = useColors();
+  const { isDark } = useTheme();
 
   // 下次产检倒计时（放在早期 return 之前，避免 hook 数量变化）
   const nextPrenatal = useMemo(() => {
@@ -87,10 +88,10 @@ export default function HomeScreen() {
   urgentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? '#3A1A1A' : '#FEF2F2',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: isDark ? '#5A2A2A' : '#FECACA',
     paddingVertical: spacing.md,
     paddingLeft: spacing.md,
     paddingRight: spacing.sm,
@@ -104,13 +105,13 @@ export default function HomeScreen() {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.error,
     marginRight: spacing.sm,
     flexShrink: 0,
   },
   urgentText: {
     ...typography.callout,
-    color: '#991B1B',
+    color: isDark ? '#FCA5A5' : '#991B1B',
     lineHeight: 22,
     flexShrink: 1,
   },
@@ -124,7 +125,7 @@ export default function HomeScreen() {
   },
   urgentCloseText: {
     fontSize: 14,
-    color: '#DC2626',
+    color: colors.error,
     fontWeight: '400',
   },
   urgentAddBtn: {
@@ -133,9 +134,9 @@ export default function HomeScreen() {
     justifyContent: 'center',
     paddingVertical: spacing.md - 2,
     gap: spacing.sm,
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.error,
     borderRadius: 12,
-    shadowColor: '#DC2626',
+    shadowColor: colors.error,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -329,7 +330,7 @@ export default function HomeScreen() {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F0EDE6',
+    backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -362,10 +363,10 @@ export default function HomeScreen() {
     minWidth: 64,
   },
   checkupCountdownUrgent: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? '#3A1A1A' : '#FEF2F2',
   },
   checkupCountdownSoon: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: isDark ? '#3A2A1A' : '#FFFBEB',
   },
   checkupDaysNum: {
     ...typography.title2,
@@ -373,10 +374,10 @@ export default function HomeScreen() {
     color: colors.accent,
   },
   checkupDaysUrgent: {
-    color: '#DC2626',
+    color: colors.error,
   },
   checkupDaysSoon: {
-    color: '#D97706',
+    color: colors.warning,
   },
   checkupDaysLabel: {
     ...typography.caption2,
@@ -384,7 +385,7 @@ export default function HomeScreen() {
     marginTop: 1,
   },
   checkupDaysLabelUrgent: {
-    color: '#DC2626',
+    color: colors.error,
   },
   checkupDesc: {
     ...typography.footnote,
@@ -572,7 +573,7 @@ export default function HomeScreen() {
     flex: 1,
   },
 
-}), [colors]);
+}), [colors, isDark]);
 
   // 物品准备 + 心理支持
   const [presetItems, setPresetItems] = useState<PresetItem[]>([]);

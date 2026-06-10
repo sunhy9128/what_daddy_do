@@ -30,8 +30,7 @@ export default function TabLayout() {
   const styles = useMemo(() => StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.surface,
+    borderTopWidth: 0,
     elevation: 0,
     height: Platform.OS === 'ios' ? 72 : 60,
     paddingTop: spacing.sm,

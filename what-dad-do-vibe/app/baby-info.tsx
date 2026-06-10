@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { useAuth } from '../src/context/AuthContext';
 import { STAGES } from '../src/lib/stages';
-import { useColors } from '../src/context/ThemeContext';
+import { useColors, useTheme } from '../src/context/ThemeContext';
 import { spacing, radius, typography, shadows } from '../src/styles/tokens';
 import { loadMomWeightConfig, saveMomWeightConfig } from '../src/lib/storage';
 import { DatePicker } from '../src/components/DatePicker';
@@ -36,6 +36,7 @@ export default function BabyInfoScreen() {
   }, [user]);
 
   const colors = useColors();
+  const { isDark } = useTheme();
 
   const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
@@ -54,18 +55,18 @@ export default function BabyInfoScreen() {
 
   // 宝宝卡片
   babyCard: {
-    backgroundColor: '#FFF8F5', borderRadius: 20, padding: spacing.xl,
+    backgroundColor: isDark ? '#2A1E1E' : '#FFF8F5', borderRadius: 20, padding: spacing.xl,
     alignItems: 'center', marginBottom: spacing.xl,
-    borderWidth: 1, borderColor: '#F5E0D0',
+    borderWidth: 1, borderColor: isDark ? '#4A3030' : '#F5E0D0',
   },
   babyEmoji: { fontSize: 56, marginBottom: spacing.sm },
-  babyName: { ...typography.title1, fontWeight: '700', color: '#5A3E2B', marginBottom: spacing.xs },
+  babyName: { ...typography.title1, fontWeight: '700', color: isDark ? '#E8DCC8' : '#5A3E2B', marginBottom: spacing.xs },
   babyTag: {
-    backgroundColor: '#D4A574', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    backgroundColor: isDark ? '#5A4040' : '#D4A574', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
     borderRadius: radius.sm, marginBottom: spacing.md,
   },
   babyTagText: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  babyDivider: { width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: '#F5E0D0', marginBottom: spacing.md },
+  babyDivider: { width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: isDark ? '#4A3030' : '#F5E0D0', marginBottom: spacing.md },
 
   // 孕期卡片
   infoCard: {
@@ -166,7 +167,7 @@ export default function BabyInfoScreen() {
   },
   saveBtnDisabled: { opacity: 0.6 },
   saveText: { ...typography.callout, fontWeight: '600', color: '#fff' },
-}), [colors]);
+}), [colors, isDark]);
 
   const safeAlert = (title: string, msg?: string) => {
     if (Platform.OS === 'web') { window.alert(msg || title); }

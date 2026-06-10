@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { Confetti } from '../src/components/Confetti';
-import { useColors } from '../src/context/ThemeContext';
+import { useColors, useTheme } from '../src/context/ThemeContext';
 import { spacing, radius, typography } from '../src/styles/tokens';
 
 export default function CongratulationsScreen() {
@@ -15,11 +15,12 @@ export default function CongratulationsScreen() {
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const colors = useColors();
+  const { isDark } = useTheme();
 
   const styles = useMemo(() => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF8F3',
+    backgroundColor: isDark ? '#1E1E30' : '#FDF8F3',
   },
   content: {
     flex: 1,
@@ -69,11 +70,11 @@ export default function CongratulationsScreen() {
   },
   genderBtnBoy: {
     borderColor: '#4D96FF',
-    backgroundColor: '#F0F7FF',
+    backgroundColor: isDark ? '#1A2A4A' : '#F0F7FF',
   },
   genderBtnGirl: {
     borderColor: '#F472B6',
-    backgroundColor: '#FFF0F6',
+    backgroundColor: isDark ? '#4A1A2A' : '#FFF0F6',
   },
   genderIcon: {
     fontSize: 44,
@@ -105,7 +106,7 @@ export default function CongratulationsScreen() {
     color: '#fff',
     fontSize: 18,
   },
-}), [colors]);
+}), [colors, isDark]);
 
   const handleConfirm = async () => {
     if (!selectedGender || !baby || saving) return;

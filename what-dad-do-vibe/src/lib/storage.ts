@@ -151,3 +151,39 @@ export async function loadMomWeightConfig(userId: string): Promise<MomWeightConf
 export async function saveMomWeightConfig(userId: string, config: MomWeightConfig): Promise<void> {
   try { await AsyncStorage.setItem(`mom_weight_config_${userId}`, JSON.stringify(config)); } catch (e) { console.error('saveMomWeightConfig failed', e); }
 }
+
+// 爸爸情绪自评记录
+export interface MoodRecord {
+  id: string;
+  date: string;       // YYYY-MM-DD
+  score: number;      // 0-30
+  answers: number[];  // 每题得分 0-3, 共10题
+  notes?: string;     // 备注
+}
+
+export interface MoodConfig {
+  name: string;       // 用户昵称/称呼
+  createdAt: string;  // ISO date
+}
+
+export async function loadMoodRecords(userId: string): Promise<MoodRecord[]> {
+  try {
+    const json = await AsyncStorage.getItem(`mood_records_${userId}`);
+    return json ? JSON.parse(json) : [];
+  } catch { return []; }
+}
+
+export async function saveMoodRecords(userId: string, records: MoodRecord[]): Promise<void> {
+  try { await AsyncStorage.setItem(`mood_records_${userId}`, JSON.stringify(records)); } catch (e) { console.error('saveMoodRecords failed', e); }
+}
+
+export async function loadMoodConfig(userId: string): Promise<MoodConfig | null> {
+  try {
+    const json = await AsyncStorage.getItem(`mood_config_${userId}`);
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+
+export async function saveMoodConfig(userId: string, config: MoodConfig): Promise<void> {
+  try { await AsyncStorage.setItem(`mood_config_${userId}`, JSON.stringify(config)); } catch (e) { console.error('saveMoodConfig failed', e); }
+}

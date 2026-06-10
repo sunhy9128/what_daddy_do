@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Text, StyleSheet, View, ViewProps } from 'react-native';
 import { radius, spacing, typography } from '../../styles/tokens';
-import { useColors } from '../../context/ThemeContext';
+import { useColors, useTheme } from '../../context/ThemeContext';
 
 type TagVariant = 'default' | 'short' | 'long' | 'success' | 'warning';
 
@@ -10,15 +10,30 @@ interface TagProps extends ViewProps {
   label: string;
 }
 
+const VARIANT_STYLES: Record<TagVariant, { bg: string; fg: string }> = {
+  default: { bg: '', fg: '' }, // handled by theme
+  short: { bg: '#f0f9ff', fg: '#007aff' },
+  long: { bg: '#f0fdf4', fg: '#34c759' },
+  success: { bg: '#f0fdf4', fg: '#34c759' },
+  warning: { bg: '#fef3c7', fg: '#d97706' },
+};
+
+const DARK_VARIANT_STYLES: Record<TagVariant, { bg: string; fg: string }> = {
+  default: { bg: '', fg: '' },
+  short: { bg: '#1A2A4A', fg: '#5A9AE0' },
+  long: { bg: '#1A3A2A', fg: '#5AB87A' },
+  success: { bg: '#1A3A2A', fg: '#5AB87A' },
+  warning: { bg: '#3A2A10', fg: '#D4A84E' },
+};
+
 export function Tag({ variant = 'default', label, style, ...props }: TagProps) {
   const colors = useColors();
-  const variantStyle = {
-    default: { backgroundColor: colors.bg, color: colors.fg },
-    short: { backgroundColor: '#f0f9ff', color: '#007aff' },
-    long: { backgroundColor: '#f0fdf4', color: '#34c759' },
-    success: { backgroundColor: '#f0fdf4', color: '#34c759' },
-    warning: { backgroundColor: '#fef3c7', color: '#d97706' },
-  }[variant];
+  const { isDark } = useTheme();
+  const variantColors = isDark
+    ? DARK_VARIANT_STYLES[variant]
+    : VARIANT_STYLES[variant];
+  const bgColor = variant === 'default' ? colors.bg : variantColors.bg;
+  const fgColor = variant === 'default' ? colors.fg : variantColors.fg;
   const styles = useMemo(() => StyleSheet.create({
     base: {
       paddingHorizontal: spacing.sm,
@@ -32,8 +47,8 @@ export function Tag({ variant = 'default', label, style, ...props }: TagProps) {
     },
   }), []);
   return (
-    <View style={[styles.base, { backgroundColor: variantStyle.backgroundColor }, style]} {...props}>
-      <Text style={[styles.text, { color: variantStyle.color }]}>{label}</Text>
+    <View style={[styles.base, { backgroundColor: bgColor }, style]} {...props}>
+      <Text style={[styles.text, { color: fgColor }]}>{label}</Text>
     </View>
   );
 }

@@ -106,9 +106,9 @@ export function GrowthChart({ gender, records }: Props) {
     wrapper: { alignItems: 'center', marginVertical: spacing.sm },
     title: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.xs },
     bar: { position: 'absolute', opacity: 0.35 },
-    grid: { position: 'absolute', height: 0.5, backgroundColor: '#E8E4D9' },
-    yLbl: { position: 'absolute', left: 2, fontSize: 8, color: '#8A8A9A', width: 26, textAlign: 'right' },
-    xLbl: { position: 'absolute', fontSize: 8, color: '#8A8A9A', width: 14, textAlign: 'center' },
+    grid: { position: 'absolute', height: 0.5, backgroundColor: colors.border },
+    yLbl: { position: 'absolute', left: 2, fontSize: 8, color: colors.muted, width: 26, textAlign: 'right' },
+    xLbl: { position: 'absolute', fontSize: 8, color: colors.muted, width: 14, textAlign: 'center' },
     axisTitle: { position: 'absolute', fontSize: 8, fontWeight: '600' },
     dot: { position: 'absolute', opacity: 0.7 },
     dataPt: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 2, backgroundColor: '#fff' },
@@ -122,7 +122,7 @@ export function GrowthChart({ gender, records }: Props) {
     <View style={s.wrapper}>
       <Text style={s.title}>生长曲线</Text>
       <View style={{ width: W, height: TOTAL_H }}>
-        <View style={{ position: 'absolute', left: 0, top: 0, width: W, height: TOTAL_H, backgroundColor: '#FCFAF5', borderRadius: 8 }} />
+        <View style={{ position: 'absolute', left: 0, top: 0, width: W, height: TOTAL_H, backgroundColor: colors.bg, borderRadius: 8 }} />
 
         {/* 上半：身长 */}
         {drawPanel(lenData, lenMin, lenMax, 5, '#D06060', '#CC4444', '#FFE0E0', '#E8FFE8', records.map(r => ({ month: r.month, value: r.height })), 0, s)}

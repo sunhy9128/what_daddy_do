@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { getFoodSafety } from '../../lib/api';
 import { FoodSafety } from '../../lib/supabase';
-import { useColors } from '../../context/ThemeContext';
+import { useColors, useTheme } from '../../context/ThemeContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
@@ -18,6 +18,12 @@ const LEVEL_COLORS: Record<string, string> = {
   forbidden: '#ff3b30',
 };
 
+const DARK_LEVEL_COLORS: Record<string, string> = {
+  safe: '#5AB87A',
+  caution: '#D4A84E',
+  forbidden: '#D46A6A',
+};
+
 const PERIODS = [
   { key: 'preconception' as const, label: '备孕' },
   { key: 'first' as const, label: '孕早期' },
@@ -30,16 +36,18 @@ const PERIODS = [
 ];
 
 // 提取到组件外部，避免每次渲染重建组件类型
-function SafetyBadge({ level }: { level: string }) {
+function SafetyBadge({ level, isDark }: { level: string; isDark?: boolean }) {
+  const colors = isDark ? DARK_LEVEL_COLORS : LEVEL_COLORS;
   return (
-    <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, backgroundColor: LEVEL_COLORS[level] + '20' }}>
-      <Text style={{ ...typography.caption1, fontWeight: '600', fontSize: 11, color: LEVEL_COLORS[level] }}>{LEVEL_LABELS[level]}</Text>
+    <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, backgroundColor: colors[level] + '20' }}>
+      <Text style={{ ...typography.caption1, fontWeight: '600', fontSize: 11, color: colors[level] }}>{LEVEL_LABELS[level]}</Text>
     </View>
   );
 }
 
 export function FoodSafetyTool({ expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { isDark } = useTheme();
   const [foods, setFoods] = useState<FoodSafety[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -156,7 +164,7 @@ export function FoodSafetyTool({ expanded }: { userId: string; babyGender?: stri
             {PERIODS.map(p => (
               <View key={p.key} style={styles.row}>
                 <Text style={styles.periodLabel}>{p.label}</Text>
-                <SafetyBadge level={food[p.key]} />
+                <SafetyBadge level={food[p.key]} isDark={isDark} />
               </View>
             ))}
           </View>

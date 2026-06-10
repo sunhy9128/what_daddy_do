@@ -17,6 +17,7 @@ import { ContractionTimer } from '../src/components/tools/ContractionTimer';
 import { KickCounter } from '../src/components/tools/KickCounter';
 import { MomWeightTracker } from '../src/components/tools/MomWeightTracker';
 import { HospitalBag } from '../src/components/tools/HospitalBag';
+import { MoodCheckIn } from '../src/components/tools/MoodCheckIn';
 
 interface ToolComponentProps {
   userId: string;
@@ -35,6 +36,7 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'kick-counter': KickCounter,
   'mom-weight': MomWeightTracker,
   'hospital-bag': HospitalBag,
+  'mood-checkin': MoodCheckIn,
 };
 
 // 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中

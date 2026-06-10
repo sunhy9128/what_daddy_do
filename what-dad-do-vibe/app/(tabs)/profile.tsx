@@ -123,7 +123,7 @@ export default function ProfileScreen() {
     babyName: { ...typography.title2, fontWeight: '700', color: isDark ? '#E8DCC8' : '#5A3E2B' },
     babyStage: {
       fontSize: 11, fontWeight: '600', color: '#fff',
-      backgroundColor: '#D4A574', paddingHorizontal: spacing.sm, paddingVertical: 2,
+      backgroundColor: isDark ? '#5A4040' : '#D4A574', paddingHorizontal: spacing.sm, paddingVertical: 2,
       borderRadius: radius.sm, overflow: 'hidden',
     },
     babyInfoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
         {state.babies.length > 0 && state.stage === 'postpartum' ? (
           <View style={styles.babyCard}>
             <TouchableOpacity style={styles.cardSettings} onPress={() => router.push('/baby-info')}>
-              <Ionicons name="settings-outline" size={16} color="#D4A574" />
+              <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
             </TouchableOpacity>
             <View style={styles.babyHeader}>
               <Text style={styles.babyEmoji}>{state.babies[0]?.gender === 'girl' ? '👧' : '👦'}</Text>
@@ -183,17 +183,17 @@ export default function ProfileScreen() {
             </View>
             {state.babies[0]?.birthDate && (
               <View style={styles.babyInfoRow}>
-                <Ionicons name="gift-outline" size={14} color="#D4A574" />
+                <Ionicons name="gift-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
                 <Text style={styles.babyInfoText}>出生日期：{state.babies[0].birthDate}</Text>
               </View>
             )}
             <View style={styles.babyInfoRow}>
-              <Ionicons name="time-outline" size={14} color="#D4A574" />
+              <Ionicons name="time-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
               <Text style={styles.babyInfoText}>宝宝 {state.birthAgeLabel}</Text>
             </View>
             <View style={styles.babyTagRow}>
               <View style={styles.babyTag}><Text style={styles.babyTagText}>{state.babies[0]?.gender === 'girl' ? '女宝' : '男宝'}</Text></View>
-              <View style={[styles.babyTag, { backgroundColor: '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: '#D4A574' }]}>🎂 {state.babies[0]?.birthDate || state.babies[0]?.dueDate}</Text></View>
+              <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}>🎂 {state.babies[0]?.birthDate || state.babies[0]?.dueDate}</Text></View>
             </View>
           </View>
         ) : state.babies.length > 0 ? (

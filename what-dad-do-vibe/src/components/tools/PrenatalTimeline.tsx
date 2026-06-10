@@ -8,15 +8,17 @@ import { radius, spacing, typography, shadows } from '../../styles/tokens';
 const STAGE_ORDER = ['first', 'second', 'third'] as const;
 const FULL_STAGE_ORDER = ['preconception', 'first', 'second', 'third', 'postpartum'];
 const STAGE_LABELS: Record<string, string> = { first: '孕早期', second: '孕中期', third: '孕晚期' };
-const STAGE_COLORS: Record<string, string> = {
-  first: '#4A6B8A',
-  second: '#4A7C5E',
-  third: '#B8963E',
-};
 
 export function PrenatalTimeline({ userId: _userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const { state, toggleTask } = useApp();
+  
+  // 使用主题 token 的阶段颜色
+  const STAGE_COLORS: Record<string, string> = {
+    first: colors.info,
+    second: colors.success,
+    third: colors.warning,
+  };
 
   // 判断任务是否为已过阶段（当前阶段之前）
   const currentStageIndex = FULL_STAGE_ORDER.indexOf(state.stage);

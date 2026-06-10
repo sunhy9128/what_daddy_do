@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { AppProvider } from '../src/context/AppContext';
-import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { ThemeProvider, useTheme, useColors } from '../src/context/ThemeContext';
 import { WebScrollbarStyle } from '../src/components/WebScrollbarStyle';
 
 function AuthRedirector() {
@@ -33,6 +33,24 @@ function StatusBarManager() {
   return <StatusBar style={isDark ? 'light' : 'dark'} />;
 }
 
+function StackNavigator() {
+  const colors = useColors();
+  const { isDark } = useTheme();
+  return (
+    <>
+      <WebScrollbarStyle isDark={isDark} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+        <Stack.Screen name="login" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="baby-info" />
+        <Stack.Screen name="congratulations" />
+        <Stack.Screen name="profile-edit" />
+        <Stack.Screen name="tool-detail" />
+      </Stack>
+    </>
+  );
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
@@ -43,15 +61,7 @@ export default function RootLayout() {
             <Suspense fallback={null}>
               <AuthRedirector />
             </Suspense>
-            <WebScrollbarStyle />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="login" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="baby-info" />
-              <Stack.Screen name="congratulations" />
-              <Stack.Screen name="profile-edit" />
-              <Stack.Screen name="tool-detail" />
-            </Stack>
+            <StackNavigator />
           </AppProvider>
         </AuthProvider>
       </ThemeProvider>
