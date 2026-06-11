@@ -18,6 +18,8 @@ import { KickCounter } from './KickCounter';
 import { MomWeightTracker } from './MomWeightTracker';
 import { HospitalBag } from './HospitalBag';
 import { MoodCheckIn } from './MoodCheckIn';
+import { MedicationSafetyTool } from './MedicationSafety';
+import { BabyMedicationSafetyTool } from './BabyMedicationSafety';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -33,6 +35,8 @@ export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'mom-weight', name: '妈妈体重记录', icon: 'scale-outline', description: '孕期体重记录及增长曲线', hideInStages: ['postpartum'] },
   { id: 'hospital-bag', name: '待产包清单', icon: 'bag-check-outline', description: '待产物品准备清单及进度', hideInStages: ['preconception', 'first', 'second'] },
   { id: 'mood-checkin', name: '爸爸情绪自评', icon: 'heart-outline', description: 'EPDS情绪筛查，关注爸爸心理健康' },
+  { id: 'medication-safety', name: '用药安全', icon: 'medical-outline', description: '孕期用药禁忌查询，搜药品名/商品名' },
+  { id: 'baby-medication-safety', name: '婴儿用药', icon: 'bandage-outline', description: '婴幼儿用药禁忌查询，按月龄筛选', hideInStages: ['preconception', 'first', 'second', 'third'] },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
@@ -47,6 +51,7 @@ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: st
   'mom-weight': MomWeightTracker,
   'hospital-bag': HospitalBag,
   'mood-checkin': MoodCheckIn,
+  'medication-safety': MedicationSafetyTool,
 };
 
 interface ToolInstance {

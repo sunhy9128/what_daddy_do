@@ -368,151 +368,196 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
     container: { maxHeight: expanded ? undefined : 560 },
     // 配置
     configCard: {
-      backgroundColor: colors.accentLight,
+      backgroundColor: colors.surface,
       borderRadius: radius.md,
       padding: spacing.md,
       marginBottom: spacing.lg,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.accent,
+      ...shadows.sm,
     },
-    configLabel: { ...typography.footnote, color: colors.fgSecondary, marginBottom: spacing.xs },
+    configLabel: { ...typography.subhead, fontWeight: '600', color: colors.fg, marginBottom: spacing.xs },
     configValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
-    configNote: { ...typography.caption2, color: colors.muted, marginTop: spacing.xs },
+    configNote: { ...typography.footnote, color: colors.fgSecondary, marginTop: spacing.xs, lineHeight: 20 },
     // 输入
     inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
     input: {
       flex: 1,
       ...typography.callout,
       color: colors.fg,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.bg,
       borderRadius: radius.sm,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
-      height: 40,
+      height: 44,
     },
     saveBtn: {
       backgroundColor: colors.accent,
       borderRadius: radius.sm,
-      paddingHorizontal: spacing.md,
-      height: 40,
+      paddingHorizontal: spacing.lg,
+      height: 44,
       alignItems: 'center',
       justifyContent: 'center',
+      ...shadows.sm,
     },
     saveBtnText: { ...typography.callout, fontWeight: '600', color: '#fff' },
     // 概览
     summaryCard: {
       backgroundColor: colors.surface,
       borderRadius: radius.md,
-      padding: spacing.md,
+      padding: spacing.lg,
       marginBottom: spacing.lg,
       ...shadows.sm,
     },
     summaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-    summaryScore: { fontSize: 36, fontWeight: '700', color: colors.accent },
-    summaryUnit: { ...typography.title3, color: colors.muted, marginTop: 8 },
+    summaryScore: { fontSize: 40, fontWeight: '700', color: colors.accent, letterSpacing: -1 },
+    summaryUnit: { ...typography.callout, color: colors.muted },
     summaryLabel: { ...typography.footnote, color: colors.fgSecondary },
     summaryTrend: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     // 开始按钮
     startBtn: {
       backgroundColor: colors.accent,
-      borderRadius: radius.md,
-      paddingVertical: spacing.md,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md + 2,
+      paddingHorizontal: spacing.xl,
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'row',
       gap: spacing.sm,
+      ...shadows.md,
     },
     startBtnText: { ...typography.headline, fontWeight: '600', color: '#fff' },
     // 问卷
     quizContainer: { gap: spacing.lg },
-    quizHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    quizHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
     quizTitle: { ...typography.title3, fontWeight: '600', color: colors.fg },
-    quizProgress: { ...typography.footnote, color: colors.muted },
+    quizProgress: { ...typography.footnote, color: colors.muted, fontWeight: '500' },
+    progressBarTrack: {
+      height: 4,
+      backgroundColor: colors.divider,
+      borderRadius: 2,
+      marginBottom: spacing.lg,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: colors.accent,
+      borderRadius: 2,
+    },
     questionCard: {
       backgroundColor: colors.surface,
       borderRadius: radius.md,
-      padding: spacing.md,
+      padding: spacing.lg,
       ...shadows.sm,
     },
     questionNumber: {
       ...typography.caption1,
       fontWeight: '600',
       color: colors.accent,
-      marginBottom: spacing.xs,
+      marginBottom: spacing.sm,
     },
-    questionText: { ...typography.callout, fontWeight: '500', color: colors.fg, marginBottom: spacing.md },
+    questionText: { ...typography.callout, fontWeight: '500', color: colors.fg, marginBottom: spacing.md, lineHeight: 24 },
     optionRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
       borderRadius: radius.sm,
-      marginBottom: spacing.xs,
+      marginBottom: spacing.sm,
       borderWidth: 1,
       borderColor: colors.divider,
+      backgroundColor: colors.bg,
     },
-    optionRowSelected: { borderColor: colors.accent, backgroundColor: colors.accentLight },
+    optionRowSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentLight,
+    },
     optionDot: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       borderWidth: 2,
       borderColor: colors.muted,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: spacing.sm,
+      marginRight: spacing.md,
     },
-    optionDotSelected: { borderColor: colors.accent, backgroundColor: colors.accent },
-    optionDotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
-    optionLabel: { ...typography.subhead, color: colors.fg, flex: 1 },
-    optionLabelSelected: { fontWeight: '500' },
+    optionDotSelected: { borderColor: colors.accent },
+    optionDotInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.accent,
+    },
+    optionLabel: { ...typography.subhead, color: colors.fg, flex: 1, lineHeight: 22 },
+    optionLabelSelected: { fontWeight: '600' },
     submitBtn: {
       backgroundColor: colors.accent,
       borderRadius: radius.md,
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.md + 2,
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: spacing.sm,
+      ...shadows.sm,
     },
-    submitBtnDisabled: { backgroundColor: colors.surfaceSecondary },
+    submitBtnDisabled: { backgroundColor: colors.border, ...shadows.sm, shadowOpacity: 0 },
     submitBtnText: { ...typography.headline, fontWeight: '600', color: '#fff' },
     submitBtnTextDisabled: { color: colors.muted },
     // 结果
     resultContainer: { gap: spacing.lg },
     resultCard: {
       backgroundColor: colors.surface,
-      borderRadius: radius.md,
-      padding: spacing.xl,
+      borderRadius: radius.lg,
+      padding: spacing.xl + 4,
       alignItems: 'center',
       ...shadows.md,
     },
-    resultScore: { fontSize: 48, fontWeight: '700' },
-    resultUnit: { ...typography.title3, color: colors.muted, marginTop: 4 },
-    resultLevel: { ...typography.headline, fontWeight: '600', marginTop: spacing.sm },
+    resultScore: { fontSize: 56, fontWeight: '700', letterSpacing: -2 },
+    resultUnit: { ...typography.title3, color: colors.muted, marginTop: spacing.xs },
+    resultLevel: { ...typography.headline, fontWeight: '600', marginTop: spacing.md },
     resultAdvice: {
       ...typography.callout,
       color: colors.fgSecondary,
       textAlign: 'center',
-      lineHeight: 22,
-      marginTop: spacing.md,
+      lineHeight: 24,
+      marginTop: spacing.lg,
       paddingHorizontal: spacing.sm,
     },
-    resultActions: { flexDirection: 'row', gap: spacing.sm },
+    warningCallout: {
+      backgroundColor: colors.warning + '12',
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.warning,
+    },
+    warningCalloutText: {
+      ...typography.footnote,
+      color: colors.fgSecondary,
+      lineHeight: 22,
+    },
+    resultActions: { flexDirection: 'row', gap: spacing.md },
     actionBtn: {
       flex: 1,
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.md + 2,
       borderRadius: radius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    actionBtnPrimary: { backgroundColor: colors.accent, borderColor: colors.accent },
+    actionBtnPrimary: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+      ...shadows.sm,
+    },
     actionBtnText: { ...typography.callout, fontWeight: '600', color: colors.fgSecondary },
     actionBtnTextPrimary: { color: '#fff' },
     // 历史
-    historySection: { marginTop: spacing.md },
-    historyTitle: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.sm },
+    historySection: { marginTop: spacing.lg },
+    historyTitle: { ...typography.subhead, fontWeight: '600', color: colors.fg, marginBottom: spacing.sm },
     historyTable: {
       backgroundColor: colors.surface,
       borderRadius: radius.md,
@@ -522,7 +567,9 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
     historyHeader: {
       flexDirection: 'row',
       backgroundColor: colors.accentLight,
-      paddingVertical: spacing.sm + 2,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
     },
     historyHeaderText: {
       ...typography.caption1,
@@ -540,23 +587,24 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: spacing.sm + 2,
+      paddingVertical: spacing.md,
     },
     historyText: { ...typography.callout, color: colors.fg, textAlign: 'center', fontWeight: '500' },
     historyScoreOk: { color: colors.success },
     historyScoreWarn: { color: colors.warning },
     historyScoreHigh: { color: colors.error },
     delBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-    delBtnText: { ...typography.caption2, color: colors.error, fontWeight: '600' },
+    delBtnText: { ...typography.caption1, color: colors.error, fontWeight: '600' },
     emptyState: {
-      height: 120,
+      paddingVertical: spacing.xxl + 8,
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.sm,
     },
-    emptyText: { ...typography.footnote, color: colors.muted },
+    emptyIcon: { marginBottom: spacing.xs, opacity: 0.5 },
+    emptyText: { ...typography.footnote, color: colors.muted, textAlign: 'center' },
     // Loading
-    loadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, gap: spacing.md },
+    loadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl + 8, gap: spacing.md },
     loadingDots: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     loadingText: { ...typography.footnote, color: colors.fgSecondary },
   }), [colors, expanded]);
@@ -585,6 +633,9 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
             <Text style={styles.quizProgress}>
               {answers.filter(a => a >= 0).length}/{QUESTIONS.length}
             </Text>
+          </View>
+          <View style={styles.progressBarTrack}>
+            <View style={[styles.progressBarFill, { width: `${(answers.filter(a => a >= 0).length / QUESTIONS.length) * 100}%` as any }]} />
           </View>
 
           {QUESTIONS.map((q, qi) => (
@@ -642,14 +693,8 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
 
           {/* 警告提示 */}
           {latestResult.score >= 10 && (
-            <View style={{
-              backgroundColor: colors.warning + '15',
-              borderRadius: radius.md,
-              padding: spacing.md,
-              borderLeftWidth: 3,
-              borderLeftColor: colors.warning,
-            }}>
-              <Text style={{ ...typography.footnote, color: colors.fgSecondary, lineHeight: 20 }}>
+            <View style={styles.warningCallout}>
+              <Text style={styles.warningCalloutText}>
                 {latestResult.score >= 13
                   ? '你的评分较高，建议尽快寻求专业心理帮助。可以联系：心理援助热线 400-161-9995，或就近前往心理科就诊。'
                   : '评分处于临界范围。建议与家人沟通你的感受，注意休息和放松。可每隔 1-2 周再做一次测评关注变化。'}
@@ -705,7 +750,10 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
 
       {hasConfig && (
         <View style={styles.configCard}>
-          <Text style={styles.configLabel}>你好，{config.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Ionicons name="happy-outline" size={20} color={colors.accent} />
+            <Text style={styles.configLabel}>你好，{config.name}</Text>
+          </View>
           <Text style={styles.configNote}>定期做情绪测评，关注自己的心理健康</Text>
         </View>
       )}
@@ -813,9 +861,9 @@ export function MoodCheckIn({ userId, expanded }: { userId: string; babyGender?:
       {/* 空状态 */}
       {!lastRecord && (
         <View style={styles.emptyState}>
-          <Ionicons name="heart-outline" size={32} color={colors.muted} />
+          <Ionicons name="heart-outline" size={36} color={colors.muted} style={styles.emptyIcon} />
           <Text style={styles.emptyText}>照顾好自己，才能更好地照顾家人</Text>
-          <Text style={styles.emptyText}>点击上方按钮开始第一次测评</Text>
+          <Text style={[styles.emptyText, { marginTop: 4 }]}>点击上方按钮开始第一次测评</Text>
         </View>
       )}
     </ScrollView>

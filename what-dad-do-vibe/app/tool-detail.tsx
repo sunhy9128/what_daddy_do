@@ -18,6 +18,8 @@ import { KickCounter } from '../src/components/tools/KickCounter';
 import { MomWeightTracker } from '../src/components/tools/MomWeightTracker';
 import { HospitalBag } from '../src/components/tools/HospitalBag';
 import { MoodCheckIn } from '../src/components/tools/MoodCheckIn';
+import { MedicationSafetyTool } from '../src/components/tools/MedicationSafety';
+import { BabyMedicationSafetyTool } from '../src/components/tools/BabyMedicationSafety';
 
 interface ToolComponentProps {
   userId: string;
@@ -37,12 +39,16 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'mom-weight': MomWeightTracker,
   'hospital-bag': HospitalBag,
   'mood-checkin': MoodCheckIn,
+  'medication-safety': MedicationSafetyTool,
+  'baby-medication-safety': BabyMedicationSafetyTool,
 };
 
 // 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中
 const TOOL_JUSTIFY: Record<string, 'center' | 'flex-start'> = {
   'hospital-bag': 'flex-start',
   'food-safety': 'flex-start',
+  'medication-safety': 'flex-start',
+  'baby-medication-safety': 'flex-start',
 };
 
 export default function ToolDetailPage() {

@@ -40,20 +40,14 @@ export default function TabLayout() {
     paddingVertical: 0,
   },
   iconWrapper: {
-    width: 36,
-    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-  },
-  iconWrapperActive: {
-    backgroundColor: colors.accentLight,
   },
 }), [colors]);
 
   function TabIcon({ routeName, color, size, focused }: { routeName: string; color: string; size: number; focused: boolean }) {
     return (
-      <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
+      <View style={styles.iconWrapper}>
         <Ionicons
           name={focused ? tabIconsActive[routeName] : tabIcons[routeName]}
           size={focused ? size + 2 : size}
