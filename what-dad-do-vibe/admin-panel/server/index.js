@@ -12,25 +12,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // 资源映射：React Admin 资源名 → Supabase 表名 + 主键
 // ============================================================
 const RESOURCES = {
-  users:               { table: 'users',              schema: 'auth',  pk: 'id' },
-  babies:              { table: 'babies',              schema: 'public', pk: 'id' },
-  tasks:               { table: 'tasks',               schema: 'public', pk: 'id' },
-  records:             { table: 'records',              schema: 'public', pk: 'id' },
-  preset_tasks:        { table: 'preset_tasks',         schema: 'public', pk: 'id' },
-  preset_items:        { table: 'preset_items',         schema: 'public', pk: 'id' },
-  user_preparations:   { table: 'user_preparations',    schema: 'public', pk: 'id' },
-  urgent_notes:        { table: 'urgent_notes',         schema: 'public', pk: 'id' },
-  community_posts:     { table: 'community_posts',      schema: 'public', pk: 'id' },
-  post_comments:       { table: 'post_comments',        schema: 'public', pk: 'id' },
-  post_likes:          { table: 'post_likes',           schema: 'public', pk: 'id' },
-  knowledge_articles:  { table: 'knowledge_articles',   schema: 'public', pk: 'id' },
-  user_knowledge_reads:{ table: 'user_knowledge_reads',  schema: 'public', pk: 'id' },
-  psychological_support:{table: 'psychological_support', schema: 'public', pk: 'id' },
-  pregnancy_stages:    { table: 'pregnancy_stages',     schema: 'public', pk: 'id' },
-  vaccines:            { table: 'vaccines',             schema: 'public', pk: 'id' },
-  vaccine_doses:       { table: 'vaccine_doses',        schema: 'public', pk: 'id' },
-  user_vaccinations:   { table: 'user_vaccinations',    schema: 'public', pk: 'id' },
-  food_safety:         { table: 'food_safety',          schema: 'public', pk: 'id' },
+  users:               { table: 'users',              pk: 'id' },
+  babies:              { table: 'babies',              pk: 'id' },
+  tasks:               { table: 'tasks',               pk: 'id' },
+  records:             { table: 'records',              pk: 'id' },
+  preset_tasks:        { table: 'preset_tasks',         pk: 'id' },
+  preset_items:        { table: 'preset_items',         pk: 'id' },
+  user_preparations:   { table: 'user_preparations',    pk: 'id' },
+  urgent_notes:        { table: 'urgent_notes',         pk: 'id' },
+  community_posts:     { table: 'community_posts',      pk: 'id' },
+  post_comments:       { table: 'post_comments',        pk: 'id' },
+  post_likes:          { table: 'post_likes',           pk: 'id' },
+  knowledge_articles:  { table: 'knowledge_articles',   pk: 'id' },
+  user_knowledge_reads:{ table: 'user_knowledge_reads',  pk: 'id' },
+  psychological_support:{table: 'psychological_support', pk: 'id' },
+  pregnancy_stages:    { table: 'pregnancy_stages',     pk: 'id' },
+  vaccines:            { table: 'vaccines',             pk: 'id' },
+  vaccine_doses:       { table: 'vaccine_doses',        pk: 'id' },
+  user_vaccinations:   { table: 'user_vaccinations',    pk: 'id' },
+  food_safety:         { table: 'food_safety',          pk: 'id' },
 };
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -123,8 +123,101 @@ app.get('/logout', (req, res) => {
 });
 
 // ============================================================
-// API 路由（所有 CRUD）
+// API 路由
 // ============================================================
+
+// ---- 用户管理（通过 supabase.auth.admin，不直接查 auth schema） ----
+
+// 用户列表
+app.get('/api/users', requireAuth, async (req, res) => {
+  const { sort, order, page, perPage, filter } = parseQuery(req.query);
+
+  const { data, error } = await supabase.auth.admin.listUsers({
+    page,
+    perPage: Math.min(perPage, 1000),
+  });
+
+  if (error) return res.status(400).json({ error: error.message });
+
+  let users = data?.users || [];
+
+  // 搜索过滤（按 email）
+  if (filter.q) {
+    const q = filter.q.toLowerCase();
+    users = users.filter(u =>
+      u.email?.toLowerCase().includes(q) ||
+      u.phone?.toLowerCase().includes(q) ||
+      u.id?.toLowerCase().includes(q)
+    );
+  }
+  for (const [key, value] of Object.entries(filter)) {
+    if (key === 'q' || value === '' || value === null || value === undefined) continue;
+    users = users.filter(u => String(u[key] ?? '') === String(value));
+  }
+
+  // 排序
+  const dir = order === 'DESC' ? -1 : 1;
+  users.sort((a, b) => {
+    const av = a[sort] ?? '';
+    const bv = b[sort] ?? '';
+    if (typeof av === 'string') return av.localeCompare(String(bv)) * dir;
+    return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
+  });
+
+  const total = users.length;
+
+  res.json({
+    data: transformRows(users),
+    total,
+  });
+});
+
+// 用户详情
+app.get('/api/users/:id', requireAuth, async (req, res) => {
+  const { data, error } = await supabase.auth.admin.getUserById(req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
+  if (!data?.user) return res.status(404).json({ error: 'User not found' });
+  res.json({ data: transformRows(data.user) });
+});
+
+// 创建用户
+app.post('/api/users', requireAuth, async (req, res) => {
+  const { email, password, phone, email_confirm, ...meta } = req.body;
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password: password || 'Temp1234!',
+    phone,
+    email_confirm: email_confirm ?? true,
+    user_metadata: meta,
+  });
+  if (error) return res.status(400).json({ error: error.message });
+  res.status(201).json({ data: transformRows(data.user) });
+});
+
+// 更新用户
+app.put('/api/users/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { email, password, phone, email_confirm, ...meta } = req.body;
+  const attrs = {};
+  if (email) attrs.email = email;
+  if (password) attrs.password = password;
+  if (phone) attrs.phone = phone;
+  if (email_confirm !== undefined) attrs.email_confirm = email_confirm;
+  if (Object.keys(meta).length > 0) attrs.user_metadata = meta;
+
+  const { data, error } = await supabase.auth.admin.updateUserById(id, attrs);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ data: transformRows(data.user) });
+});
+
+// 删除用户
+app.delete('/api/users/:id', requireAuth, async (req, res) => {
+  const { error } = await supabase.auth.admin.deleteUser(req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ data: { id: req.params.id } });
+});
+
+// ---- 通用 CRUD（public schema 表） ----
 
 // ============================================================
 // 工具函数
@@ -201,10 +294,6 @@ app.get('/api/:resource', requireAuth, async (req, res) => {
     .from(resource.table)
     .select('*', { count: 'exact' });
 
-  if (resource.schema === 'auth') {
-    query = query.schema('auth');
-  }
-
   // 应用筛选
   for (const [key, value] of Object.entries(filter)) {
     if (value !== '' && value !== null && value !== undefined) {
@@ -232,7 +321,6 @@ app.get('/api/:resource/:id', requireAuth, async (req, res) => {
   const pk = resource.pk || 'id';
 
   let query = supabase.from(resource.table).select('*').eq(pk, req.params.id);
-  if (resource.schema === 'auth') query = query.schema('auth');
 
   const { data, error } = await query.single();
   if (error) return res.status(400).json({ error: error.message });
@@ -250,8 +338,6 @@ app.post('/api/:resource', requireAuth, async (req, res) => {
     .select()
     .single();
 
-  if (resource.schema === 'auth') query = query.schema('auth');
-
   const { data, error } = await query;
 
   if (error) return res.status(400).json({ error: error.message });
@@ -264,8 +350,8 @@ app.put('/api/:resource/:id', requireAuth, async (req, res) => {
   if (!resource) return res.status(404).json({ error: 'Unknown resource' });
   const pk = resource.pk || 'id';
 
-  // 只对非 auth schema 的表添加 updated_at
-  const updates = resource.schema === 'auth' ? req.body : { ...req.body, updated_at: new Date().toISOString() };
+  // 统一添加 updated_at
+  const updates = { ...req.body, updated_at: new Date().toISOString() };
 
   let query = supabase
     .from(resource.table)
@@ -273,8 +359,6 @@ app.put('/api/:resource/:id', requireAuth, async (req, res) => {
     .eq(pk, req.params.id)
     .select()
     .single();
-
-  if (resource.schema === 'auth') query = query.schema('auth');
 
   const { data, error } = await query;
 
@@ -292,8 +376,6 @@ app.delete('/api/:resource/:id', requireAuth, async (req, res) => {
     .from(resource.table)
     .delete()
     .eq(pk, req.params.id);
-
-  if (resource.schema === 'auth') query = query.schema('auth');
 
   const { error } = await query;
 

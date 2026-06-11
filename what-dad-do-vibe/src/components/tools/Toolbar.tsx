@@ -20,6 +20,7 @@ import { HospitalBag } from './HospitalBag';
 import { MoodCheckIn } from './MoodCheckIn';
 import { MedicationSafetyTool } from './MedicationSafety';
 import { BabyMedicationSafetyTool } from './BabyMedicationSafety';
+import { BabyCareLog } from './BabyCareLog';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -37,6 +38,7 @@ export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'mood-checkin', name: '爸爸情绪自评', icon: 'heart-outline', description: 'EPDS情绪筛查，关注爸爸心理健康' },
   { id: 'medication-safety', name: '用药安全', icon: 'medical-outline', description: '孕期用药禁忌查询，搜药品名/商品名' },
   { id: 'baby-medication-safety', name: '婴儿用药', icon: 'bandage-outline', description: '婴幼儿用药禁忌查询，按月龄筛选', hideInStages: ['preconception', 'first', 'second', 'third'] },
+  { id: 'baby-care-log', name: '护理日志', icon: 'clipboard-outline', description: '尿布/喂奶/俯趴记录，每日综合看板', hideInStages: ['preconception', 'first', 'second', 'third'] },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
@@ -52,6 +54,8 @@ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: st
   'hospital-bag': HospitalBag,
   'mood-checkin': MoodCheckIn,
   'medication-safety': MedicationSafetyTool,
+  'baby-medication-safety': BabyMedicationSafetyTool,
+  'baby-care-log': BabyCareLog,
 };
 
 interface ToolInstance {

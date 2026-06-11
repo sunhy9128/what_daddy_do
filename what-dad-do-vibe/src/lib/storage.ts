@@ -187,3 +187,51 @@ export async function loadMoodConfig(userId: string): Promise<MoodConfig | null>
 export async function saveMoodConfig(userId: string, config: MoodConfig): Promise<void> {
   try { await AsyncStorage.setItem(`mood_config_${userId}`, JSON.stringify(config)); } catch (e) { console.error('saveMoodConfig failed', e); }
 }
+
+// ─── 产后护理日志（尿布/喂奶/俯趴） ───
+export interface DiaperRecord {
+  id: string;
+  timestamp: string;      // ISO string
+  date: string;           // YYYY-MM-DD
+  type: 'wet' | 'dirty' | 'both';
+  color?: 'yellow' | 'green' | 'brown' | 'black' | 'red' | 'white';
+  consistency?: 'normal' | 'watery' | 'hard' | 'mucus';
+  notes?: string;
+}
+
+export interface FeedingRecord {
+  id: string;
+  timestamp: string;      // ISO string
+  date: string;           // YYYY-MM-DD
+  type: 'breast_left' | 'breast_right' | 'breast_both' | 'formula' | 'mixed';
+  amountMl?: number;      // for formula/mixed
+  durationSec?: number;   // for breastfeeding
+  notes?: string;
+}
+
+export interface TummyTimeRecord {
+  id: string;
+  timestamp: string;      // ISO string (start time)
+  date: string;           // YYYY-MM-DD
+  durationSec: number;
+  notes?: string;
+}
+
+export type BabyCareLogEntry = {
+  id: string;
+  timestamp: string;
+  date: string;
+  type: 'diaper' | 'feeding' | 'tummy';
+  data: DiaperRecord | FeedingRecord | TummyTimeRecord;
+};
+
+export async function loadBabyCareLog(userId: string): Promise<BabyCareLogEntry[]> {
+  try {
+    const json = await AsyncStorage.getItem(`baby_care_log_${userId}`);
+    return json ? JSON.parse(json) : [];
+  } catch { return []; }
+}
+
+export async function saveBabyCareLog(userId: string, entries: BabyCareLogEntry[]): Promise<void> {
+  try { await AsyncStorage.setItem(`baby_care_log_${userId}`, JSON.stringify(entries)); } catch (e) { console.error('saveBabyCareLog failed', e); }
+}

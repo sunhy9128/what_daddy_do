@@ -31,6 +31,8 @@ const LEVEL_STYLES = {
   optional: { bg: '#8e8e9320', text: '#8e8e93' },
 };
 
+const PAGE_SIZE = 10;
+
 export function HospitalBag({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
   const [items, setItems] = useState<PresetItem[]>([]);
@@ -38,6 +40,8 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [showUnfinished, setShowUnfinished] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -73,11 +77,25 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
   // 当前 category 列表
   const catKeys = useMemo(() => categories.map(([k]) => k), [categories]);
 
-  // 选中的分类下的物品，或全部
+  // 选中的分类下的物品（配合未完成筛选）
   const displayedItems = useMemo(() => {
-    if (!activeCategory) return items;
-    return items.filter(i => i.category === activeCategory);
-  }, [items, activeCategory]);
+    let filtered = activeCategory
+      ? items.filter(i => i.category === activeCategory)
+      : items;
+    if (showUnfinished) {
+      filtered = filtered.filter(i => preparations[i.id]?.status !== 'prepared');
+    }
+    return filtered;
+  }, [items, activeCategory, showUnfinished, preparations]);
+
+  // 分页
+  const totalPages = Math.max(1, Math.ceil(displayedItems.length / PAGE_SIZE));
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return displayedItems.slice(start, start + PAGE_SIZE);
+  }, [displayedItems, page]);
+  const pageStart = (page - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(page * PAGE_SIZE, displayedItems.length);
 
   // 统计
   const totalCount = items.length;
@@ -106,6 +124,9 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
       setTogglingId(null);
     }
   }, [userId, isPrepared, togglingId]);
+
+  // 切换分类或筛选时重置页码
+  useEffect(() => { setPage(1); }, [activeCategory, showUnfinished]);
 
   const styles = useMemo(() => StyleSheet.create({
     wrapper: { maxHeight: expanded ? undefined : 480 },
@@ -162,6 +183,30 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
     itemDesc: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 18, marginBottom: 2 },
     itemMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 2 },
     itemMetaTag: { ...typography.caption2, color: colors.muted, backgroundColor: colors.surfaceSecondary, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, overflow: 'hidden' },
+
+    filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+    filterChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+      borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    filterChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+    filterChipText: { ...typography.caption1, color: colors.fgSecondary },
+    filterChipTextActive: { color: '#fff', fontWeight: '600' },
+
+    pagination: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.xs,
+    },
+    paginationBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      borderRadius: radius.sm, backgroundColor: colors.surfaceSecondary,
+    },
+    paginationBtnDisabled: { opacity: 0.35 },
+    paginationBtnText: { ...typography.footnote, fontWeight: '600', color: colors.fg },
+    paginationInfo: { ...typography.caption1, color: colors.muted },
   }), [colors, expanded]);
 
   if (loading) {
@@ -220,9 +265,26 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
         ))}
       </ScrollView>
 
+      {/* 未完成筛选 */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.filterChip, showUnfinished && styles.filterChipActive]}
+          onPress={() => setShowUnfinished(v => !v)}
+        >
+          <Ionicons
+            name={showUnfinished ? 'eye-off-outline' : 'eye-outline'}
+            size={14}
+            color={showUnfinished ? '#fff' : colors.fgSecondary}
+          />
+          <Text style={[styles.filterChipText, showUnfinished && styles.filterChipTextActive]}>
+            {showUnfinished ? '只看未准备' : '全部物品'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* 物品列表 */}
       <ScrollView style={styles.scroller} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-        {displayedItems.map(item => {
+        {paginatedItems.map(item => {
           const done = isPrepared(item.id);
           const level = item.essential_level;
           const ls = LEVEL_STYLES[level];
@@ -255,6 +317,29 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
           );
         })}
       </ScrollView>
+
+      {/* 分页控制 */}
+      {displayedItems.length > PAGE_SIZE ? (
+        <View style={styles.pagination}>
+          <TouchableOpacity
+            style={[styles.paginationBtn, page <= 1 && styles.paginationBtnDisabled]}
+            onPress={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+          >
+            <Ionicons name="chevron-back" size={14} color={colors.fg} />
+            <Text style={styles.paginationBtnText}>上一页</Text>
+          </TouchableOpacity>
+          <Text style={styles.paginationInfo}>第 {page}/{totalPages} 页 · {pageStart}-{pageEnd}</Text>
+          <TouchableOpacity
+            style={[styles.paginationBtn, page >= totalPages && styles.paginationBtnDisabled]}
+            onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+          >
+            <Text style={styles.paginationBtnText}>下一页</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.fg} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </View>
   );
 }
