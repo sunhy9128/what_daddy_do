@@ -105,9 +105,9 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
     const record: BabyCareLogEntry = {
       id: generateId(),
       timestamp: now,
-      date: today,
+      date: todayRef.current,
       type: 'diaper',
-      data: { id: generateId(), timestamp: now, date: today, type } as DiaperRecord,
+      data: { id: generateId(), timestamp: now, date: todayRef.current, type } as DiaperRecord,
     };
     const newEntries = [record, ...entries];
     setEntries(newEntries);
@@ -127,10 +127,10 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
     const record: BabyCareLogEntry = {
       id: generateId(),
       timestamp: now,
-      date: today,
+      date: todayRef.current,
       type: 'feeding',
       data: {
-        id: generateId(), timestamp: now, date: today,
+        id: generateId(), timestamp: now, date: todayRef.current,
         type: feedingType,
         amountMl: feedingType === 'formula' || feedingType === 'mixed' ? (parseInt(feedingAmount) || 0) : undefined,
       } as FeedingRecord,
@@ -145,13 +145,16 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
 
   // ── 快速记录：俯趴时间 ──
   const [tummyTimerRunning, setTummyTimerRunning] = useState(false);
-  const [tummyStartTime, setTummyStartTime] = useState<Date | null>(null);
   const [tummyElapsed, setTummyElapsed] = useState(0);
+  const tummyStartTimeRef = useRef<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const todayRef = useRef(getTodayStr());
+  // 保持 todayRef 最新
+  todayRef.current = getTodayStr();
 
   const startTummyTimer = () => {
     const now = new Date();
-    setTummyStartTime(now);
+    tummyStartTimeRef.current = now;
     setTummyTimerRunning(true);
     setTummyElapsed(0);
     timerRef.current = setInterval(() => {
@@ -160,13 +163,18 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
   };
 
   const stopTummyTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (submittedRef.current || !tummyStartTime) return;
+    // ⚠️ 先检查守卫条件，再清除定时器
+    if (submittedRef.current || !tummyStartTimeRef.current) return;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     submittedRef.current = true;
-    const elapsed = Math.floor((Date.now() - tummyStartTime.getTime()) / 1000);
-    if (elapsed < 5) {
+    const elapsed = Math.floor((Date.now() - tummyStartTimeRef.current.getTime()) / 1000);
+    if (elapsed < 1) {
       setTummyTimerRunning(false);
-      setTummyStartTime(null);
+      tummyStartTimeRef.current = null;
       setTummyElapsed(0);
       submittedRef.current = false;
       return;
@@ -174,19 +182,26 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
     const now = new Date().toISOString();
     const record: BabyCareLogEntry = {
       id: generateId(),
-      timestamp: tummyStartTime.toISOString(),
-      date: today,
+      timestamp: tummyStartTimeRef.current.toISOString(),
+      date: todayRef.current,
       type: 'tummy',
-      data: { id: generateId(), timestamp: now, date: today, durationSec: elapsed } as TummyTimeRecord,
+      data: { id: generateId(), timestamp: now, date: todayRef.current, durationSec: elapsed } as TummyTimeRecord,
     };
     const newEntries = [record, ...entries];
     setEntries(newEntries);
     persist(newEntries);
     setTummyTimerRunning(false);
-    setTummyStartTime(null);
+    tummyStartTimeRef.current = null;
     setTummyElapsed(0);
     setTimeout(() => { submittedRef.current = false; }, 500);
   };
+
+  // 组件卸载时清理计时器
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   // ── 删除 ──
   const removeEntry = (id: string) => {
