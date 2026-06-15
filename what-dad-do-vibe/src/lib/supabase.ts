@@ -159,6 +159,7 @@ export interface KnowledgeRead {
 
 export interface CommunityPost {
   id: string;
+  user_id: string;
   author_name: string;
   title: string;
   content: string;
@@ -205,6 +206,57 @@ export interface PsychologicalSupport {
   tips: string[];
   sort_order: number;
   is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// =====================
+// 儿保检查 (Well-Child Checkup)
+// =====================
+
+export interface WellChildVisit {
+  id: number;
+  slug: string;
+  name: string;
+  age_label: string;
+  min_age_days: number;
+  max_age_days: number | null;
+  recommended_age: string | null;
+  sort_order: number;
+  is_key_visit: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface WellChildCheckupItem {
+  id: number;
+  visit_id: number;
+  category: 'measurement' | 'physical_exam' | 'development' | 'lab_test' | 'screening' | 'vaccination_check' | 'guidance' | 'oral_health';
+  name: string;
+  description: string | null;
+  is_required: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface UserWellChildRecord {
+  id: string;
+  user_id: string;
+  baby_id: string;
+  visit_id: number;
+  checkup_date: string | null;
+  hospital: string | null;
+  doctor: string | null;
+  is_completed: boolean;
+  has_abnormality: boolean | null;
+  abnormality_notes: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  head_circumference_cm: number | null;
+  hemoglobin_g_l: number | null;
+  vision_left: number | null;
+  vision_right: number | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }
