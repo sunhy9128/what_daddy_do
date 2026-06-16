@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch } from 'react-native';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -7,7 +7,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useApp } from '../../src/context/AppContext';
 import { useColors, useTheme } from '../../src/context/ThemeContext';
 import { Card } from '../../src/components/atoms';
-import { STAGES } from '../../src/lib/stages';
+import { STAGES, calculateStageFromDueDate, calculateBirthAge } from '../../src/lib/stages';
 import { spacing, radius, typography } from '../../src/styles/tokens';
 
 export default function ProfileScreen() {
@@ -18,7 +18,23 @@ export default function ProfileScreen() {
   const colors = useColors();
   const { isDark, toggleTheme } = useTheme();
 
+  const activeBabies = state.babies.filter(b => !b.is_archived);
+
+  const CARD_WIDTH = useMemo(() => Dimensions.get('window').width - spacing.lg * 2, []);
+
   const [signingOut, setSigningOut] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+
+  // 使用 onScroll 持续监听，scrollEventThrottle=16 保证流畅
+  // 这是最可靠的方式 —— 不依赖 onMomentumScrollEnd/onScrollEndDrag（在嵌套 ScrollView 中不可靠）
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / CARD_WIDTH);
+    if (newIndex >= 0 && newIndex < activeBabies.length && newIndex !== pageIndex) {
+      setPageIndex(newIndex);
+    }
+  }, [CARD_WIDTH, activeBabies.length, pageIndex]);
   const handleLogout = async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -88,11 +104,11 @@ export default function ProfileScreen() {
     menuText: { ...typography.callout, color: colors.fg },
     menuBadge: { ...typography.footnote, color: colors.accent, fontWeight: '500' },
 
-    // 孕期信息卡片
+    // 孕期信息卡片（滑页内用）
     pregCard: {
       backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg,
-      marginBottom: spacing.lg, borderWidth: 0.5, borderColor: colors.border,
-      alignItems: 'center', position: 'relative',
+      borderWidth: 0.5, borderColor: colors.border,
+      alignItems: 'center',
     },
     pregHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
     pregIcon: {
@@ -110,12 +126,11 @@ export default function ProfileScreen() {
       width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: colors.border,
     },
 
-    // 宝宝信息卡片
+    // 宝宝信息卡片（滑页内用）
     babyCard: {
       backgroundColor: isDark ? '#1E1E30' : '#FFF8F5', borderRadius: radius.lg, padding: spacing.xl,
-      marginBottom: spacing.lg, alignItems: 'center',
+      alignItems: 'center',
       borderWidth: 1, borderColor: isDark ? '#333348' : '#F5E0D0',
-      position: 'relative',
     },
     babyHeader: { alignItems: 'center', marginBottom: spacing.md },
     babyEmoji: { fontSize: 48, marginBottom: spacing.sm },
@@ -153,6 +168,12 @@ export default function ProfileScreen() {
       alignItems: 'center',
     },
     logoutText: { ...typography.callout, fontWeight: '500', color: colors.error },
+
+    // 分页指示器
+    dotsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.md, height: 8 },
+    dot: { height: 6, borderRadius: 3, marginHorizontal: 3 },
+    dotActive: { width: 20, backgroundColor: colors.accent },
+    dotInactive: { width: 6, backgroundColor: colors.border },
   }), [colors, isDark]);
 
   return (
@@ -168,63 +189,104 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user?.email || '未登录'}</Text>
         </View>
 
-        {/* 孕期/宝宝信息卡片 */}
-        {state.babies.length > 0 && state.stage === 'postpartum' ? (
-          <View style={styles.babyCard}>
-            <TouchableOpacity style={styles.cardSettings} onPress={() => router.push('/baby-info')}>
-              <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
-            </TouchableOpacity>
-            <View style={styles.babyHeader}>
-              <Text style={styles.babyEmoji}>{state.babies[0]?.gender === 'girl' ? '👧' : '👦'}</Text>
-              <View style={styles.babyNameRow}>
-                <Text style={styles.babyName}>{state.babies[0]?.name || '宝宝'}</Text>
-                <Text style={styles.babyStage}>已出生</Text>
-              </View>
+        {/* 多宝宝信息卡片 - 左右滑动 */}
+        {activeBabies.length > 0 && (
+          <>
+            <View style={{ width: CARD_WIDTH }}>
+              <FlatList
+                ref={flatListRef}
+                data={activeBabies}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={item => item.id}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                renderItem={({ item }) => {
+                const calc = calculateStageFromDueDate(item.dueDate);
+                const isPostpartum = calc.stage === 'postpartum';
+                const birthAgeLabel = isPostpartum ? calculateBirthAge(item.dueDate, item.birthDate) : '';
+
+                if (isPostpartum) {
+                  return (
+                    <View style={{ width: CARD_WIDTH }}>
+                      <View style={styles.babyCard}>
+                        <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
+                          <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
+                        </TouchableOpacity>
+                        <View style={styles.babyHeader}>
+                          <Text style={styles.babyEmoji}>{item.gender === 'girl' ? '👧' : '👦'}</Text>
+                          <View style={styles.babyNameRow}>
+                            <Text style={styles.babyName}>{item.name || '宝宝'}</Text>
+                            <Text style={styles.babyStage}>已出生</Text>
+                          </View>
+                        </View>
+                        {item.birthDate && (
+                          <View style={styles.babyInfoRow}>
+                            <Ionicons name="gift-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
+                            <Text style={styles.babyInfoText}>出生日期：{item.birthDate}</Text>
+                          </View>
+                        )}
+                        <View style={styles.babyInfoRow}>
+                          <Ionicons name="time-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
+                          <Text style={styles.babyInfoText}>宝宝 {birthAgeLabel}</Text>
+                        </View>
+                        <View style={styles.babyTagRow}>
+                          <View style={styles.babyTag}><Text style={styles.babyTagText}>{item.gender === 'girl' ? '女宝' : item.gender === 'boy' ? '男宝' : '未知'}</Text></View>
+                          <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}>🎂 {item.birthDate || item.dueDate}</Text></View>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                }
+                return (
+                  <View style={{ width: CARD_WIDTH }}>
+                    <View style={styles.pregCard}>
+                      <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
+                        <Ionicons name="settings-outline" size={16} color={colors.muted} />
+                      </TouchableOpacity>
+                      <View style={styles.pregHeader}>
+                        <View style={styles.pregIcon}>
+                          <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+                        </View>
+                        <Text style={styles.pregTitle}>{item.name || '宝宝'} 孕期信息</Text>
+                      </View>
+                      <View style={styles.pregRow}>
+                        <Text style={styles.pregLabel}>当前阶段</Text>
+                        <Text style={styles.pregValue}>{calc.stageLabel}</Text>
+                      </View>
+                      <View style={styles.pregDivider} />
+                      <View style={styles.pregRow}>
+                        <Text style={styles.pregLabel}>当前孕周</Text>
+                        <Text style={styles.pregValue}>第 {calc.weeksPregnant} 周</Text>
+                      </View>
+                      <View style={styles.pregDivider} />
+                      <View style={styles.pregRow}>
+                        <Text style={styles.pregLabel}>预产期</Text>
+                        <Text style={styles.pregValue}>{item.dueDate || '-'}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+                }}
+              />
             </View>
-            {state.babies[0]?.birthDate && (
-              <View style={styles.babyInfoRow}>
-                <Ionicons name="gift-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
-                <Text style={styles.babyInfoText}>出生日期：{state.babies[0].birthDate}</Text>
+            {/* 分页指示器 */}
+            {activeBabies.length > 1 && (
+              <View style={styles.dotsContainer}>
+                {activeBabies.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      index === pageIndex ? styles.dotActive : styles.dotInactive,
+                    ]}
+                  />
+                ))}
               </View>
             )}
-            <View style={styles.babyInfoRow}>
-              <Ionicons name="time-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
-              <Text style={styles.babyInfoText}>宝宝 {state.birthAgeLabel}</Text>
-            </View>
-            <View style={styles.babyTagRow}>
-              <View style={styles.babyTag}><Text style={styles.babyTagText}>{state.babies[0]?.gender === 'girl' ? '女宝' : '男宝'}</Text></View>
-              <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}>🎂 {state.babies[0]?.birthDate || state.babies[0]?.dueDate}</Text></View>
-            </View>
-          </View>
-        ) : state.babies.length > 0 ? (
-          <View style={styles.pregCard}>
-            <TouchableOpacity style={styles.cardSettings} onPress={() => router.push('/baby-info')}>
-              <Ionicons name="settings-outline" size={16} color={colors.muted} />
-            </TouchableOpacity>
-            <View style={styles.pregHeader}>
-              <View style={styles.pregIcon}>
-                <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-              </View>
-              <Text style={styles.pregTitle}>孕期信息</Text>
-            </View>
-            <View style={styles.pregRow}>
-              <Text style={styles.pregLabel}>当前阶段</Text>
-              <Text style={styles.pregValue}>
-                {STAGES.find(s => s.key === state.stage)?.label || '未知'}
-              </Text>
-            </View>
-            <View style={styles.pregDivider} />
-            <View style={styles.pregRow}>
-              <Text style={styles.pregLabel}>当前孕周</Text>
-              <Text style={styles.pregValue}>第 {state.weeksPregnant} 周</Text>
-            </View>
-            <View style={styles.pregDivider} />
-            <View style={styles.pregRow}>
-              <Text style={styles.pregLabel}>预产期</Text>
-              <Text style={styles.pregValue}>{state.babies[0]?.dueDate || '-'}</Text>
-            </View>
-          </View>
-        ) : null}
+          </>
+        )}
 
         {/* 账号菜单 */}
         <View style={styles.section}>
@@ -299,4 +361,3 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
