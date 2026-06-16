@@ -20,7 +20,12 @@ export default function ProfileScreen() {
 
   const activeBabies = state.babies.filter(b => !b.is_archived);
 
-  const CARD_WIDTH = useMemo(() => Dimensions.get('window').width - spacing.lg * 2, []);
+  const PAGE_WIDTH = useMemo(() => Dimensions.get('window').width - spacing.lg * 2, []);
+  const GAP = spacing.md; // 卡片之间的视觉间距
+  // 翻页步长 = PAGE_WIDTH (pagingEnabled 强制等于父容器宽度)
+  // 卡片实际宽度 = PAGE_WIDTH - GAP (右侧留出 GAP 作为视觉空隙)
+  // 最后一张卡片宽度 = PAGE_WIDTH (占满整页,无右侧空隙)
+  const CARD_WIDTH = PAGE_WIDTH - GAP;
 
   const [signingOut, setSigningOut] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -30,11 +35,11 @@ export default function ProfileScreen() {
   // 这是最可靠的方式 —— 不依赖 onMomentumScrollEnd/onScrollEndDrag（在嵌套 ScrollView 中不可靠）
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CARD_WIDTH);
+    const newIndex = Math.round(offsetX / PAGE_WIDTH);
     if (newIndex >= 0 && newIndex < activeBabies.length && newIndex !== pageIndex) {
       setPageIndex(newIndex);
     }
-  }, [CARD_WIDTH, activeBabies.length, pageIndex]);
+  }, [PAGE_WIDTH, activeBabies.length, pageIndex]);
   const handleLogout = async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -192,7 +197,7 @@ export default function ProfileScreen() {
         {/* 多宝宝信息卡片 - 左右滑动 */}
         {activeBabies.length > 0 && (
           <>
-            <View style={{ width: CARD_WIDTH }}>
+            <View style={{ width: PAGE_WIDTH }}>
               <FlatList
                 ref={flatListRef}
                 data={activeBabies}
@@ -202,46 +207,54 @@ export default function ProfileScreen() {
                 keyExtractor={item => item.id}
                 onScroll={onScroll}
                 scrollEventThrottle={16}
-                renderItem={({ item }) => {
+                renderItem={({ item, index }) => {
+                const isLast = index === activeBabies.length - 1;
+                // 每张卡片外层"页容器"宽度 = PAGE_WIDTH (让 paging 步长 = 卡片+间距)
+                // 卡片实际宽度 = PAGE_WIDTH - GAP (右侧留 GAP 视觉空隙)
+                // 最后一张卡片实际宽度 = PAGE_WIDTH (占满整页)
+                const cardWidth = isLast ? PAGE_WIDTH : CARD_WIDTH;
                 const calc = calculateStageFromDueDate(item.dueDate);
                 const isPostpartum = calc.stage === 'postpartum';
                 const birthAgeLabel = isPostpartum ? calculateBirthAge(item.dueDate, item.birthDate) : '';
 
                 if (isPostpartum) {
                   return (
-                    <View style={{ width: CARD_WIDTH }}>
-                      <View style={styles.babyCard}>
-                        <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
-                          <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
-                        </TouchableOpacity>
-                        <View style={styles.babyHeader}>
-                          <Text style={styles.babyEmoji}>{item.gender === 'girl' ? '👧' : '👦'}</Text>
-                          <View style={styles.babyNameRow}>
-                            <Text style={styles.babyName}>{item.name || '宝宝'}</Text>
-                            <Text style={styles.babyStage}>已出生</Text>
+                    <View style={{ width: PAGE_WIDTH, paddingRight: isLast ? 0 : GAP }}>
+                      <View style={{ width: cardWidth }}>
+                        <View style={styles.babyCard}>
+                          <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
+                            <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
+                          </TouchableOpacity>
+                          <View style={styles.babyHeader}>
+                            <Text style={styles.babyEmoji}>{item.gender === 'girl' ? '👧' : '👦'}</Text>
+                            <View style={styles.babyNameRow}>
+                              <Text style={styles.babyName}>{item.name || '宝宝'}</Text>
+                              <Text style={styles.babyStage}>已出生</Text>
+                            </View>
                           </View>
-                        </View>
-                        {item.birthDate && (
+                          {item.birthDate && (
+                            <View style={styles.babyInfoRow}>
+                              <Ionicons name="gift-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
+                              <Text style={styles.babyInfoText}>出生日期：{item.birthDate}</Text>
+                            </View>
+                          )}
                           <View style={styles.babyInfoRow}>
-                            <Ionicons name="gift-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
-                            <Text style={styles.babyInfoText}>出生日期：{item.birthDate}</Text>
+                            <Ionicons name="time-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
+                            <Text style={styles.babyInfoText}>宝宝 {birthAgeLabel}</Text>
                           </View>
-                        )}
-                        <View style={styles.babyInfoRow}>
-                          <Ionicons name="time-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
-                          <Text style={styles.babyInfoText}>宝宝 {birthAgeLabel}</Text>
-                        </View>
-                        <View style={styles.babyTagRow}>
-                          <View style={styles.babyTag}><Text style={styles.babyTagText}>{item.gender === 'girl' ? '女宝' : item.gender === 'boy' ? '男宝' : '未知'}</Text></View>
-                          <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}>🎂 {item.birthDate || item.dueDate}</Text></View>
+                          <View style={styles.babyTagRow}>
+                            <View style={styles.babyTag}><Text style={styles.babyTagText}>{item.gender === 'girl' ? '女宝' : item.gender === 'boy' ? '男宝' : '未知'}</Text></View>
+                            <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}>🎂 {item.birthDate || item.dueDate}</Text></View>
+                          </View>
                         </View>
                       </View>
                     </View>
                   );
                 }
                 return (
-                  <View style={{ width: CARD_WIDTH }}>
-                    <View style={styles.pregCard}>
+                  <View style={{ width: PAGE_WIDTH, paddingRight: isLast ? 0 : GAP }}>
+                    <View style={{ width: cardWidth }}>
+                      <View style={styles.pregCard}>
                       <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
                         <Ionicons name="settings-outline" size={16} color={colors.muted} />
                       </TouchableOpacity>
@@ -265,6 +278,7 @@ export default function ProfileScreen() {
                         <Text style={styles.pregLabel}>预产期</Text>
                         <Text style={styles.pregValue}>{item.dueDate || '-'}</Text>
                       </View>
+                    </View>
                     </View>
                   </View>
                 );
