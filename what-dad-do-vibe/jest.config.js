@@ -13,7 +13,9 @@ module.exports = {
   // 项目中的 React Native/Expo 依赖在纯逻辑测试中不需要 mock，
   // 但如果测试文件 import 了含 RN 依赖的模块，需要在这里 mock
   moduleNameMapper: {
-    // 如果后续需要测组件，这里可以加 mock
+    // 官方 AsyncStorage mock（jest 环境的 in-memory 实现）
+    '^@react-native-async-storage/async-storage$':
+      '<rootDir>/node_modules/@react-native-async-storage/async-storage/jest/async-storage-mock.js',
   },
   // verbose 输出能看到每个测试组的详细信息
   verbose: true,

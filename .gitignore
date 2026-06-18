@@ -1,10 +1,18 @@
 # Expo
 .expo/
+.expo-cache/
 dist/
 *.tsbuildinfo
 
 # Dependencies
 node_modules/
+
+# iOS / macOS local tool artifacts
+Library/
+
+# Local AI / editor tool artifacts
+.codegraph/
+.understand-anything/
 
 # Environment
 .env

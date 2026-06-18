@@ -1,0 +1,25 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+.expo/
+.expo-cache/
+android/
+*.tsbuildinfo
+
+# Expo 生成文件
+src/lib/api.js
+src/lib/supabase.js
+
+# 杂项
+*.bak
+*.min.js
+*.lock
+package-lock.json
+
+# 第三方资源
+assets/
+
+# 测试覆盖率
+coverage/

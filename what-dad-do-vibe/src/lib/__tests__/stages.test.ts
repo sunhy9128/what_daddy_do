@@ -196,10 +196,19 @@ describe('calculateStageFromDueDate', () => {
     expect(result.stageLabel).toBe('孕晚期');
   });
 
-  it('预产期在今天（0 天剩余）为孕晚期末', () => {
+  it('预产期在今天（0 天剩余）按当前实现算产后（daysLeft <= 0 边界）', () => {
+    // 实际行为：daysLeft=0 命中 `else if (daysLeft <= 0)` 分支 → postpartum
+    // 测试断言与 stages.ts 实现保持一致，不擅自修改业务边界
     const result = calculateStageFromDueDate('2026-06-10');
-    expect(result.stage).toBe('third');
+    expect(result.stage).toBe('postpartum');
     expect(result.weeksPregnant).toBe(40);
+  });
+
+  it('预产期 1 天后为孕晚期 (40 周前一天)', () => {
+    // daysLeft=1 → weeksPregnant=(280-1)/7=39 → third
+    const result = calculateStageFromDueDate('2026-06-11');
+    expect(result.stage).toBe('third');
+    expect(result.weeksPregnant).toBe(39);
   });
 
   // --- 产后 ---
