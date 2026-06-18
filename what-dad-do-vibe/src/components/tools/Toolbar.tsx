@@ -20,7 +20,12 @@ import { HospitalBag } from './HospitalBag';
 import { MoodCheckIn } from './MoodCheckIn';
 import { MedicationSafetyTool } from './MedicationSafety';
 import { BabyMedicationSafetyTool } from './BabyMedicationSafety';
+import { BabyFoodRecipeTool } from './BabyFoodRecipe';
 import { BabyCareLog } from './BabyCareLog';
+import { BabySleepLog } from './BabySleepLog';
+import { ChildCheckupTool } from './ChildCheckup';
+import { DadDeliveryPrep } from './DadDeliveryPrep';
+import { TaskCalendar } from './TaskCalendar';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -38,7 +43,12 @@ export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'mood-checkin', name: '爸爸情绪自评', icon: 'heart-outline', description: 'EPDS情绪筛查，关注爸爸心理健康' },
   { id: 'medication-safety', name: '用药安全', icon: 'medical-outline', description: '孕期用药禁忌查询，搜药品名/商品名' },
   { id: 'baby-medication-safety', name: '婴儿用药', icon: 'bandage-outline', description: '婴幼儿用药禁忌查询，按月龄筛选', hideInStages: ['preconception', 'first', 'second', 'third'] },
+  { id: 'baby-food-recipe', name: '辅食食谱库', icon: 'nutrition-outline', description: '按月龄查找辅食食谱', hideInStages: ['preconception', 'first', 'second', 'third'] },
+  { id: 'child-checkup', name: '儿童保健', icon: 'medical-outline', description: '记录42天体检、半年、一年等儿童保健检查', hideInStages: ['preconception', 'first', 'second', 'third'] },
   { id: 'baby-care-log', name: '护理日志', icon: 'clipboard-outline', description: '尿布/喂奶/俯趴记录，每日综合看板', hideInStages: ['preconception', 'first', 'second', 'third'] },
+  { id: 'baby-sleep-log', name: '宝宝睡眠', icon: 'moon-outline', description: '记录宝宝睡眠时长和质量', hideInStages: ['preconception', 'first', 'second', 'third'] },
+  { id: 'dad-delivery-prep', name: '爸爸分娩准备', icon: 'man-outline', description: '爸爸专属分娩准备清单', hideInStages: ['postpartum'] },
+  { id: 'task-calendar', name: '日历总览', icon: 'calendar-outline', description: '按日查看所有待办任务和产检安排' },
 ];
 
 const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: string }>> = {
@@ -55,7 +65,12 @@ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: st
   'mood-checkin': MoodCheckIn,
   'medication-safety': MedicationSafetyTool,
   'baby-medication-safety': BabyMedicationSafetyTool,
+  'baby-food-recipe': BabyFoodRecipeTool,
+  'child-checkup': ChildCheckupTool,
   'baby-care-log': BabyCareLog,
+  'baby-sleep-log': BabySleepLog,
+  'dad-delivery-prep': DadDeliveryPrep,
+  'task-calendar': TaskCalendar,
 };
 
 interface ToolInstance {

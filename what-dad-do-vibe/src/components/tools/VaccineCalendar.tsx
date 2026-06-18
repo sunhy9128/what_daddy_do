@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensio
 import { getVaccines, getUserVaccinations } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
+import { useApp } from '../../context/AppContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
@@ -18,6 +19,7 @@ const PERIODS = [
 
 export function VaccineCalendar({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { state } = useApp();
   const { width: screenW } = useWindowDimensions();
   const chartW = Math.max(180, Math.min(300, screenW - PAD_CTX - NAME_W));
   const [vaccines, setVaccines] = useState<(Vaccine & { doses: VaccineDose[] })[]>([]);
@@ -38,7 +40,7 @@ export function VaccineCalendar({ userId, expanded }: { userId: string; babyGend
       try {
         const [vaxList, userVaxList] = await Promise.all([
           getVaccines(),
-          getUserVaccinations(userId),
+          getUserVaccinations(userId, state.currentBabyId!),
         ]);
         setVaccines(vaxList);
         const map = new Map<number, UserVaccination>();

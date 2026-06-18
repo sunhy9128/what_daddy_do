@@ -48,3 +48,4 @@ what-dad-do-vibe/supabase/migrations/*
 !**/.codewhale/constitution.json
 
 # AdminJS generated
+.clauge-worktrees/

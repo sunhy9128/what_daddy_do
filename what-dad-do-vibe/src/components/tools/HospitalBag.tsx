@@ -5,6 +5,7 @@ import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 import { getPresetItems, getUserPreparations, setUserPreparation } from '../../lib/api';
 import { PresetItem, UserPreparation } from '../../lib/supabase';
+import { useApp } from '../../context/AppContext';
 import { LoadingDot } from './ToolBase';
 
 const CATEGORY_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -35,6 +36,7 @@ const PAGE_SIZE = 10;
 
 export function HospitalBag({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { state } = useApp();
   const [items, setItems] = useState<PresetItem[]>([]);
   const [preparations, setPreparations] = useState<Record<string, UserPreparation>>({});
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
       try {
         const [allItems, preps] = await Promise.all([
           getPresetItems('third'),
-          getUserPreparations(userId),
+          getUserPreparations(userId, state.currentBabyId!),
         ]);
         setItems(allItems);
         const prepMap: Record<string, UserPreparation> = {};
@@ -116,7 +118,7 @@ export function HospitalBag({ userId, expanded }: { userId: string; babyGender?:
     try {
       const current = isPrepared(itemId);
       const newStatus = current ? 'not_prepared' : 'prepared';
-      const result = await setUserPreparation(userId, itemId, newStatus);
+      const result = await setUserPreparation(userId, state.currentBabyId!, itemId, newStatus);
       setPreparations(prev => ({ ...prev, [itemId]: result }));
     } catch (e) {
       console.error('HospitalBag toggle error:', e);

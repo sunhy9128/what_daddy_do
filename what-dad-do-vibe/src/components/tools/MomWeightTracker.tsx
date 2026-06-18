@@ -8,6 +8,7 @@ import {
   loadMomWeightConfig, MomWeightConfig,
 } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
+import Svg, { Path, Line, Rect, Circle, Text as SvgText, G } from 'react-native-svg';
 
 // IOM 推荐增重范围
 function getIOMRange(bmi: number): { totalMin: number; totalMax: number; firstTri: number; weekly: number } {
@@ -36,8 +37,11 @@ function getRecommendedGain(week: number, bmi: number): { min: number; max: numb
 
 function MomWeightChart({ records, bmi, prePregnancyWeight }: { records: MomWeightRecord[]; bmi: number; prePregnancyWeight: number }) {
   const colors = useColors();
-  const CHART_H = 160;
+  const CHART_H = 140;
   const CHART_W = 260;
+  const PAD_L = 28;
+  const PAD_R = 6;
+  const PLOT_W = CHART_W - PAD_L - PAD_R;
 
   const maxWeek = Math.max(40, ...records.map(r => r.week));
   const maxGain = Math.max(
@@ -46,95 +50,124 @@ function MomWeightChart({ records, bmi, prePregnancyWeight }: { records: MomWeig
     getRecommendedGain(maxWeek, bmi).max + 2,
   );
 
-  const toX = (week: number) => (week / maxWeek) * CHART_W;
+  const toX = (week: number) => PAD_L + (week / maxWeek) * PLOT_W;
   const toY = (gain: number) => CHART_H - (gain / maxGain) * CHART_H;
 
-  const chartStyles = useMemo(() => StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.md,
-      padding: spacing.md,
-      ...shadows.sm,
-    },
-    title: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.sm },
-    canvas: { height: CHART_H + 28, position: 'relative' },
-    yGrid: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
-    yLabel: { fontSize: 8, color: colors.muted, width: 24, textAlign: 'right', marginRight: spacing.xs },
-    yLine: { flex: 1, height: 0.5, backgroundColor: colors.divider },
-    rangeBar: { position: 'absolute', borderRadius: 2, backgroundColor: colors.accent + '18' },
-    refLine: { position: 'absolute', width: 3, height: 2 },
-    refLineUpper: { backgroundColor: colors.accent + '60' },
-    refLineLower: { backgroundColor: colors.accent + '40' },
-    dataPoint: { position: 'absolute', width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: colors.surface },
-    dataPointOk: { backgroundColor: colors.success },
-    dataPointWarn: { backgroundColor: colors.error },
-    xLabel: { position: 'absolute', fontSize: 9, color: colors.muted, width: 20, textAlign: 'center' },
-    yTitle: { position: 'absolute', top: -2, left: 0, fontSize: 8, color: colors.muted },
-  }), [colors]);
+  // 推荐范围带：闭合 Path（从 week 0 沿上界到 maxWeek，再沿下界返回）
+  const bandPath = useMemo(() => {
+    const upper: string[] = [];
+    const lower: string[] = [];
+    for (let w = 0; w <= maxWeek; w++) {
+      const { min, max } = getRecommendedGain(w, bmi);
+      upper.push(`${toX(w).toFixed(1)},${toY(max).toFixed(1)}`);
+      lower.unshift(`${toX(w).toFixed(1)},${toY(min).toFixed(1)}`);
+    }
+    return 'M ' + [...upper, ...lower].join(' L ') + ' Z';
+  }, [maxWeek, bmi]);
+
+  // Y 轴网格值
+  const yTicks: number[] = [];
+  for (let v = 0; v <= maxGain; v += 5) yTicks.push(v);
 
   return (
-    <View style={chartStyles.card}>
-      <Text style={chartStyles.title}>体重增长曲线</Text>
-      <View style={chartStyles.canvas}>
-        {/* Y轴网格线 */}
-        {[0, 5, 10, 15, 20].filter(v => v <= maxGain).map(v => (
-          <View key={v} style={[chartStyles.yGrid, { top: toY(v) }]}>
-            <Text style={chartStyles.yLabel}>{v}</Text>
-            <View style={chartStyles.yLine} />
-          </View>
-        ))}
+    <View style={{ backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, ...shadows.sm }}>
+      <Text style={{ ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.sm }}>
+        体重增长曲线
+      </Text>
+      <View style={{ height: CHART_H + 28, position: 'relative' }}>
+        <Svg width={CHART_W} height={CHART_H + 28}>
+          {/* Y 轴网格 */}
+          {yTicks.map(v => (
+            <G key={v}>
+              <Line
+                x1={PAD_L} y1={toY(v)}
+                x2={CHART_W - PAD_R} y2={toY(v)}
+                stroke={colors.divider}
+                strokeWidth={0.5}
+              />
+              <SvgText
+                x={PAD_L - 4} y={toY(v) + 3}
+                fontSize={8} fill={colors.muted}
+                textAnchor="end"
+              >
+                {v}
+              </SvgText>
+            </G>
+          ))}
 
-        {/* 推荐范围带（每隔4周一画） */}
-        {Array.from({ length: Math.ceil(maxWeek / 4) + 1 }, (_, i) => {
-          const week = i * 4;
-          if (week > maxWeek) return null;
-          const { min, max } = getRecommendedGain(week, bmi);
-          return (
-            <View key={week} style={[chartStyles.rangeBar, {
-              left: 24 + toX(week) - 3,
-              top: toY(max),
-              width: 6,
-              height: Math.max(2, toY(min) - toY(max)),
-            }]} />
-          );
-        })}
+          {/* 推荐范围带 */}
+          <Path d={bandPath} fill={colors.accent} fillOpacity={0.12} />
 
-        {/* 推荐上限/下限线 */}
-        {Array.from({ length: Math.ceil(maxWeek / 2) + 1 }, (_, i) => {
-          const week = i * 2;
-          if (week > maxWeek) return null;
-          const { min, max } = getRecommendedGain(week, bmi);
-          return (
-            <React.Fragment key={week}>
-              <View style={[chartStyles.refLine, chartStyles.refLineUpper, { left: 24 + toX(week), top: toY(max) }]} />
-              <View style={[chartStyles.refLine, chartStyles.refLineLower, { left: 24 + toX(week), top: toY(min) }]} />
-            </React.Fragment>
-          );
-        })}
+          {/* 4 周间隔的垂直范围条 */}
+          {Array.from({ length: Math.ceil(maxWeek / 4) + 1 }, (_, i) => {
+            const week = i * 4;
+            if (week > maxWeek) return null;
+            const { min, max } = getRecommendedGain(week, bmi);
+            return (
+              <Rect
+                key={week}
+                x={toX(week) - 3} y={toY(max)}
+                width={6} height={Math.max(2, toY(min) - toY(max))}
+                rx={2} fill={colors.accent} fillOpacity={0.18}
+              />
+            );
+          })}
 
-        {/* 用户数据点 */}
-        {records.map((r, i) => {
-          const gain = r.weight - prePregnancyWeight;
-          if (gain <= 0) return null;
-          const { min, max } = getRecommendedGain(r.week, bmi);
-          const inRange = gain >= min && gain <= max;
-          return (
-            <View key={i} style={[chartStyles.dataPoint, inRange ? chartStyles.dataPointOk : chartStyles.dataPointWarn, { left: 24 + toX(r.week) - 4, top: toY(gain) - 4 }]} />
-          );
-        })}
+          {/* 2 周间隔的参考标记线 */}
+          {Array.from({ length: Math.ceil(maxWeek / 2) + 1 }, (_, i) => {
+            const week = i * 2;
+            if (week > maxWeek) return null;
+            const { min, max } = getRecommendedGain(week, bmi);
+            return (
+              <G key={week}>
+                <Rect x={toX(week)} y={toY(max)} width={3} height={2} fill={colors.accent} fillOpacity={0.5} />
+                <Rect x={toX(week)} y={toY(min)} width={3} height={2} fill={colors.accent} fillOpacity={0.35} />
+              </G>
+            );
+          })}
 
-        {/* X轴标签 */}
-        {Array.from({ length: Math.ceil(maxWeek / 10) + 1 }, (_, i) => {
-          const week = i * 10;
-          if (week > maxWeek) return null;
-          return (
-            <Text key={week} style={[chartStyles.xLabel, { left: 24 + toX(week) - 10, top: CHART_H + 6 }]}>
-              {week}周
-            </Text>
-          );
-        })}
+          {/* 用户数据点 */}
+          {records.map((r, i) => {
+            const gain = r.weight - prePregnancyWeight;
+            if (gain <= 0) return null;
+            const { min, max } = getRecommendedGain(r.week, bmi);
+            const inRange = gain >= min && gain <= max;
+            return (
+              <Circle
+                key={i}
+                cx={toX(r.week)} cy={toY(gain)}
+                r={4}
+                fill={inRange ? colors.success : colors.error}
+                stroke={colors.surface}
+                strokeWidth={1.5}
+              />
+            );
+          })}
 
-        <Text style={chartStyles.yTitle}>kg</Text>
+          {/* X 轴标签（每 10 周） */}
+          {Array.from({ length: Math.ceil(maxWeek / 10) + 1 }, (_, i) => {
+            const week = i * 10;
+            if (week > maxWeek) return null;
+            return (
+              <SvgText
+                key={week}
+                x={toX(week)} y={CHART_H + 14}
+                fontSize={9} fill={colors.muted}
+                textAnchor="middle"
+              >
+                {week}周
+              </SvgText>
+            );
+          })}
+
+          {/* 单位 */}
+          <SvgText
+            x={0} y={8}
+            fontSize={8} fill={colors.muted}
+          >
+            kg
+          </SvgText>
+        </Svg>
       </View>
     </View>
   );

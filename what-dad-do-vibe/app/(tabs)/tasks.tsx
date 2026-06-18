@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { PregnancyStage, STAGES, STAGE_LABELS } from '../../src/lib/stages';
+import { PregnancyStage, STAGE_LABELS } from '../../src/lib/stages';
 import { getPresetTasks, PresetTask } from '../../src/lib/api';
 
 import { Card, ProgressBar, Tag, Button } from '../../src/components/atoms';
@@ -401,11 +401,6 @@ export default function TasksScreen() {
     { value: 'prenatal', label: '产检任务', color: colors.accent },
     { value: 'daily', label: '日常任务', color: colors.accent },
   ] as const;
-
-  const getTypeStyle = (type: string) => {
-    const opt = TASK_TYPE_OPTIONS.find(o => o.value === type);
-    return opt ? { color: opt.color } : {};
-  };
 
   // 当自动计算的孕期变化时，同步切换
   useEffect(() => {

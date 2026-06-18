@@ -68,12 +68,13 @@ export function BabyMedicationSafetyTool({ expanded }: { userId: string; babyGen
 
   // 计算宝宝当前月龄
   const babyAgeMonths = useMemo(() => {
-    if (state.stage !== 'postpartum' || !state.babies?.[0]?.birthDate) return null;
-    const birthDate = new Date(state.babies[0].birthDate);
+    const baby = state.babies.find(b => b.id === state.currentBabyId) || state.babies[0];
+    if (state.stage !== 'postpartum' || !baby?.birthDate) return null;
+    const birthDate = new Date(baby.birthDate);
     const now = new Date();
     const diffMs = now.getTime() - birthDate.getTime();
     return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
-  }, [state.stage, state.babies]);
+  }, [state.stage, state.babies, state.currentBabyId]);
 
   const currentPeriodKey = getCurrentAgePeriod(babyAgeMonths);
   const currentPeriodLabel = getCurrentAgeLabel(babyAgeMonths);

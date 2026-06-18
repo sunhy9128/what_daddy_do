@@ -11,6 +11,7 @@ import {
   loadMoodConfig, saveMoodConfig, MoodConfig,
 } from '../../lib/storage';
 import { LoadingDot } from './ToolBase';
+import { LineChart } from 'react-native-gifted-charts';
 
 // ─── EPDS 题目（适配爸爸版本） ───
 interface Question {
@@ -157,98 +158,80 @@ function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// ─── 简易趋势图 ───
+// ─── 简易趋势图（gifted-charts LineChart） ───
 function MoodTrendChart({ records }: { records: MoodRecord[] }) {
   const colors = useColors();
-  const CHART_H = 120;
-  const CHART_W = 240;
   const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date));
   const maxScore = Math.max(30, ...sorted.map(r => r.score));
-  const toX = (i: number) => (i / Math.max(sorted.length - 1, 1)) * CHART_W;
-  const toY = (s: number) => CHART_H - (s / maxScore) * CHART_H;
-
-  const chartStyles = useMemo(() => StyleSheet.create({
-    card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, ...shadows.sm },
-    title: { ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.sm },
-    canvas: { height: CHART_H + 24, position: 'relative' },
-    gridLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
-    gridLabel: { fontSize: 8, color: colors.muted, width: 20, textAlign: 'right', marginRight: spacing.xs },
-    gridStroke: { flex: 1, height: 0.5, backgroundColor: colors.divider },
-    cutoffLine: { position: 'absolute', left: 24, right: 0, height: 1, backgroundColor: colors.warning + '80' },
-    cutoffLabel: { position: 'absolute', fontSize: 7, color: colors.muted, right: 0 },
-    dataPoint: {
-      position: 'absolute', width: 10, height: 10, borderRadius: 5,
-      borderWidth: 2, borderColor: colors.surface, alignItems: 'center', justifyContent: 'center',
-    },
-    dataPointOk: { backgroundColor: colors.success },
-    dataPointWarn: { backgroundColor: colors.warning },
-    dataPointHigh: { backgroundColor: colors.error },
-    connector: { position: 'absolute', height: 2, backgroundColor: colors.accent + '40' },
-    xLabel: { position: 'absolute', fontSize: 7, color: colors.muted, width: 28, textAlign: 'center', transform: [{ rotate: '-30deg' }] },
-  }), [colors]);
 
   if (sorted.length < 1) return null;
 
+  // 数据点：分数、颜色编码、日期标签（稀疏显示）
+  const showLabelIdx = new Set<number>();
+  for (let i = 0; i < sorted.length; i++) {
+    if (i === 0 || i === sorted.length - 1 || i % Math.max(1, Math.floor(sorted.length / 4)) === 0) {
+      showLabelIdx.add(i);
+    }
+  }
+
+  const data = sorted.map((r, idx) => ({
+    value: r.score,
+    dataPointText: String(r.score),
+    textFontSize: 8,
+    textColor: '#fff',
+    dataPointColor: r.score >= 13 ? colors.error : r.score >= 10 ? colors.warning : colors.success,
+    label: showLabelIdx.has(idx) ? r.date.slice(5) : undefined,
+    labelTextStyle: { fontSize: 7, transform: [{ rotate: '-30deg' }] as any },
+  }));
+
+  const pointSpacing = sorted.length > 1 ? 240 / (sorted.length - 1) : 240;
+
   return (
-    <View style={chartStyles.card}>
-      <Text style={chartStyles.title}>趋势</Text>
-      <View style={chartStyles.canvas}>
-        {/* Y轴网格 */}
-        {[0, 10, 20, 30].filter(v => v <= maxScore).map(v => (
-          <View key={v} style={[chartStyles.gridLine, { top: toY(v) }]}>
-            <Text style={chartStyles.gridLabel}>{v}</Text>
-            <View style={chartStyles.gridStroke} />
-          </View>
-        ))}
-        {/* 10分警戒线 */}
-        <View style={[chartStyles.cutoffLine, { top: toY(10), left: 24 }]} />
-        <Text style={[chartStyles.cutoffLabel, { top: toY(10) - 6 }]}>轻度线 10</Text>
-
-        {/* 连线 */}
-        {sorted.slice(0, -1).map((_, i) => {
-          if (i >= sorted.length - 1) return null;
-          const x1 = 24 + toX(i);
-          const y1 = toY(sorted[i].score);
-          const x2 = 24 + toX(i + 1);
-          const y2 = toY(sorted[i + 1].score);
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          const len = Math.sqrt(dx * dx + dy * dy);
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          return (
-            <View key={i} style={[chartStyles.connector, {
-              left: x1, top: y1, width: len,
-              transform: [{ rotate: `${angle}deg` }],
-              transformOrigin: 'left center',
-            }]} />
-          );
-        })}
-
-        {/* 数据点 */}
-        {sorted.map((r, i) => {
-          let dotStyle = chartStyles.dataPointOk;
-          if (r.score >= 13) dotStyle = chartStyles.dataPointHigh;
-          else if (r.score >= 10) dotStyle = chartStyles.dataPointWarn;
-          return (
-            <View key={i} style={[chartStyles.dataPoint, dotStyle, { left: 24 + toX(i) - 5, top: toY(r.score) - 5 }]}>
-              <Text style={{ fontSize: 6, color: colors.surface, fontWeight: '700' }}>{r.score}</Text>
-            </View>
-          );
-        })}
-
-        {/* X轴日期标签（只显示部分） */}
-        {sorted.filter((_, i) => i === 0 || i === sorted.length - 1 || i % Math.max(1, Math.floor(sorted.length / 4)) === 0).map((r, i) => {
-          const idx = sorted.indexOf(r);
-          return (
-            <Text key={i} style={[chartStyles.xLabel, {
-              left: 24 + toX(idx) - 14,
-              top: CHART_H + 2,
-            }]}>
-              {r.date.slice(5)}
-            </Text>
-          );
-        })}
-      </View>
+    <View style={{ backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, ...shadows.sm }}>
+      <Text style={{ ...typography.caption1, fontWeight: '600', color: colors.fgSecondary, marginBottom: spacing.sm }}>
+        趋势
+      </Text>
+      <LineChart
+        data={data}
+        height={120}
+        width={240}
+        maxValue={maxScore}
+        noOfSections={3}
+        initialSpacing={20}
+        spacing={pointSpacing}
+        thickness={2}
+        color={colors.accent + '60'}
+        // 引用线：10 分警戒线
+        showReferenceLine1
+        referenceLine1Position={10}
+        referenceLine1Config={{
+          color: colors.warning + '80',
+          thickness: 1,
+          labelText: '轻度线 10',
+          labelTextStyle: { fontSize: 7, color: colors.muted },
+        } as any}
+        // 轴 + 标签
+        yAxisColor="transparent"
+        yAxisThickness={0}
+        yAxisTextStyle={{ fontSize: 8, color: colors.muted, width: 20, textAlign: 'right' }}
+        yAxisLabelWidth={22}
+        xAxisColor="transparent"
+        xAxisThickness={0}
+        xAxisLabelTextStyle={{ fontSize: 7, color: colors.muted, width: 28, textAlign: 'center' }}
+        xAxisLabelsVerticalShift={2}
+        // 网格线
+        rulesColor={colors.divider}
+        rulesType="solid"
+        rulesThickness={0.5}
+        // 关闭多余渲染
+        showXAxisIndices={false}
+        showYAxisIndices={false}
+        roundToDigits={0}
+        isAnimated={false}
+        hideDataPoints={false}
+        showDataPointOnFocus={false}
+        pointerConfig={undefined}
+      />
     </View>
   );
 }

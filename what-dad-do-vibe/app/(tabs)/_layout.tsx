@@ -10,18 +10,21 @@ import { spacing } from '../../src/styles/tokens';
 const tabIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: 'home-outline',
   tasks: 'checkbox-outline',
+  community: 'people-outline',
   profile: 'person-outline',
 };
 
 const tabIconsActive: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: 'home',
   tasks: 'checkbox',
+  community: 'people',
   profile: 'person',
 };
 
 const tabLabels: Record<string, string> = {
   index: '首页',
   tasks: '任务',
+  community: '社区',
   profile: '我的',
 };
 
@@ -72,9 +75,8 @@ export default function TabLayout() {
       })}>
         <Tabs.Screen name="index" options={{ title: tabLabels.index }} />
         <Tabs.Screen name="tasks" options={{ title: tabLabels.tasks }} />
+        <Tabs.Screen name="community" options={{ title: tabLabels.community }} />
         <Tabs.Screen name="profile" options={{ title: tabLabels.profile }} />
-        <Tabs.Screen name="community" options={{ href: null }} />
-        <Tabs.Screen name="records" options={{ href: null }} />
       </Tabs>
     </AuthGuard>
   );

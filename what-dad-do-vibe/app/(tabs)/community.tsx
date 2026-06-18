@@ -21,7 +21,7 @@ const CATEGORIES = ['推荐', '知识', '经验', '问答'];
 
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
-  const { state, refreshCommunityPosts } = useApp();
+  const { state, refreshCommunityPosts, addPost } = useApp();
   const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [activeCategory, setActiveCategory] = useState('推荐');
@@ -57,10 +57,14 @@ export default function CommunityScreen() {
   }, [state.communityPosts]);
 
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostCategory, setNewPostCategory] = useState('经验');
+  const [creatingPost, setCreatingPost] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [comments, setComments] = useState<PostComment[]>([]);
-  const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
   const [commentLimit, setCommentLimit] = useState(3);
 
@@ -85,8 +89,45 @@ export default function CommunityScreen() {
 
   const lastPostRef = useRef<CommunityPost | null>(null);
   const likingRef = useRef(false);
+
+  const handleCreatePost = async () => {
+    if (!user) {
+      if (Platform.OS === 'web') { window.alert('请先登录'); } else { Alert.alert('请先登录'); }
+      return;
+    }
+    if (!newPostTitle.trim()) {
+      if (Platform.OS === 'web') { window.alert('请输入标题'); } else { Alert.alert('请输入标题'); }
+      return;
+    }
+    if (!newPostContent.trim()) {
+      if (Platform.OS === 'web') { window.alert('请输入内容'); } else { Alert.alert('请输入内容'); }
+      return;
+    }
+    setCreatingPost(true);
+    try {
+      await addPost({
+        title: newPostTitle.trim(),
+        content: newPostContent.trim(),
+        category: newPostCategory,
+      });
+      setNewPostTitle('');
+      setNewPostContent('');
+      setNewPostCategory('经验');
+      setShowCreateModal(false);
+    } catch (e: any) {
+      if (Platform.OS === 'web') { window.alert('发布失败，请重试'); } else { Alert.alert('发布失败', e?.message || '请重试'); }
+    } finally {
+      setCreatingPost(false);
+    }
+  };
+
   const handleLike = async () => {
     if (likingRef.current || !selectedPost || !user) return;
+    // 不能给自己的帖子点赞
+    if (selectedPost.userId === user.id) {
+      if (Platform.OS === 'web') { window.alert('不能给自己点赞'); } else { Alert.alert('不能给自己点赞'); }
+      return;
+    }
     likingRef.current = true;
     try {
       const result = await toggleLike(selectedPost.id, user.id);
@@ -101,13 +142,17 @@ export default function CommunityScreen() {
     }
   };
 
-  const handleSendComment = async () => {
-    if (!selectedPost || !user || !commentText.trim()) return;
+  const handleSendComment = async (text: string) => {
+    if (!selectedPost || !user || !text.trim()) return;
+    // 不能给自己的帖子回复
+    if (selectedPost.userId === user.id) {
+      if (Platform.OS === 'web') { window.alert('不能回复自己的帖子'); } else { Alert.alert('不能回复自己的帖子'); }
+      return;
+    }
     setSendingComment(true);
     try {
-      const newComment = await addComment(selectedPost.id, user.id, commentText.trim());
+      const newComment = await addComment(selectedPost.id, user.id, text);
       setComments(prev => [...prev, newComment]);
-      setCommentText('');
       // 新评论发布后展开全部，确保能看到
       setCommentLimit(999);
       // 同步更新列表中的评论数
@@ -401,21 +446,49 @@ export default function CommunityScreen() {
   );
 }
 
+function CommentInput({ onSend, sending }: { onSend: (text: string) => void; sending: boolean }) {
+  const colors = useColors();
+  const [text, setText] = useState('');
+
+  return (
+    <View style={styles.commentInputRow}>
+      <TextInput
+        style={styles.commentInput}
+        placeholder="写评论..."
+        placeholderTextColor={colors.muted}
+        value={text}
+        onChangeText={setText}
+        multiline={false}
+      />
+      <TouchableOpacity
+        style={[styles.commentSend, (!text.trim() || sending) && styles.commentSendDisabled]}
+        onPress={() => {
+          if (text.trim() && !sending) {
+            onSend(text.trim());
+            setText('');
+          }
+        }}
+        disabled={!text.trim() || sending}
+      >
+        <Text style={styles.commentSendText}>{sending ? '…' : '发送'}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function PostDetailContent({
-  post, liked, likesCount, comments, commentLimit, commentText, sendingComment,
-  onClose, onLike, onSetCommentText, onSendComment, onShowMore,
+  post, liked, likesCount, comments, commentLimit, sendingComment,
+  onClose, onLike, onSendComment, onShowMore,
 }: {
   post: CommunityPost | null;
   liked: boolean;
   likesCount: number;
   comments: PostComment[];
   commentLimit: number;
-  commentText: string;
   sendingComment: boolean;
   onClose: () => void;
   onLike: () => void;
-  onSetCommentText: (text: string) => void;
-  onSendComment: () => void;
+  onSendComment: (text: string) => void;
   onShowMore: () => void;
 }) {
   const p = post;
@@ -484,23 +557,7 @@ function PostDetailContent({
       </View>
 
       {/* 评论输入 */}
-      <View style={styles.commentInputRow}>
-        <TextInput
-          style={styles.commentInput}
-          placeholder="写评论..."
-          placeholderTextColor={colors.muted}
-          value={commentText}
-          onChangeText={onSetCommentText}
-          multiline={false}
-        />
-        <TouchableOpacity
-          style={[styles.commentSend, (!commentText.trim() || sendingComment) && styles.commentSendDisabled]}
-          onPress={onSendComment}
-          disabled={!commentText.trim() || sendingComment}
-        >
-          <Text style={styles.commentSendText}>{sendingComment ? '…' : '发送'}</Text>
-        </TouchableOpacity>
-      </View>
+      <CommentInput onSend={onSendComment} sending={sendingComment} />
     </>
   );
 }
@@ -602,9 +659,118 @@ function PostDetailContent({
       </ScrollView>
 
       {/* FAB — 发布帖子 */}
-      <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('提示', '发布功能即将上线')} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.fab} onPress={() => {
+        if (!user) {
+          if (Platform.OS === 'web') { window.alert('请先登录'); } else { Alert.alert('请先登录'); }
+          return;
+        }
+        setShowCreateModal(true);
+      }} activeOpacity={0.8}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
+
+      {/* 创建帖子弹窗 */}
+      <Modal visible={showCreateModal} animationType="fade" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => !creatingPost && setShowCreateModal(false)}>
+          <Pressable style={[styles.modalContent, { maxHeight: '90%' }]} onPress={e => e.stopPropagation()}>
+            <View style={styles.modalTopBar}>
+              <Text style={{ ...typography.title3, fontWeight: '700', color: colors.fg, flex: 1 }}>发布经验</Text>
+              <TouchableOpacity style={styles.modalClose} onPress={() => !creatingPost && setShowCreateModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <Text style={styles.modalCloseIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 分类选择 */}
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+              {['知识', '经验', '问答'].map(cat => (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => setNewPostCategory(cat)}
+                  style={{
+                    paddingVertical: spacing.xs,
+                    paddingHorizontal: spacing.md,
+                    borderRadius: radius.sm,
+                    backgroundColor: newPostCategory === cat ? colors.accent : colors.surfaceSecondary,
+                  }}
+                >
+                  <Text style={{
+                    ...typography.footnote,
+                    fontWeight: '600',
+                    color: newPostCategory === cat ? '#fff' : colors.fg,
+                  }}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* 标题 */}
+            <TextInput
+              style={{
+                ...typography.callout,
+                color: colors.fg,
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: radius.sm,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: spacing.md,
+              }}
+              placeholder="标题"
+              placeholderTextColor={colors.muted}
+              value={newPostTitle}
+              onChangeText={setNewPostTitle}
+              maxLength={100}
+            />
+
+            {/* 正文 */}
+            <TextInput
+              style={{
+                ...typography.body,
+                color: colors.fg,
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: radius.sm,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                borderWidth: 1,
+                borderColor: colors.border,
+                minHeight: 150,
+                textAlignVertical: 'top',
+              }}
+              placeholder="分享你的经验、心得或疑问..."
+              placeholderTextColor={colors.muted}
+              value={newPostContent}
+              onChangeText={setNewPostContent}
+              multiline
+              maxLength={2000}
+            />
+
+            <Text style={{
+              ...typography.caption1,
+              color: colors.muted,
+              textAlign: 'right',
+              marginTop: spacing.xs,
+              marginBottom: spacing.md,
+            }}>{newPostContent.length}/2000</Text>
+
+            {/* 发布按钮 */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.accent,
+                borderRadius: radius.sm,
+                paddingVertical: spacing.md,
+                alignItems: 'center',
+                opacity: (!newPostTitle.trim() || !newPostContent.trim() || creatingPost) ? 0.5 : 1,
+              }}
+              onPress={handleCreatePost}
+              disabled={!newPostTitle.trim() || !newPostContent.trim() || creatingPost}
+            >
+              <Text style={{ ...typography.callout, fontWeight: '600', color: '#fff' }}>
+                {creatingPost ? '发布中…' : '发布'}
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* 帖子详情弹窗 — 小红书风格 */}
       <Modal visible={!!selectedPost} animationType="fade" transparent>
@@ -616,11 +782,9 @@ function PostDetailContent({
               likesCount={likesCount}
               comments={comments}
               commentLimit={commentLimit}
-              commentText={commentText}
               sendingComment={sendingComment}
               onClose={() => setSelectedPost(null)}
               onLike={handleLike}
-              onSetCommentText={setCommentText}
               onSendComment={handleSendComment}
               onShowMore={() => setCommentLimit(prev => prev + 5)}
             />

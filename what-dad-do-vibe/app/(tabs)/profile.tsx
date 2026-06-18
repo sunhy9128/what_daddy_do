@@ -138,7 +138,6 @@ export default function ProfileScreen() {
       borderWidth: 1, borderColor: isDark ? '#333348' : '#F5E0D0',
     },
     babyHeader: { alignItems: 'center', marginBottom: spacing.md },
-    babyEmoji: { fontSize: 48, marginBottom: spacing.sm },
     babyNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     babyName: { ...typography.title2, fontWeight: '700', color: isDark ? '#E8DCC8' : '#5A3E2B' },
     babyStage: {
@@ -226,7 +225,13 @@ export default function ProfileScreen() {
                             <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
                           </TouchableOpacity>
                           <View style={styles.babyHeader}>
-                            <Text style={styles.babyEmoji}>{item.gender === 'girl' ? '👧' : '👦'}</Text>
+                            {item.gender === 'girl' ? (
+                              <Ionicons name="female" size={48} color={isDark ? '#E8B4D8' : '#D89BB8'} style={{ marginBottom: spacing.sm }} />
+                            ) : item.gender === 'boy' ? (
+                              <Ionicons name="male" size={48} color={isDark ? '#B4D8E8' : '#9BB8D8'} style={{ marginBottom: spacing.sm }} />
+                            ) : (
+                              <Ionicons name="help-circle-outline" size={48} color={isDark ? '#B8A88A' : '#8B6F4A'} style={{ marginBottom: spacing.sm }} />
+                            )}
                             <View style={styles.babyNameRow}>
                               <Text style={styles.babyName}>{item.name || '宝宝'}</Text>
                               <Text style={styles.babyStage}>已出生</Text>

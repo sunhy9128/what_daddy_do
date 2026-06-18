@@ -27,6 +27,9 @@ export interface Baby {
   birth_date: string | null;
   name: string;
   gender: string | null;
+  is_active: boolean;
+  is_archived: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +60,7 @@ export interface PregnancyStage {
 export interface Task {
   id: string;
   user_id: string;
+  baby_id: string;
   title: string;
   description: string | null;
   stage: 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
@@ -75,6 +79,7 @@ export interface Task {
 export interface Record {
   id: string;
   user_id: string;
+  baby_id: string;
   title: string;
   content: string;
   is_private: boolean;
@@ -88,13 +93,6 @@ export interface UrgentNote {
   is_active: boolean;
   created_at: string;
   dismissed_at: string | null;
-}
-
-export interface PostLike {
-  id: string;
-  post_id: string;
-  user_id: string;
-  created_at: string;
 }
 
 export interface PostComment {
@@ -127,6 +125,7 @@ export interface VaccineDose {
 export interface UserVaccination {
   id: string;
   user_id: string;
+  baby_id: string;
   dose_id: number;
   vaccinated_at: string | null;
   is_vaccinated: boolean;
@@ -148,13 +147,6 @@ export interface KnowledgeArticle {
   is_published: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface KnowledgeRead {
-  id: string;
-  user_id: string;
-  article_id: number;
-  read_at: string;
 }
 
 export interface CommunityPost {
@@ -188,6 +180,7 @@ export interface PresetItem {
 export interface UserPreparation {
   id: string;
   user_id: string;
+  baby_id: string;
   item_id: string;
   status: 'not_prepared' | 'prepared' | 'not_needed';
   prepared_at: string | null;

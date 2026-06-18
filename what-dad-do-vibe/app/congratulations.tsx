@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { Confetti } from '../src/components/Confetti';
 import { useColors, useTheme } from '../src/context/ThemeContext';
@@ -11,7 +11,10 @@ export default function CongratulationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateBabyGender } = useApp();
-  const baby = state.babies[0];
+  const { babyId } = useLocalSearchParams<{ babyId?: string }>();
+  const baby = babyId
+    ? state.babies.find(b => b.id === babyId)
+    : state.babies.find(b => b.id === state.currentBabyId) || state.babies[0];
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const colors = useColors();
@@ -106,6 +109,16 @@ export default function CongratulationsScreen() {
     color: '#fff',
     fontSize: 18,
   },
+  skipBtn: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  skipText: {
+    ...typography.callout,
+    color: colors.muted,
+    textDecorationLine: 'underline',
+  },
 }), [colors, isDark]);
 
   const handleConfirm = async () => {
@@ -120,6 +133,11 @@ export default function CongratulationsScreen() {
     } catch {
       setSaving(false);
     }
+  };
+
+  const handleNotYetBorn = () => {
+    if (!baby) return;
+    router.replace(`/baby-info?babyId=${baby.id}&from=congratulations`);
   };
 
   return (
@@ -167,6 +185,11 @@ export default function CongratulationsScreen() {
           disabled={!selectedGender || saving}
         >
           <Text style={styles.confirmText}>{saving ? '保存中...' : '恭喜！开始新旅程'}</Text>
+        </TouchableOpacity>
+
+        {/* 还未出生 */}
+        <TouchableOpacity style={styles.skipBtn} onPress={handleNotYetBorn}>
+          <Text style={styles.skipText}>宝宝还未出生</Text>
         </TouchableOpacity>
       </View>
     </View>

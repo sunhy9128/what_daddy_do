@@ -8,6 +8,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 import { GrowthChart } from './GrowthChart';
 import { loadGrowthRecords, saveGrowthRecords, GrowthRecordData } from '../../lib/storage';
+import { useApp } from '../../context/AppContext';
 import { LoadingDot } from './ToolBase';
 
 interface GrowthRecord {
@@ -18,6 +19,7 @@ interface GrowthRecord {
 
 export function GrowthTracker({ userId, babyGender, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { state } = useApp();
   const [gender, setGender] = useState<'boy' | 'girl'>(babyGender === 'girl' ? 'girl' : 'boy');
   const [month, setMonth] = useState('');
   const [height, setHeight] = useState('');
@@ -31,7 +33,7 @@ export function GrowthTracker({ userId, babyGender, expanded }: { userId: string
     setLoading(true);
     (async () => {
       try {
-        const all = await loadGrowthRecords(userId);
+        const all = await loadGrowthRecords(userId, state.currentBabyId!);
         setRecords(all.sort((a, b) => b.month - a.month));
       } catch (e) {
         console.error('Failed to load growth records:', e);
@@ -43,7 +45,7 @@ export function GrowthTracker({ userId, babyGender, expanded }: { userId: string
 
   const persistRecords = (newRecords: GrowthRecord[]) => {
     if (!userId) return;
-    saveGrowthRecords(userId, newRecords);
+    saveGrowthRecords(userId, state.currentBabyId!, newRecords);
   };
 
   const [editMode, setEditMode] = useState(false);

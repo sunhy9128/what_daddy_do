@@ -77,7 +77,7 @@ auto_install = true   # fetch the runtime when CodeGraph is enabled but missing
 # Rules are "ToolName" or "ToolName(glob)"; '*' matches any run, '?' one char.
 mode  = "ask"
 # deny = ["bash(rm -rf*)", "bash(git push*)"]   # hard-blocked in every mode
-allow = ["bash=cd what-dad-do-vibe && npm start"]
+allow = ["bash=cd what-dad-do-vibe && npm start", "mcp__codegraph__connect"]
 # ask = ["write_file"]   # force a prompt even if otherwise allowed
 
 [sandbox]

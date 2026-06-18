@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { useAuth } from '../src/context/AuthContext';
 import { STAGES } from '../src/lib/stages';
@@ -16,8 +16,11 @@ export default function BabyInfoScreen() {
   const router = useRouter();
   const { state, addBaby, updateBabyGender } = useApp();
   const { user } = useAuth();
+  const { babyId, mode, from } = useLocalSearchParams<{ babyId?: string; mode?: string; from?: string }>();
 
-  const existingBaby = state.babies[0];
+  const existingBaby = babyId
+    ? state.babies.find(b => b.id === babyId)
+    : mode === 'new' ? null : state.babies[0];
   const isPostpartum = state.stage === 'postpartum';
 
   const [dueDate, setDueDate] = useState(existingBaby?.dueDate || new Date().toISOString().split('T')[0]);
@@ -181,7 +184,7 @@ export default function BabyInfoScreen() {
       if (existingBaby) {
         await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate);
       } else {
-        await addBaby(dueDate);
+        await addBaby(dueDate, `宝宝${state.babies.length + 1}`);
       }
       // 保存孕前体重/身高配置
       const pw = parseFloat(preWeight);
@@ -209,10 +212,16 @@ export default function BabyInfoScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.nav}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.navBack}>
+        <TouchableOpacity onPress={() => {
+          if (from === 'congratulations') {
+            router.replace('/(tabs)');
+          } else {
+            router.back();
+          }
+        }} style={styles.navBack}>
           <Ionicons name="chevron-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>{isPostpartum ? '宝宝信息' : '怀孕信息'}</Text>
+        <Text style={styles.navTitle}>孕期信息</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -296,7 +305,7 @@ export default function BabyInfoScreen() {
         </View>
 
         <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
-          <Text style={styles.saveText}>{saving ? '保存中…' : existingBaby ? '更新预产期' : '保存'}</Text>
+          <Text style={styles.saveText}>{saving ? '保存中…' : existingBaby ? '更新信息' : '保存'}</Text>
         </TouchableOpacity>
         </View>
       </ScrollView>

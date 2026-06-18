@@ -10,6 +10,7 @@ import {
   loadBabyCareLog, saveBabyCareLog, BabyCareLogEntry,
   DiaperRecord, FeedingRecord, TummyTimeRecord,
 } from '../../lib/storage';
+import { useApp } from '../../context/AppContext';
 
 // ─── 工具函数 ───
 function generateId(): string {
@@ -64,6 +65,7 @@ const DIAPER_CONSISTENCY: Record<string, string> = {
 // ─── 主组件 ───
 export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { state } = useApp();
   const [entries, setEntries] = useState<BabyCareLogEntry[]>([]);
   const [activeTab, setActiveTab] = useState<CareTab>('diaper');
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
     if (!userId) { setLoading(false); return; }
     (async () => {
       try {
-        const data = await loadBabyCareLog(userId);
+        const data = await loadBabyCareLog(userId, state.currentBabyId!);
         setEntries(data.sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
       } catch (e) {
         console.error('Failed to load baby care log:', e);
@@ -86,8 +88,8 @@ export function BabyCareLog({ userId, expanded }: { userId: string; babyGender?:
 
   const persist = useCallback((data: BabyCareLogEntry[]) => {
     if (!userId) return;
-    saveBabyCareLog(userId, data);
-  }, [userId]);
+    saveBabyCareLog(userId, state.currentBabyId!, data);
+  }, [userId, state]);
 
   // ── 今天的记录 ──
   const today = getTodayStr();

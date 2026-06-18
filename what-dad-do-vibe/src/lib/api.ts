@@ -24,18 +24,18 @@ export async function getPresetTasks(): Promise<PresetTask[]> {
     }
     return data || [];
   } catch (e) {
-    console.log('getPresetTasks exception:', e);
     return [];
   }
 }
 
 // 孕期阶段
 // 任务 CRUD
-export async function getTasks(userId: string): Promise<Task[]> {
+export async function getTasks(userId: string, babyId: string): Promise<Task[]> {
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
     .eq('user_id', userId)
+    .eq('baby_id', babyId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data || [];
@@ -79,11 +79,12 @@ export async function toggleTaskComplete(id: string, isCompleted: boolean): Prom
 }
 
 // 记录 CRUD
-export async function getRecords(userId: string): Promise<Record[]> {
+export async function getRecords(userId: string, babyId: string): Promise<Record[]> {
   const { data, error } = await supabase
     .from('records')
     .select('*')
     .eq('user_id', userId)
+    .eq('baby_id', babyId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data || [];
@@ -189,12 +190,22 @@ export async function dismissUrgentNote(id: string): Promise<void> {
 }
 
 // 宝宝 CRUD
-export async function getBabies(userId: string): Promise<Baby[]> {
-  const { data, error } = await supabase
+export async function getBabies(
+  userId: string,
+  opts?: { includeArchived?: boolean }
+): Promise<Baby[]> {
+  let query = supabase
     .from('babies')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (!opts?.includeArchived) {
+    query = query.eq('is_archived', false);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
@@ -202,7 +213,12 @@ export async function getBabies(userId: string): Promise<Baby[]> {
 export async function createBaby(baby: Partial<Baby>): Promise<Baby> {
   const { data, error } = await supabase
     .from('babies')
-    .insert(baby)
+    .insert({
+      ...baby,
+      is_active: baby.is_active ?? true,
+      is_archived: baby.is_archived ?? false,
+      sort_order: baby.sort_order ?? 0,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -218,6 +234,29 @@ export async function updateBaby(id: string, updates: Partial<Baby>): Promise<Ba
     .single();
   if (error) throw error;
   return data;
+}
+
+/** 归档宝宝（软删除） */
+export async function archiveBaby(id: string): Promise<Baby> {
+  return updateBaby(id, { is_archived: true, is_active: false });
+}
+
+/** 恢复已归档宝宝 */
+export async function unarchiveBaby(id: string): Promise<Baby> {
+  return updateBaby(id, { is_archived: false, is_active: true });
+}
+
+/** 重排宝宝顺序 */
+export async function reorderBabies(userId: string, orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase
+        .from('babies')
+        .update({ sort_order: index, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', userId)
+    )
+  );
 }
 
 // 孕期阶段计算
@@ -339,27 +378,33 @@ export async function getVaccines(): Promise<(Vaccine & { doses: VaccineDose[] }
   }));
 }
 
-export async function getUserVaccinations(userId: string): Promise<UserVaccination[]> {
+export async function getUserVaccinations(userId: string, babyId: string): Promise<UserVaccination[]> {
   const { data, error } = await supabase
     .from('user_vaccinations')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('baby_id', babyId);
   if (error) throw error;
   return data || [];
 }
 
 export async function setVaccinationStatus(
-  userId: string, doseId: number, isVaccinated: boolean, vaccinatedAt?: string
+  userId: string,
+  babyId: string,
+  doseId: number,
+  isVaccinated: boolean,
+  vaccinatedAt?: string
 ): Promise<UserVaccination> {
   const { data, error } = await supabase
     .from('user_vaccinations')
     .upsert({
       user_id: userId,
+      baby_id: babyId,
       dose_id: doseId,
       is_vaccinated: isVaccinated,
       vaccinated_at: vaccinatedAt || null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,dose_id' })
+    }, { onConflict: 'baby_id,dose_id' })
     .select()
     .single();
   if (error) throw error;
@@ -398,11 +443,12 @@ export async function getPresetItemsByPeriods(periods: string[]): Promise<Preset
 }
 
 // 获取用户的物品准备状态
-export async function getUserPreparations(userId: string): Promise<UserPreparation[]> {
+export async function getUserPreparations(userId: string, babyId: string): Promise<UserPreparation[]> {
   const { data, error } = await supabase
     .from('user_preparations')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('baby_id', babyId);
   if (error) throw error;
   return data || [];
 }
@@ -410,12 +456,14 @@ export async function getUserPreparations(userId: string): Promise<UserPreparati
 // 设置用户物品准备状态（upsert）
 export async function setUserPreparation(
   userId: string,
+  babyId: string,
   itemId: string,
   status: 'not_prepared' | 'prepared' | 'not_needed'
 ): Promise<UserPreparation> {
   const now = new Date().toISOString();
   const payload: Partial<UserPreparation> = {
     user_id: userId,
+    baby_id: babyId,
     item_id: itemId,
     status,
     updated_at: now,
@@ -429,7 +477,7 @@ export async function setUserPreparation(
 
   const { data, error } = await supabase
     .from('user_preparations')
-    .upsert(payload, { onConflict: 'user_id,item_id' })
+    .upsert(payload, { onConflict: 'baby_id,item_id' })
     .select()
     .single();
   if (error) throw error;
@@ -539,11 +587,3 @@ export async function upsertWellChildRecord(
   return data;
 }
 
-/** 删除儿保记录 */
-export async function deleteWellChildRecord(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('user_well_child_records')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
-}

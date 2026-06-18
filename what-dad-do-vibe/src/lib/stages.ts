@@ -55,11 +55,15 @@ export function calculateBirthAge(dueDate: string, birthDate?: string | null): s
 /**
  * 根据预产期计算当前孕期阶段
  */
-export function calculateStageFromDueDate(dueDate: string): {
+export function calculateStageFromDueDate(dueDate?: string | null): {
   stage: PregnancyStage;
   weeksPregnant: number;
   stageLabel: string;
 } {
+  // dueDate 缺失时返回 'preconception' 默认值,避免 NaN 误判为 'third'
+  if (!dueDate) {
+    return { stage: 'preconception', weeksPregnant: 0, stageLabel: STAGE_LABELS.preconception };
+  }
   const today = new Date();
   const due = new Date(dueDate);
   const diffMs = due.getTime() - today.getTime();
@@ -70,14 +74,14 @@ export function calculateStageFromDueDate(dueDate: string): {
   let stage: PregnancyStage;
   if (daysLeft > 280) {
     stage = 'preconception';
+  } else if (daysLeft <= 0) {
+    stage = 'postpartum';
   } else if (weeksPregnant <= 12) {
     stage = 'first';
   } else if (weeksPregnant <= 27) {
     stage = 'second';
-  } else if (weeksPregnant <= 40) {
-    stage = 'third';
   } else {
-    stage = 'postpartum';
+    stage = 'third';
   }
 
   return { stage, weeksPregnant, stageLabel: STAGE_LABELS[stage] };

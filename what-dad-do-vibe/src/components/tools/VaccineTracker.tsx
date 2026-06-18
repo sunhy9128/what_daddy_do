@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput,
 import { getVaccines, getUserVaccinations, setVaccinationStatus } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
+import { useApp } from '../../context/AppContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { LoadingDot } from './ToolBase';
 
@@ -11,6 +12,7 @@ const CELL_H = 36;
 
 export function VaccineTracker({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { state } = useApp();
   const { width: screenW } = useWindowDimensions();
   const [vaccines, setVaccines] = useState<(Vaccine & { doses: VaccineDose[] })[]>([]);
   const [userVax, setUserVax] = useState<Map<number, UserVaccination>>(new Map());
@@ -31,7 +33,7 @@ export function VaccineTracker({ userId, expanded }: { userId: string; babyGende
       try {
         const [vaxList, userVaxList] = await Promise.all([
           getVaccines(),
-          getUserVaccinations(userId),
+          getUserVaccinations(userId, state.currentBabyId!),
         ]);
         setVaccines(vaxList);
         const map = new Map<number, UserVaccination>();
@@ -71,11 +73,11 @@ export function VaccineTracker({ userId, expanded }: { userId: string; babyGende
     setSaving(true);
     try {
       if (isDone) {
-        const res = await setVaccinationStatus(userId, selectedDose, false);
+        const res = await setVaccinationStatus(userId, state.currentBabyId!, selectedDose, false);
         setUserVax(prev => { const m = new Map(prev); m.set(selectedDose, res); return m; });
       } else {
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const res = await setVaccinationStatus(userId, selectedDose, true, dateStr);
+        const res = await setVaccinationStatus(userId, state.currentBabyId!, selectedDose, true, dateStr);
         setUserVax(prev => { const m = new Map(prev); m.set(selectedDose, res); return m; });
       }
       setShowModal(false);

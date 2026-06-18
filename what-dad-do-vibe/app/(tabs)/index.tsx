@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { useApp } from '../../src/context/AppContext';
 import { ToolGrid } from '../../src/components/tools/ToolGrid';
+import { BabySwitcher } from '../../src/components/BabySwitcher';
 import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GuideOverlay } from '../../src/components/GuideOverlay';
@@ -25,13 +26,14 @@ export default function HomeScreen() {
   const { session, loading: authLoading, user } = useAuth();
   const router = useRouter();
 
-  // 开发阶段：每次进入首页都检测是否显示恭喜页面
+  // 检测已出生但未确认性别的宝宝，跳转恭喜页面
   useEffect(() => {
-    if (!session || !state.babies[0]) return;
-    const baby = state.babies[0];
-    if (baby.gender) return; // 已确认性别，跳过
-    router.replace('/congratulations');
-  }, [session, state.babies]);
+    if (!session || !state.currentBabyId) return;
+    if (state.stage !== 'postpartum') return;
+    const baby = state.babies.find(b => b.id === state.currentBabyId);
+    if (!baby || baby.gender) return;
+    router.replace(`/congratulations?babyId=${baby.id}`);
+  }, [session, state.currentBabyId, state.babies, state.stage]);
 
   const [showUrgentModal, setShowUrgentModal] = useState(false);
   const [urgentText, setUrgentText] = useState('');
@@ -78,6 +80,12 @@ export default function HomeScreen() {
   stageText: { ...typography.title1, fontWeight: '700' },
   stageRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   weekText: { ...typography.callout, color: colors.accent, fontWeight: '500' },
+  stageMotto: {
+    ...typography.subhead,
+    color: colors.fgSecondary,
+    marginTop: spacing.xs,
+    lineHeight: 22,
+  },
 
   // 紧急关注
   urgentSection: {
@@ -272,6 +280,7 @@ export default function HomeScreen() {
     alignItems: 'center',
     gap: spacing.md,
     marginBottom: spacing.sm,
+    flexWrap: 'wrap',
   },
   bumpMetaItem: {
     flexDirection: 'row',
@@ -288,9 +297,10 @@ export default function HomeScreen() {
     color: colors.fg,
   },
   bumpMetaDivider: {
-    width: 1,
+    width: 12,
     height: 14,
     backgroundColor: colors.border,
+    flexShrink: 0,
   },
   bumpDesc: {
     ...typography.footnote,
@@ -589,10 +599,11 @@ export default function HomeScreen() {
       setLoadingItems(true);
       setLoadingSupport(true);
       try {
+        const babyId = state.currentBabyId;
         const [items, support, preps] = await Promise.all([
           getPresetItemsByPeriods(periods),
           getPsychologicalSupportByPeriods(periods),
-          getUserPreparations(user.id),
+          babyId ? getUserPreparations(user.id, babyId) : Promise.resolve([]),
         ]);
         setPresetItems(items);
         setSupportTips(support);
@@ -607,11 +618,11 @@ export default function HomeScreen() {
   }, [user, state.stage]);
 
   const handleToggleItem = async (itemId: string) => {
-    if (!user) return;
+    if (!user || !state.currentBabyId) return;
     const existing = userPreparations.find(p => p.item_id === itemId);
     const newStatus = existing?.status === 'prepared' ? 'not_prepared' : 'prepared';
     try {
-      const updated = await setUserPreparation(user.id, itemId, newStatus);
+      const updated = await setUserPreparation(user.id, state.currentBabyId, itemId, newStatus);
       setUserPreparations(prev => {
         const filtered = prev.filter(p => p.item_id !== itemId);
         return [...filtered, updated];
@@ -677,7 +688,15 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>准爸爸，你好 👋</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Ionicons name="heart-outline" size={18} color={colors.accent} />
+              <Text style={styles.greeting}>
+                {state.stage === 'postpartum' ? '新晋奶爸，辛苦了' : '准爸爸，你好'}
+              </Text>
+            </View>
+            <BabySwitcher />
+          </View>
           <View style={styles.stageRow}>
             <Text style={styles.stageText}>{stageLabel}</Text>
             {state.babies.length > 0 && (
@@ -686,6 +705,13 @@ export default function HomeScreen() {
               </Text>
             )}
           </View>
+          <Text style={styles.stageMotto}>
+            {state.stage === 'preconception' && '调整身心，迎接新生命的到来'}
+            {state.stage === 'first' && '孕早期要格外注意休息和营养均衡'}
+            {state.stage === 'second' && '宝宝正在快速发育，保持愉悦心情'}
+            {state.stage === 'third' && '胜利在望，为宝宝的到来做最后准备'}
+            {state.stage === 'postpartum' && '新的人生阶段开始了，享受每一刻'}
+          </Text>
         </View>
 
         {/* ===== 宝宝大小对比 ===== */}

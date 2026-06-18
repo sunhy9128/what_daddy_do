@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
+import { useApp } from '../../context/AppContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { loadChildCheckupRecords, saveChildCheckupRecords, ChildCheckupRecord } from '../../lib/storage';
 import { getWellChildVisits, getAllCheckupItems } from '../../lib/api';
@@ -35,6 +36,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 // ─── 组件 ───
 export function ChildCheckupTool({ userId, expanded }: { userId: string; babyGender?: string; expanded?: boolean }) {
   const colors = useColors();
+  const { state } = useApp();
 
   // DB 参考数据
   const [visits, setVisits] = useState<WellChildVisit[]>([]);
@@ -77,7 +79,7 @@ export function ChildCheckupTool({ userId, expanded }: { userId: string; babyGen
     if (!userId) { setRecordsLoading(false); return; }
     (async () => {
       try {
-        const data = await loadChildCheckupRecords(userId);
+        const data = await loadChildCheckupRecords(userId, state.currentBabyId!);
         setRecords(data);
       } catch (e) {
         console.error('loadChildCheckupRecords error:', e);
@@ -98,8 +100,8 @@ export function ChildCheckupTool({ userId, expanded }: { userId: string; babyGen
 
   const persist = useCallback((data: ChildCheckupRecord[]) => {
     setRecords(data);
-    saveChildCheckupRecords(userId, data);
-  }, [userId]);
+    saveChildCheckupRecords(userId, state.currentBabyId!, data);
+  }, [userId, state.currentBabyId]);
 
   const getRecord = useCallback((visitId: number) =>
     records.find(r => r.visitId === visitId),

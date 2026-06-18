@@ -21,6 +21,11 @@ import { MoodCheckIn } from '../src/components/tools/MoodCheckIn';
 import { MedicationSafetyTool } from '../src/components/tools/MedicationSafety';
 import { BabyMedicationSafetyTool } from '../src/components/tools/BabyMedicationSafety';
 import { BabyCareLog } from '../src/components/tools/BabyCareLog';
+import { BabySleepLog } from '../src/components/tools/BabySleepLog';
+import { BabyFoodRecipeTool } from '../src/components/tools/BabyFoodRecipe';
+import { ChildCheckupTool } from '../src/components/tools/ChildCheckup';
+import { DadDeliveryPrep } from '../src/components/tools/DadDeliveryPrep';
+import { TaskCalendar } from '../src/components/tools/TaskCalendar';
 
 interface ToolComponentProps {
   userId: string;
@@ -42,7 +47,12 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'mood-checkin': MoodCheckIn,
   'medication-safety': MedicationSafetyTool,
   'baby-medication-safety': BabyMedicationSafetyTool,
+  'baby-food-recipe': BabyFoodRecipeTool,
+  'child-checkup': ChildCheckupTool,
   'baby-care-log': BabyCareLog,
+  'baby-sleep-log': BabySleepLog,
+  'dad-delivery-prep': DadDeliveryPrep,
+  'task-calendar': TaskCalendar,
 };
 
 // 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中
@@ -52,6 +62,8 @@ const TOOL_JUSTIFY: Record<string, 'center' | 'flex-start'> = {
   'medication-safety': 'flex-start',
   'baby-medication-safety': 'flex-start',
   'baby-care-log': 'flex-start',
+  'baby-food-recipe': 'flex-start',
+  'child-checkup': 'flex-start',
 };
 
 export default function ToolDetailPage() {

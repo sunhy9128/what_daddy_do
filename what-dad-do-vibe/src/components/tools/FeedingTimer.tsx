@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography, shadows } from '../../styles/tokens';
 import { loadFeedingRecords, saveFeedingRecords, FeedingRecordData } from '../../lib/storage';
+import { useApp } from '../../context/AppContext';
 import { LoadingDot } from './ToolBase';
 
 interface FeedingRecord {
@@ -13,6 +14,7 @@ interface FeedingRecord {
 
 export function FeedingTimer({ userId }: { userId: string; babyGender?: string }) {
   const colors = useColors();
+  const { state } = useApp();
   const [records, setRecords] = useState<FeedingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const nextId = useRef(1);
@@ -25,7 +27,7 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
     setLoading(true);
     (async () => {
       try {
-        const all = await loadFeedingRecords(userId);
+        const all = await loadFeedingRecords(userId, state.currentBabyId!);
         allRecordsRef.current = all;
         const todaysRecords = all.filter(r => r.date === todayStr);
         setRecords(todaysRecords.map(r => ({ id: r.id, time: r.time })));
@@ -47,7 +49,7 @@ export function FeedingTimer({ userId }: { userId: string; babyGender?: string }
     }));
     const merged = [...otherDays, ...todaysRecords];
     allRecordsRef.current = merged;
-    saveFeedingRecords(userId, merged);
+    saveFeedingRecords(userId, state.currentBabyId!, merged);
   };
 
   const formatTime = (d: Date) => {
