@@ -31,9 +31,14 @@ export default function ProfileScreen() {
   const [pageIndex, setPageIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  // 使用 onScroll 持续监听，scrollEventThrottle=16 保证流畅
-  // 这是最可靠的方式 —— 不依赖 onMomentumScrollEnd/onScrollEndDrag（在嵌套 ScrollView 中不可靠）
-  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const scrollToBaby = useCallback((index: number) => {
+    if (index < 0 || index >= activeBabies.length || index === pageIndex) return;
+    flatListRef.current?.scrollToOffset({ offset: index * PAGE_WIDTH, animated: true });
+    setPageIndex(index);
+  }, [activeBabies.length, pageIndex, PAGE_WIDTH]);
+
+  // 滑动停止后才更新指示器（避免动画过程中抖动）
+  const onMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const newIndex = Math.round(offsetX / PAGE_WIDTH);
     if (newIndex >= 0 && newIndex < activeBabies.length && newIndex !== pageIndex) {
@@ -173,11 +178,25 @@ export default function ProfileScreen() {
     },
     logoutText: { ...typography.callout, fontWeight: '500', color: colors.error },
 
-    // 分页指示器
-    dotsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.md, height: 8 },
-    dot: { height: 6, borderRadius: 3, marginHorizontal: 3 },
-    dotActive: { width: 20, backgroundColor: colors.accent },
-    dotInactive: { width: 6, backgroundColor: colors.border },
+    // 分页指示器（匹配工具箱样式）
+    dotsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
+      paddingBottom: spacing.xs,
+    },
+    dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+    dotActive: { width: 24, borderRadius: 4, backgroundColor: colors.accent },
+    dotInactive: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+    pageBtn: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    pageBtnDisabled: {
+      opacity: 0.25,
+    },
   }), [colors, isDark]);
 
   return (
@@ -204,8 +223,7 @@ export default function ProfileScreen() {
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={item => item.id}
-                onScroll={onScroll}
-                scrollEventThrottle={16}
+                onMomentumScrollEnd={onMomentumEnd}
                 renderItem={({ item, index }) => {
                 const isLast = index === activeBabies.length - 1;
                 // 每张卡片外层"页容器"宽度 = PAGE_WIDTH (让 paging 步长 = 卡片+间距)
@@ -293,15 +311,35 @@ export default function ProfileScreen() {
             {/* 分页指示器 */}
             {activeBabies.length > 1 && (
               <View style={styles.dotsContainer}>
+                <TouchableOpacity
+                  style={[styles.pageBtn, pageIndex === 0 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToBaby(pageIndex - 1)}
+                  disabled={pageIndex === 0}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-back" size={16} color={pageIndex === 0 ? colors.muted : colors.accent} />
+                </TouchableOpacity>
+
                 {activeBabies.map((_, index) => (
-                  <View
+                  <TouchableOpacity
                     key={index}
                     style={[
                       styles.dot,
-                      index === pageIndex ? styles.dotActive : styles.dotInactive,
+                      index === pageIndex && styles.dotActive,
                     ]}
+                    onPress={() => scrollToBaby(index)}
+                    activeOpacity={0.7}
                   />
                 ))}
+
+                <TouchableOpacity
+                  style={[styles.pageBtn, pageIndex >= activeBabies.length - 1 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToBaby(pageIndex + 1)}
+                  disabled={pageIndex >= activeBabies.length - 1}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={pageIndex >= activeBabies.length - 1 ? colors.muted : colors.accent} />
+                </TouchableOpacity>
               </View>
             )}
           </>

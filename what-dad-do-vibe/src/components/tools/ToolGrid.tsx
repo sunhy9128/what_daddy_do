@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, Pressable, StyleSheet, Animated, LayoutAnimation, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Pressable, StyleSheet, Animated, LayoutAnimation, Platform, ScrollView, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../styles/tokens';
@@ -33,6 +33,14 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
   const [deleteReady, setDeleteReady] = useState(false);
   const rippleAnim = useRef(new Animated.Value(0)).current;
   const deleteTargetRef = useRef<string | null>(null);
+
+  // 页面滑动动画
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const gridWidthRef = useRef(300);
+
+  const handleGridLayout = useCallback((e: any) => {
+    gridWidthRef.current = e.nativeEvent.layout.width;
+  }, []);
 
   const startReveal = useCallback((instanceId: string) => {
     deleteTargetRef.current = instanceId;
@@ -111,11 +119,28 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
     return items;
   }, [tools, page, totalPages]);
 
-  // 切页时重置删除状态
+  // 切页时重置删除状态并执行滑动动画
   const goToPage = useCallback((p: number) => {
+    if (p === page || p < 0 || p >= totalPages) return;
     resetReveal();
+
+    const direction = p > page;
+    const width = gridWidthRef.current;
+
+    slideAnim.stopAnimation();
+    // 新内容从对侧滑入：前进从右(+width)，后退从左(-width)
+    slideAnim.setValue(direction ? width : -width);
     setPage(p);
-  }, [resetReveal]);
+
+    requestAnimationFrame(() => {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: Platform.OS !== 'web',
+      }).start();
+    });
+  }, [page, totalPages, resetReveal, slideAnim]);
 
   // ─── 选择器分页计算 ───
   const pickerTotalPages = useMemo(
@@ -369,23 +394,25 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
         {deleteReady && (
           <Pressable style={styles.dismissOverlay} onPress={resetReveal} />
         )}
-        <View style={styles.grid}>
-          {pageContent.map(item =>
-            item.type === 'tool'
-              ? renderToolItem(item.tool)
-              : (
-                <View key="add-btn" style={styles.gridItem}>
-                  <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={deleteReveal ? resetReveal : () => { setShowPicker(true); setPickerPage(0); }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="add" size={28} color={colors.muted} />
-                    <Text style={styles.addLabel}>添加</Text>
-                  </TouchableOpacity>
-                </View>
-              )
-          )}
+        <View style={{ overflow: 'hidden' }} onLayout={handleGridLayout}>
+          <Animated.View style={[styles.grid, { transform: [{ translateX: slideAnim }] }]}>
+            {pageContent.map(item =>
+              item.type === 'tool'
+                ? renderToolItem(item.tool)
+                : (
+                  <View key="add-btn" style={styles.gridItem}>
+                    <TouchableOpacity
+                      style={styles.addBtn}
+                      onPress={deleteReveal ? resetReveal : () => { setShowPicker(true); setPickerPage(0); }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="add" size={28} color={colors.muted} />
+                      <Text style={styles.addLabel}>添加</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+            )}
+          </Animated.View>
         </View>
       </View>
 
