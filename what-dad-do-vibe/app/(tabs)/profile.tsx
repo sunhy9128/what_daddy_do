@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useApp } from '../../src/context/AppContext';
 import { useColors, useTheme } from '../../src/context/ThemeContext';
@@ -30,21 +31,47 @@ export default function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const programmaticScrolling = useRef(false);
+  const pageIndexRef = useRef(0);
 
   const scrollToBaby = useCallback((index: number) => {
-    if (index < 0 || index >= activeBabies.length || index === pageIndex) return;
+    if (index < 0 || index >= activeBabies.length || index === pageIndexRef.current) return;
+    programmaticScrolling.current = true;
     flatListRef.current?.scrollToOffset({ offset: index * PAGE_WIDTH, animated: true });
+    pageIndexRef.current = index;
     setPageIndex(index);
-  }, [activeBabies.length, pageIndex, PAGE_WIDTH]);
+  }, [activeBabies.length, PAGE_WIDTH]);
 
-  // 滑动停止后才更新指示器（避免动画过程中抖动）
-  const onMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  // onScroll 实时同步指示器，但跳过按钮触发的程序化滚动（防抖动）
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (programmaticScrolling.current) return;
     const offsetX = e.nativeEvent.contentOffset.x;
     const newIndex = Math.round(offsetX / PAGE_WIDTH);
-    if (newIndex >= 0 && newIndex < activeBabies.length && newIndex !== pageIndex) {
+    if (newIndex >= 0 && newIndex < activeBabies.length && newIndex !== pageIndexRef.current) {
+      pageIndexRef.current = newIndex;
       setPageIndex(newIndex);
     }
-  }, [PAGE_WIDTH, activeBabies.length, pageIndex]);
+  }, [PAGE_WIDTH, activeBabies.length]);
+
+  // 程序化滚动结束后释放守卫，后续手动滑动可正常同步
+  const onMomentumEnd = useCallback(() => {
+    programmaticScrolling.current = false;
+  }, []);
+
+  // 进入页面时自动滚动到当前选中的宝宝
+  useFocusEffect(
+    useCallback(() => {
+      const currentIdx = activeBabies.findIndex(b => b.id === state.currentBabyId);
+      if (currentIdx > 0) {
+        programmaticScrolling.current = true;
+        flatListRef.current?.scrollToOffset({ offset: currentIdx * PAGE_WIDTH, animated: false });
+        pageIndexRef.current = currentIdx;
+        setPageIndex(currentIdx);
+        programmaticScrolling.current = false;
+      }
+    }, [activeBabies, state.currentBabyId, PAGE_WIDTH])
+  );
+
   const handleLogout = async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -223,6 +250,8 @@ export default function ProfileScreen() {
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={item => item.id}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
                 onMomentumScrollEnd={onMomentumEnd}
                 renderItem={({ item, index }) => {
                 const isLast = index === activeBabies.length - 1;
