@@ -1,5 +1,5 @@
 #!/bin/bash
-export JAVA_HOME=/tmp/jdk17/Contents/Home
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 cd "$(dirname "$0")/../android"
 rm -rf .gradle
