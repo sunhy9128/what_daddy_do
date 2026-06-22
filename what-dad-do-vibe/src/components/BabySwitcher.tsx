@@ -12,6 +12,7 @@ export function BabySwitcher() {
   const [editingBaby, setEditingBaby] = useState<{ id: string; name: string } | null>(null);
   const [editName, setEditName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const router = useRouter();
   const colors = useColors();
 
@@ -197,6 +198,33 @@ export function BabySwitcher() {
       fontWeight: '600',
       color: '#fff',
     },
+
+    // ===== 切换宝宝 Loading =====
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999,
+    },
+    loadingBox: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.xxl,
+      alignItems: 'center',
+      gap: spacing.md,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    loadingText: {
+      ...typography.callout,
+      color: colors.fgSecondary,
+      fontWeight: '500',
+    },
   });
 
   return (
@@ -236,8 +264,11 @@ export function BabySwitcher() {
                   <View style={[styles.row, isCurrent && styles.rowActive]}>
                     <Pressable
                       onPress={async () => {
+                        if (switching || isCurrent) return;
+                        setSwitching(true);
                         await setActiveBaby(item.id);
                         setOpen(false);
+                        setSwitching(false);
                       }}
                       style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
                     >
@@ -325,6 +356,16 @@ export function BabySwitcher() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* 切换宝宝 Loading */}
+      {switching && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={styles.loadingText}>正在切换宝宝…</Text>
+          </View>
+        </View>
+      )}
     </>
   );
 }
