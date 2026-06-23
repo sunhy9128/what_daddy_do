@@ -24,8 +24,8 @@ import { ensurePresetTasksForBaby } from '../ensurePresetTasks';
 import type { AppAction, AppState, Baby } from '../types';
 
 export interface UseBabyActionsResult {
-  addBaby: (dueDate: string, name?: string, birthDate?: string) => Promise<void>;
-  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string) => Promise<void>;
+  addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
+  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
   setActiveBaby: (id: string) => Promise<void>;
   archiveBaby: (id: string) => Promise<void>;
   reorderBabies: (orderedIds: string[]) => Promise<void>;
@@ -44,7 +44,7 @@ export function useBabyActions(
     babiesRef.current = state.babies;
   }, [state.babies]);
 
-  const addBaby = useCallback(async (dueDate: string, name: string = '宝宝', birthDate?: string) => {
+  const addBaby = useCallback(async (dueDate: string, name: string = '宝宝', birthDate?: string, hospitalName?: string, hospitalLocation?: string) => {
     if (!user) return;
     const nextSortOrder = state.babies.length;
     try {
@@ -53,6 +53,8 @@ export function useBabyActions(
         due_date: dueDate,
         birth_date: birthDate || null,
         name,
+        hospital_name: hospitalName || null,
+        hospital_location: hospitalLocation || null,
         sort_order: nextSortOrder,
         is_active: true,
         is_archived: false,
@@ -71,6 +73,8 @@ export function useBabyActions(
             is_active: true,
             is_archived: false,
             sort_order: nextSortOrder,
+            hospitalName: baby.hospital_name,
+            hospitalLocation: baby.hospital_location,
           },
           stage: calc.stage,
           weeksPregnant: calc.weeksPregnant,
@@ -92,12 +96,16 @@ export function useBabyActions(
     dueDate?: string,
     birthDate?: string,
     name?: string,
+    hospitalName?: string,
+    hospitalLocation?: string,
   ) => {
-    const updates: { [k: string]: string } = {};
+    const updates: { [k: string]: string | null } = {};
     if (dueDate) updates.due_date = dueDate;
     if (gender) updates.gender = gender;
     if (birthDate) updates.birth_date = birthDate;
     if (name) updates.name = name;
+    if (hospitalName !== undefined) updates.hospital_name = hospitalName || null;
+    if (hospitalLocation !== undefined) updates.hospital_location = hospitalLocation || null;
     try {
       await updateBabyInDb(babyId, updates);
       const today = dueDate || new Date().toISOString().split('T')[0];
@@ -106,7 +114,7 @@ export function useBabyActions(
       dispatch({
         type: 'SET_BABIES',
         payload: {
-          babies: state.babies.map(b => b.id === babyId ? { ...b, ...(gender ? { gender } : {}), ...(name ? { name: name } : {}), dueDate: today, birthDate: birthDate || b.birthDate } : b),
+          babies: state.babies.map(b => b.id === babyId ? { ...b, ...(gender ? { gender } : {}), ...(name ? { name: name } : {}), dueDate: today, birthDate: birthDate || b.birthDate, hospitalName: hospitalName !== undefined ? (hospitalName || null) : b.hospitalName, hospitalLocation: hospitalLocation !== undefined ? (hospitalLocation || null) : b.hospitalLocation } : b),
           stage: calc.stage,
           weeksPregnant: calc.weeksPregnant,
           birthAgeLabel,

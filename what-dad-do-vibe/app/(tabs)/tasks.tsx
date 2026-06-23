@@ -15,6 +15,7 @@ import { useColors } from '../../src/context/ThemeContext';
 import { radius, spacing, shadows, typography } from '../../src/styles/tokens';
 import { Ionicons } from '@expo/vector-icons';
 import { DatePicker } from '../../src/components/DatePicker';
+import * as Linking from 'expo-linking';
 
 // 孕期阶段顺序（用于判断是否为已过阶段）
 const STAGE_ORDER: PregnancyStage[] = ['preconception', 'first', 'second', 'third', 'postpartum'];
@@ -42,12 +43,14 @@ export default function TasksScreen() {
   const [selectedStage, setSelectedStage] = useState(STAGE_LABELS[state.stage] || '孕晚期');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskType, setNewTaskType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
   const [newTaskDate, setNewTaskDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
   const [editType, setEditType] = useState<'checkin' | 'prenatal' | 'daily'>('daily');
   const [editDate, setEditDate] = useState('');
   const [presetTasks, setPresetTasks] = useState<PresetTask[]>([]);
@@ -523,9 +526,11 @@ export default function TasksScreen() {
         title: newTaskTitle.trim(),
         stage: currentStageKey,
         type: detectedType,
+        description: newTaskDesc.trim() || undefined,
         ...(dueDate ? { dueDate } : {}),
       });
       setNewTaskTitle('');
+      setNewTaskDesc('');
       setNewTaskDate(new Date().toISOString().split('T')[0]);
       setShowAddModal(false);
       const typeLabelMap: Record<string, string> = { prenatal: '产检', daily: '日常', checkin: '打卡' };
@@ -557,9 +562,38 @@ export default function TasksScreen() {
     setShowInfoModal(true);
   };
 
+  const handleNavigateToHospital = useCallback(() => {
+    const currentBaby = state.babies.find(b => b.id === state.currentBabyId);
+    const hName = currentBaby?.hospitalName;
+    const hLoc = currentBaby?.hospitalLocation;
+    let hAddr = '';
+    let hLat: number | undefined;
+    let hLng: number | undefined;
+    if (hLoc) {
+      try {
+        const parsed = JSON.parse(hLoc);
+        hAddr = parsed.address || '';
+        hLat = parsed.lat;
+        hLng = parsed.lng;
+      } catch {}
+    }
+    if (!hName && !hAddr) return;
+
+    const encoded = encodeURIComponent(hAddr);
+    const url = hLat != null && hLng != null
+      ? (Platform.OS === 'ios'
+        ? `https://maps.apple.com/?ll=${hLat},${hLng}&q=${encoded}`
+        : `https://maps.google.com/?q=${hLat},${hLng}`)
+      : (Platform.OS === 'ios'
+        ? `https://maps.apple.com/?q=${encoded}`
+        : `https://maps.google.com/?q=${encoded}`);
+    Linking.openURL(url);
+  }, [state.babies, state.currentBabyId]);
+
   const handleEditTask = () => {
     if (selectedTask) {
       setEditTitle(selectedTask.title);
+      setEditDesc(selectedTask.description || '');
       setEditType(selectedTask.type as 'checkin' | 'prenatal' | 'daily');
       setEditDate(selectedTask.dueDate || new Date().toISOString().split('T')[0]);
       setIsEditMode(true);
@@ -583,9 +617,10 @@ export default function TasksScreen() {
     }
     taskBusy.current = true;
     try {
-      const editUpdates: { title: string; type: 'checkin' | 'prenatal' | 'daily'; dueDate?: string } = {
+      const editUpdates: { title: string; type: 'checkin' | 'prenatal' | 'daily'; description?: string; dueDate?: string } = {
         title: editTitle.trim(),
         type: editType,
+        description: editDesc.trim() || undefined,
       };
       if (editDate) {
         editUpdates.dueDate = editDate;
@@ -645,7 +680,7 @@ export default function TasksScreen() {
           <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {prenatalTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onNavigate={handleNavigateToHospital} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -687,7 +722,7 @@ export default function TasksScreen() {
                 <Text style={styles.presetGroupBadgeText}>{availablePresets.length}</Text>
               </View>
             </View>
-            <Text style={styles.presetGroupArrow}>{showPresets ? '▼' : '▶'}</Text>
+            <Ionicons name={showPresets ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
           </TouchableOpacity>
 
           {showPresets && (
@@ -737,7 +772,7 @@ export default function TasksScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>添加任务</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowAddModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={styles.modalCloseIcon}>✕</Text>
+                <Ionicons name="close" size={18} color={colors.fgSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -788,6 +823,21 @@ export default function TasksScreen() {
               label="预约日期"
             />
 
+            {/* 温馨提示（仅产检任务） */}
+            {newTaskType === 'prenatal' && (
+              <>
+                <Text style={[styles.modalLabel, { marginTop: spacing.md }]}>温馨提示</Text>
+                <TextInput
+                  style={[styles.modalInput, { minHeight: 60, textAlignVertical: 'top' }]}
+                  placeholder="填写注意事项，如：需空腹、携带身份证/医保卡……"
+                  placeholderTextColor={colors.muted}
+                  value={newTaskDesc}
+                  onChangeText={setNewTaskDesc}
+                  multiline
+                />
+              </>
+            )}
+
             {/* 底部操作区 */}
             <View style={styles.modalActions}>
               <Button title="取消" variant="ghost" onPress={() => setShowAddModal(false)} style={styles.modalActionBtn} />
@@ -805,7 +855,7 @@ export default function TasksScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{isEditMode ? '编辑任务' : '任务详情'}</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => { setShowInfoModal(false); setIsEditMode(false); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={styles.modalCloseIcon}>✕</Text>
+                <Ionicons name="close" size={18} color={colors.fgSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -853,10 +903,26 @@ export default function TasksScreen() {
                       label="预约日期"
                     />
 
+                    {/* 温馨提示 */}
+                    {editType === 'prenatal' && (
+                      <>
+                        <Text style={[styles.modalLabel, { marginTop: spacing.md }]}>温馨提示</Text>
+                        <TextInput
+                          style={[styles.modalInput, { minHeight: 60, textAlignVertical: 'top' }]}
+                          placeholder="填写注意事项，如：需空腹、携带身份证/医保卡……"
+                          placeholderTextColor={colors.muted}
+                          value={editDesc}
+                          onChangeText={setEditDesc}
+                          multiline
+                        />
+                      </>
+                    )}
+
                     <Button title="保存" variant="primary" onPress={handleSaveEdit} />
                   </>
                 ) : (
-                  <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                  <>
+                  <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
                     {/* 任务标题 + 完成状态 */}
                     <View style={styles.detailHeader}>
                       <Text style={styles.detailTitle}>{selectedTask.title}</Text>
@@ -904,6 +970,41 @@ export default function TasksScreen() {
                       )}
                     </View>
 
+                    {/* 产检医院信息（仅产检任务） */}
+                    {selectedTask.type === 'prenatal' && (() => {
+                      const currentBaby = state.babies.find(b => b.id === state.currentBabyId);
+                      const hName = currentBaby?.hospitalName;
+                      const hLoc = currentBaby?.hospitalLocation;
+                      let hAddr = '';
+                      if (hLoc) {
+                        try {
+                          const parsed = JSON.parse(hLoc);
+                          hAddr = parsed.address || '';
+                        } catch {}
+                      }
+                      if (!hName && !hAddr) return null;
+                      return (
+                        <View style={[styles.detailSection, { marginTop: spacing.sm }]}>
+                          <View style={styles.detailInfoGroup}>
+                            {hName && (
+                              <View style={styles.detailInfoRow}>
+                                <Text style={styles.detailInfoLabel}><Ionicons name="medkit-outline" size={16} color={colors.fgSecondary} /> 产检医院</Text>
+                                <Text style={styles.detailInfoValue}>{hName}</Text>
+                              </View>
+                            )}
+                            {hAddr && (
+                              <View style={styles.detailInfoRow}>
+                                <Text style={styles.detailInfoLabel}><Ionicons name="location-outline" size={16} color={colors.fgSecondary} /> 地址</Text>
+                                <Text style={[styles.detailInfoValue, { fontSize: 13 }]} numberOfLines={2}>{hAddr}</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })()}
+
+                  </ScrollView>
+
                     {/* 操作按钮 */}
                     <View style={styles.actionButtons}>
                       {isPastStageTask(selectedTask.stage) ? (
@@ -918,7 +1019,7 @@ export default function TasksScreen() {
                         </>
                       )}
                     </View>
-                  </ScrollView>
+                    </>
                 )}
               </View>
             )}

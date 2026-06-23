@@ -6,6 +6,7 @@ import { radius, spacing, typography, shadows } from '../../styles/tokens';
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+import { Ionicons } from '@expo/vector-icons';
 import { GrowthChart } from './GrowthChart';
 import { loadGrowthRecords, saveGrowthRecords, GrowthRecordData } from '../../lib/storage';
 import { useApp } from '../../context/AppContext';
@@ -296,8 +297,9 @@ export function GrowthTracker({ userId, babyGender, expanded }: { userId: string
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled>
       {/* 性别 */}
       <View style={styles.genderRow}>
+        <Ionicons name={babyGender === 'girl' ? 'woman-outline' : 'man-outline'} size={18} color={colors.fgSecondary} />
         <Text style={styles.genderDisplay}>
-          {babyGender === 'girl' ? '👧 女童' : '👦 男童'}
+          {babyGender === 'girl' ? '女童' : '男童'}
         </Text>
       </View>
 
@@ -373,10 +375,10 @@ export function GrowthTracker({ userId, babyGender, expanded }: { userId: string
                         </View>
                         <View style={[styles.historyCell, { flex: 2, flexDirection: 'row', gap: 4 }]}>
                           <TouchableOpacity style={styles.editRowBtn} onPress={saveEdit}>
-                            <Text style={styles.editRowBtnText}>✓</Text>
+                            <Ionicons name="checkmark" size={16} color={colors.success} />
                           </TouchableOpacity>
                           <TouchableOpacity style={[styles.editRowBtn, styles.editRowBtnDel]} onPress={() => { setEditingIdx(null); confirmDelete(i); }}>
-                            <Text style={styles.editRowBtnTextDel}>✕</Text>
+                            <Ionicons name="close" size={16} color={colors.error} />
                           </TouchableOpacity>
                         </View>
                       </>
@@ -394,10 +396,10 @@ export function GrowthTracker({ userId, babyGender, expanded }: { userId: string
                         {editMode && (
                           <View style={[styles.historyCell, { flex: 2, flexDirection: 'row', gap: 4 }]}>
                             <TouchableOpacity style={styles.editRowBtn} onPress={() => enterEdit(i)}>
-                              <Text style={styles.editRowBtnText}>✎</Text>
+                              <Ionicons name="create-outline" size={16} color={colors.accent} />
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.editRowBtn, styles.editRowBtnDel]} onPress={() => confirmDelete(i)}>
-                              <Text style={styles.editRowBtnTextDel}>✕</Text>
+                              <Ionicons name="close" size={16} color={colors.error} />
                             </TouchableOpacity>
                           </View>
                         )}

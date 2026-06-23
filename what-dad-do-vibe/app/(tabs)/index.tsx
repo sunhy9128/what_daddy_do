@@ -785,13 +785,13 @@ export default function HomeScreen() {
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.urgentCloseText}>✕</Text>
+                <Ionicons name="close" size={16} color={colors.muted} />
               </TouchableOpacity>
             </View>
           ))}
           {/* 新增按钮 */}
           <TouchableOpacity style={styles.urgentAddBtn} onPress={() => { setUrgentText(''); setShowUrgentModal(true); }}>
-            <Text style={styles.urgentAddIcon}>+</Text>
+            <Ionicons name="add" size={16} color={colors.accent} />
             <Text style={styles.urgentAddText}>新增紧急关注</Text>
           </TouchableOpacity>
         </View>
@@ -865,7 +865,7 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
-                    {isPrepared && <Text style={styles.prepCheckmark}>✓</Text>}
+                    {isPrepared && <Ionicons name="checkmark" size={14} color="#fff" />}
                   </View>
                   <View style={styles.prepInfo}>
                     <View style={styles.prepHeaderRow}>

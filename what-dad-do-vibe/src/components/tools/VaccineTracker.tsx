@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, Platform, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getVaccines, getUserVaccinations, setVaccinationStatus } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
@@ -190,9 +191,9 @@ export function VaccineTracker({ userId, expanded }: { userId: string; babyGende
                     onPress={() => openConfirm(dose.id, record)}
                   >
                     {done ? (
-                      <><Text style={styles.cellDoneText}>✓</Text>{dateStr && <Text style={styles.cellDate}>{formatDate(dateStr)}</Text>}</>
+                      <><Ionicons name="checkmark" size={16} color="#fff" style={{ marginBottom: 2 }} />{dateStr && <Text style={styles.cellDate}>{formatDate(dateStr)}</Text>}</>
                     ) : (
-                      <Text style={styles.cellEmpty}>+</Text>
+                      <Ionicons name="add" size={16} color={colors.muted} />
                     )}
                   </TouchableOpacity>
                 );
@@ -224,8 +225,8 @@ export function VaccineTracker({ userId, expanded }: { userId: string; babyGende
           {renderTable('自费疫苗', grouped.paid, '#FF8E53')}
 
           <View style={styles.legend}>
-            <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.success }]}><Text style={styles.swatchText}>✓</Text></View><Text style={styles.legendText}>已接种</Text></View>
-            <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.surfaceSecondary }]}><Text style={[styles.swatchText, { color: colors.muted }]}>+</Text></View><Text style={styles.legendText}>未接种</Text></View>
+            <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.success }]}><Ionicons name="checkmark" size={12} color="#fff" /></View><Text style={styles.legendText}>已接种</Text></View>
+            <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.surfaceSecondary }]}><Ionicons name="add" size={12} color={colors.muted} /></View><Text style={styles.legendText}>未接种</Text></View>
           </View>
         </>
       )}

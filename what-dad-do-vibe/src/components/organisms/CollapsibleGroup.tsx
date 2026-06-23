@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -83,7 +84,7 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
             <Text style={styles.badgeText}>{count}</Text>
           </View>
         </View>
-        <Text style={styles.arrow}>{expanded ? '▼' : '▶'}</Text>
+        <Ionicons name={expanded ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
       </TouchableOpacity>
       {expanded && <View style={styles.content}>{children}</View>}
     </View>

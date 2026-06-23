@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
@@ -145,7 +146,7 @@ export default function CongratulationsScreen() {
       <Confetti />
       <View style={styles.content}>
         {/* 标题 */}
-        <Text style={styles.emoji}>🎉</Text>
+        <Ionicons name="happy-outline" size={64} color={colors.accent} style={{ marginBottom: spacing.lg }} />
         <Text style={styles.title}>恭喜升级！</Text>
         <Text style={styles.subtitle}>
           宝宝已经平安来到这个世界{'\n'}准备好迎接全新的旅程了吗？
@@ -158,9 +159,12 @@ export default function CongratulationsScreen() {
             style={[styles.genderBtn, selectedGender === 'boy' && styles.genderBtnBoy]}
             onPress={() => setSelectedGender('boy')}
           >
-            <Text style={[styles.genderIcon, selectedGender === 'boy' && styles.genderIconActive]}>
-              👦
-            </Text>
+            <Ionicons
+              name="man-outline"
+              size={44}
+              color={selectedGender === 'boy' ? '#4D96FF' : colors.fgSecondary}
+              style={{ opacity: selectedGender === 'boy' ? 1 : 0.5 }}
+            />
             <Text style={[styles.genderLabel, selectedGender === 'boy' && styles.genderLabelActive]}>
               小王子
             </Text>
@@ -169,9 +173,12 @@ export default function CongratulationsScreen() {
             style={[styles.genderBtn, selectedGender === 'girl' && styles.genderBtnGirl]}
             onPress={() => setSelectedGender('girl')}
           >
-            <Text style={[styles.genderIcon, selectedGender === 'girl' && styles.genderIconActive]}>
-              👧
-            </Text>
+            <Ionicons
+              name="woman-outline"
+              size={44}
+              color={selectedGender === 'girl' ? '#F472B6' : colors.fgSecondary}
+              style={{ opacity: selectedGender === 'girl' ? 1 : 0.5 }}
+            />
             <Text style={[styles.genderLabel, selectedGender === 'girl' && styles.genderLabelActive]}>
               小公主
             </Text>

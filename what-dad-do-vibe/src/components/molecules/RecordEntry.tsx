@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -88,7 +89,7 @@ export function RecordEntry({ title, content, time, isPrivate = false, onPress, 
               onPress={handleDelete}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.deleteIcon}>✕</Text>
+              <Ionicons name="close" size={14} color={colors.muted} />
             </TouchableOpacity>
           )}
         </View>

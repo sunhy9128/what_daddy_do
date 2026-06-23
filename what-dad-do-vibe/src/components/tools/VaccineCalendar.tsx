@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getVaccines, getUserVaccinations } from '../../lib/api';
 import { Vaccine, VaccineDose, UserVaccination } from '../../lib/supabase';
 import { useColors } from '../../context/ThemeContext';
@@ -197,7 +198,11 @@ export function VaccineCalendar({ userId, expanded }: { userId: string; babyGend
                           backgroundColor: isDone ? '#6BCB77' : barColor(vax.category),
                           opacity: isDone ? 0.6 : 1,
                         }]}>
-                          <Text style={styles.barLabel}>{isDone ? '✓' : `${dose.dose_number}`}</Text>
+                          {isDone ? (
+                            <Ionicons name="checkmark" size={10} color="#fff" />
+                          ) : (
+                            <Text style={styles.barLabel}>{dose.dose_number}</Text>
+                          )}
                         </View>
                       );
                     })}

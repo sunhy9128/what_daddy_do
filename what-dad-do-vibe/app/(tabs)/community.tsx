@@ -424,7 +424,7 @@ export default function CommunityScreen() {
     <>
       <View style={styles.modalTopBar}>
         <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.modalCloseIcon}>✕</Text>
+          <Ionicons name="close" size={20} color={colors.fgSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -498,7 +498,7 @@ function PostDetailContent({
       {/* 关闭按钮 */}
       <View style={styles.modalTopBar}>
         <TouchableOpacity style={styles.modalClose} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.modalCloseIcon}>✕</Text>
+          <Ionicons name="close" size={20} color={colors.fgSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -666,7 +666,7 @@ function PostDetailContent({
         }
         setShowCreateModal(true);
       }} activeOpacity={0.8}>
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="add" size={24} color="#fff" />
       </TouchableOpacity>
 
       {/* 创建帖子弹窗 */}
@@ -676,7 +676,7 @@ function PostDetailContent({
             <View style={styles.modalTopBar}>
               <Text style={{ ...typography.title3, fontWeight: '700', color: colors.fg, flex: 1 }}>发布经验</Text>
               <TouchableOpacity style={styles.modalClose} onPress={() => !creatingPost && setShowCreateModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text style={styles.modalCloseIcon}>✕</Text>
+                <Ionicons name="close" size={20} color={colors.fgSecondary} />
               </TouchableOpacity>
             </View>
 

@@ -30,8 +30,17 @@ export interface Baby {
   is_active: boolean;
   is_archived: boolean;
   sort_order: number;
+  hospital_name: string | null;
+  hospital_location: string | null; // JSON: { lat, lng, address }
   created_at: string;
   updated_at: string;
+}
+
+/** 医院位置信息 */
+export interface HospitalLocation {
+  lat: number;
+  lng: number;
+  address: string;
 }
 
 export interface FoodSafety {
@@ -73,6 +82,7 @@ export interface Task {
   daily_date: string | null;
   streak_count: number;
   last_checkin_date: string | null;
+  location: string | null; // JSON: { name: string; lat: number; lng: number; address: string }
   created_at: string;
 }
 

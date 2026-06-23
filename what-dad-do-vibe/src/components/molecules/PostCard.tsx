@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Badge } from '../atoms';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
@@ -88,11 +89,11 @@ export function PostCard({
       <Text style={styles.content}>{content}</Text>
       <View style={styles.actions}>
         <TouchableOpacity style={styles.action}>
-          <Text style={styles.actionIcon}>♥</Text>
+          <Ionicons name="heart-outline" size={18} color={colors.muted} />
           <Text style={styles.actionText}>{likes}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.action}>
-          <Text style={styles.actionIcon}>💬</Text>
+          <Ionicons name="chatbubble-outline" size={18} color={colors.muted} />
           <Text style={styles.actionText}>{comments}</Text>
         </TouchableOpacity>
       </View>

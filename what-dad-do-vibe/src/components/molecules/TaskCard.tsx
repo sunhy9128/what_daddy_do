@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Tag } from '../atoms';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
@@ -15,6 +16,7 @@ interface TaskCardProps {
   onPress?: () => void;
   onToggle?: () => void;
   onInfo?: () => void;
+  onNavigate?: () => void;
   onDelete?: () => void;
   readOnly?: boolean;
 }
@@ -42,6 +44,7 @@ export function TaskCard({
   onPress,
   onToggle,
   onInfo,
+  onNavigate,
   onDelete,
   readOnly = false,
 }: TaskCardProps) {
@@ -170,10 +173,14 @@ export function TaskCard({
       alignItems: 'center',
       justifyContent: 'center',
     },
-    infoButtonText: {
-      fontSize: 14,
-      color: colors.fgSecondary,
-      fontWeight: '600',
+    navigateButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.accent + '18',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 6,
     },
   }), [colors]);
 
@@ -232,7 +239,7 @@ export function TaskCard({
           activeOpacity={0.6}
         >
           {isCompleted && (
-            <Text style={styles.checkmark}>✓</Text>
+            <Ionicons name="checkmark" size={14} color={colors.surface} />
           )}
         </TouchableOpacity>
       )}
@@ -254,11 +261,18 @@ export function TaskCard({
           ) : null}
         </View>
       </View>
-      {onInfo && (
-        <TouchableOpacity style={styles.infoButton} onPress={handleInfoPress}>
-          <Text style={styles.infoButtonText}>i</Text>
-        </TouchableOpacity>
-      )}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {onInfo && (
+          <TouchableOpacity style={styles.infoButton} onPress={handleInfoPress}>
+            <Ionicons name="information-circle-outline" size={18} color={colors.fgSecondary} />
+          </TouchableOpacity>
+        )}
+        {type === 'prenatal' && onNavigate && (
+          <TouchableOpacity style={styles.navigateButton} onPress={onNavigate}>
+            <Ionicons name="navigate-outline" size={14} color={colors.accent} />
+          </TouchableOpacity>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }

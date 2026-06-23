@@ -538,7 +538,7 @@ export function ChildCheckupTool({ userId, expanded }: { userId: string; babyGen
           {displayVisits.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="checkmark-done-circle-outline" size={40} color={colors.success} />
-              <Text style={styles.emptyText}>所有儿保都已记录 ✓</Text>
+              <Text style={styles.emptyText}>所有儿保都已记录 <Ionicons name="checkmark-circle" size={14} color={colors.success} /></Text>
               <TouchableOpacity
                 style={styles.filterBtn}
                 onPress={() => setShowCompleted(true)}

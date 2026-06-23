@@ -159,7 +159,7 @@ export function ToolBase({
               onPress={() => onRemove(tool.id)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.removeIcon}>✕</Text>
+              <Ionicons name="close" size={14} color={colors.muted} />
             </TouchableOpacity>
           )}
         </View>

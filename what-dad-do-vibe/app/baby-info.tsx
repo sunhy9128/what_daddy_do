@@ -10,6 +10,7 @@ import { useColors, useTheme } from '../src/context/ThemeContext';
 import { spacing, radius, typography, shadows } from '../src/styles/tokens';
 import { loadMomWeightConfig, saveMomWeightConfig } from '../src/lib/storage';
 import { DatePicker } from '../src/components/DatePicker';
+import * as Linking from 'expo-linking';
 
 export default function BabyInfoScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +27,9 @@ export default function BabyInfoScreen() {
   const [dueDate, setDueDate] = useState(existingBaby?.dueDate || new Date().toISOString().split('T')[0]);
   const [preWeight, setPreWeight] = useState('');
   const [height, setHeight] = useState('');
+  const [hospitalName, setHospitalName] = useState(existingBaby?.hospitalName || '');
+  const [hospitalAddress, setHospitalAddress] = useState(existingBaby?.hospitalLocation ? (() => { try { return JSON.parse(existingBaby.hospitalLocation).address; } catch { return ''; } })() : '');
+  const hospitalLocationJson = hospitalAddress ? JSON.stringify({ address: hospitalAddress }) : '';
   const [saving, setSaving] = useState(false);
   // 加载孕前体重/身高配置
   useEffect(() => {
@@ -182,9 +186,9 @@ export default function BabyInfoScreen() {
     setSaving(true);
     try {
       if (existingBaby) {
-        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate);
+        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate, undefined, undefined, hospitalName || undefined, hospitalLocationJson);
       } else {
-        await addBaby(dueDate, `宝宝${state.babies.length + 1}`);
+        await addBaby(dueDate, `宝宝${state.babies.length + 1}`, undefined, hospitalName || undefined, hospitalLocationJson);
       }
       // 保存孕前体重/身高配置
       const pw = parseFloat(preWeight);
@@ -229,7 +233,7 @@ export default function BabyInfoScreen() {
         {/* 当前信息 */}
         {existingBaby && isPostpartum ? (
           <View style={styles.babyCard}>
-            <Text style={styles.babyEmoji}>{existingBaby.gender === 'girl' ? '👧' : '👦'}</Text>
+            <Ionicons name={existingBaby.gender === 'girl' ? 'woman-outline' : 'man-outline'} size={32} color={colors.fgSecondary} />
             <Text style={styles.babyName}>{existingBaby.name || '宝宝'}</Text>
             <View style={styles.babyTag}><Text style={styles.babyTagText}>已出生</Text></View>
             <View style={styles.babyDivider} />
@@ -289,6 +293,55 @@ export default function BabyInfoScreen() {
               <TextInput style={styles.motherInput} value={height} onChangeText={setHeight} keyboardType="decimal-pad" placeholder="165" placeholderTextColor={colors.muted} />
             </View>
           </View>
+        </View>
+
+        {/* 产检医院 */}
+        <View style={styles.formSection}>
+          <Text style={styles.formTitle}>产检医院</Text>
+          <Text style={styles.formHint}>
+            设置产检医院后，可以在产检任务详情页一键导航到该医院
+          </Text>
+          <View style={styles.motherRow}>
+            <View style={[styles.motherField, { flex: 2 }]}>
+              <Text style={styles.motherLabel}>医院名称</Text>
+              <TextInput style={styles.motherInput} value={hospitalName} onChangeText={setHospitalName} placeholder="如：市第一人民医院" placeholderTextColor={colors.muted} />
+            </View>
+            <View style={{ width: spacing.md }} />
+            <View style={[styles.motherField, { flex: 1 }]}>
+              <Text style={styles.motherLabel}>&nbsp;</Text>
+              <TouchableOpacity
+                style={[styles.motherInput, { alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs }]}
+                onPress={() => {
+                  const url = Platform.OS === 'ios'
+                    ? 'https://maps.apple.com/'
+                    : 'https://maps.google.com/';
+                  Linking.openURL(url);
+                }}
+              >
+                <Ionicons name="location-outline" size={16} color={colors.accent} />
+                <Text style={{ ...typography.caption1, color: colors.accent, fontWeight: '500' }}>选位置</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={{ marginTop: spacing.sm }}>
+            <Text style={styles.motherLabel}>医院地址</Text>
+            <TextInput style={styles.motherInput} value={hospitalAddress} onChangeText={setHospitalAddress} placeholder="输入地址或在地图中选择" placeholderTextColor={colors.muted} />
+          </View>
+          {hospitalAddress ? (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm }}
+              onPress={() => {
+                const encoded = encodeURIComponent(hospitalAddress);
+                const url = Platform.OS === 'ios'
+                  ? `https://maps.apple.com/?q=${encoded}`
+                  : `https://maps.google.com/?q=${encoded}`;
+                Linking.openURL(url);
+              }}
+            >
+              <Ionicons name="navigate-outline" size={14} color={colors.accent} />
+              <Text style={{ ...typography.caption2, color: colors.accent, fontWeight: '500' }}>在地图中查看</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* 修改预产期 */}

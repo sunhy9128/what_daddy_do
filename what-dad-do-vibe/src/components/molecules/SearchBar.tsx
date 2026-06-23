@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
 
@@ -39,7 +40,7 @@ export function SearchBar({ placeholder = '搜索...', value, onChangeText }: Se
 
   return (
     <View style={styles.container}>
-      <Text style={styles.icon}>🔍</Text>
+      <Ionicons name="search" size={16} color={colors.muted} />
       <TextInput
         style={styles.input}
         placeholder={placeholder}

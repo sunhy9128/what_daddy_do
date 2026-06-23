@@ -5,6 +5,18 @@ import { useRouter } from 'expo-router';
 import { useApp } from '../context/AppContext';
 import { useColors } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../styles/tokens';
+import { calculateStageFromDueDate, calculateBirthAge } from '../lib/stages';
+
+function getBabyWeekLabel(baby: { dueDate?: string | null; birthDate?: string | null }): { text: string; type: 'postpartum' | 'pregnant' | 'preconception' } | null {
+  if (!baby.dueDate) return null;
+  const { stage, weeksPregnant } = calculateStageFromDueDate(baby.dueDate);
+  if (stage === 'postpartum') {
+    const age = calculateBirthAge(baby.dueDate, baby.birthDate);
+    return age ? { text: age, type: 'postpartum' } : null;
+  }
+  if (stage === 'preconception') return { text: '备孕中', type: 'preconception' };
+  return { text: `第${weeksPregnant}周`, type: 'pregnant' };
+}
 
 export function BabySwitcher() {
   const { state, setActiveBaby, updateBabyGender } = useApp();
@@ -100,6 +112,26 @@ export function BabySwitcher() {
     },
     rowTag: {
       ...typography.caption1,
+      color: colors.muted,
+    },
+    rowWeek: {
+      ...typography.caption2,
+      fontWeight: '600',
+      paddingHorizontal: spacing.xs + 2,
+      paddingVertical: 2,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+    },
+    rowWeekPregnant: {
+      backgroundColor: colors.accent + '18',
+      color: colors.accent,
+    },
+    rowWeekPostpartum: {
+      backgroundColor: colors.success + '18',
+      color: colors.success,
+    },
+    rowWeekPreconception: {
+      backgroundColor: colors.surfaceSecondary,
       color: colors.muted,
     },
     editBtn: {
@@ -278,11 +310,23 @@ export function BabySwitcher() {
                         color={isCurrent ? colors.accent : colors.muted}
                       />
                       <Text style={styles.rowName} numberOfLines={1}>{item.name || '宝宝'}</Text>
-                      {item.gender && (
-                        <Text style={styles.rowTag}>
-                          {item.gender === 'boy' ? '男宝' : item.gender === 'girl' ? '女宝' : ''}
-                        </Text>
-                      )}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        {item.gender && (
+                          <Text style={styles.rowTag}>
+                            {item.gender === 'boy' ? '男宝' : item.gender === 'girl' ? '女宝' : ''}
+                          </Text>
+                        )}
+                        {(() => {
+                          const info = getBabyWeekLabel(item);
+                          if (!info) return null;
+                          const typeStyle = info.type === 'postpartum'
+                            ? styles.rowWeekPostpartum
+                            : info.type === 'preconception'
+                              ? styles.rowWeekPreconception
+                              : styles.rowWeekPregnant;
+                          return <Text style={[styles.rowWeek, typeStyle]}>{info.text}</Text>;
+                        })()}
+                      </View>
                     </Pressable>
                     {/* 编辑姓名按钮 */}
                     <Pressable

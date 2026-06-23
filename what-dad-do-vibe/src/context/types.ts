@@ -44,6 +44,8 @@ export interface Baby {
   is_active: boolean;
   is_archived: boolean;
   sort_order: number;
+  hospitalName?: string | null;
+  hospitalLocation?: string | null; // JSON: { lat, lng, address }
 }
 
 export interface CommunityPost {

@@ -60,8 +60,8 @@ interface AppContextType {
   addPost: (post: { title: string; content: string; category: string }) => Promise<void>;
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
-  addBaby: (dueDate: string, name?: string, birthDate?: string) => Promise<void>;
-  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string) => Promise<void>;
+  addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
+  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
   setActiveBaby: (id: string) => Promise<void>;
   archiveBaby: (id: string) => Promise<void>;
   reorderBabies: (orderedIds: string[]) => Promise<void>;
@@ -198,6 +198,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             is_active: b.is_active,
             is_archived: b.is_archived,
             sort_order: b.sort_order,
+            hospitalName: b.hospital_name,
+            hospitalLocation: b.hospital_location,
           })),
           stage: autoStage,
           weeksPregnant,
