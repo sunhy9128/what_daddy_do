@@ -45,7 +45,7 @@ auto_plan   = "ask"   # off|ask|on; ask/on auto-enter plan mode for complex task
 # planner_model = "mimo"   # optional: enable two-model collaboration
 # subagent_model = "deepseek-pro"   # optional default for runAs=subagent skills
 # subagent_models = { review = "deepseek-pro", security_review = "deepseek-pro" }   # per-skill overrides
-# output_style = "explanatory"   # explanatory | learning | concise | custom; empty = default
+output_style = "laowang-engineer"
 
 [[providers]]
 name        = "deepseek-flash"

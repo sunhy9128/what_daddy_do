@@ -7,8 +7,6 @@ import { useApp } from '../../src/context/AppContext';
 import { ToolGrid } from '../../src/components/tools/ToolGrid';
 import { BabySwitcher } from '../../src/components/BabySwitcher';
 import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { GuideOverlay } from '../../src/components/GuideOverlay';
 import { useAuth } from '../../src/context/AuthContext';
 import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
@@ -39,13 +37,7 @@ export default function HomeScreen() {
   const [urgentText, setUrgentText] = useState('');
   const [urgentLoading, setUrgentLoading] = useState(false);
   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
-  const [showGuide, setShowGuide] = useState(false);
 
-  // 引导页目标元素 ref（用于 spotlight 挖空位置）
-  const urgentRef = useRef<View>(null);
-  const prepRef = useRef<View>(null);
-  const supportRef = useRef<View>(null);
-  const toolsRef = useRef<View>(null);
   const colors = useColors();
   const { isDark } = useTheme();
 
@@ -638,23 +630,6 @@ export default function HomeScreen() {
     loadActiveTools(user.id).then(tools => setActiveTools(tools));
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const shown = await AsyncStorage.getItem(`guide_shown_${user.id}`);
-        if (!shown) setShowGuide(true);
-      } catch {}
-    })();
-  }, [user]);
-
-  const dismissGuide = async () => {
-    setShowGuide(false);
-    try {
-      await AsyncStorage.setItem(`guide_shown_${user?.id || ''}`, '1');
-    } catch {}
-  };
-
   const activeToolsRef = useRef(activeTools);
   activeToolsRef.current = activeTools;
   useEffect(() => {
@@ -758,7 +733,7 @@ export default function HomeScreen() {
         )}
 
         {/* 紧急关注 */}
-        <View ref={urgentRef} style={styles.urgentSection} collapsable={false}>
+        <View style={styles.urgentSection}>
           {state.urgentNotes.map(note => (
             <View key={note.id} style={styles.urgentCard}>
               <View style={styles.urgentBody}>
@@ -849,7 +824,7 @@ export default function HomeScreen() {
 
         {/* ===== 物品准备 ===== */}
         {presetItems.length > 0 && (
-          <CollapsibleGroup containerRef={prepRef} title="物品准备" count={presetItems.length} defaultExpanded={false}>
+          <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
             {presetItems.map(item => {
               const prep = userPreparations.find(p => p.item_id === item.id);
               const isPrepared = prep?.status === 'prepared';
@@ -892,7 +867,7 @@ export default function HomeScreen() {
 
         {/* ===== 心理支持 ===== */}
         {supportTips.length > 0 && (
-          <CollapsibleGroup containerRef={supportRef} title="心理支持" count={supportTips.length} defaultExpanded={false}>
+          <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
             {supportTips.map(tip => {
               const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
               const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
@@ -926,7 +901,7 @@ export default function HomeScreen() {
         )}
 
         {/* ===== 工具箱九宫格 ===== */}
-        <View ref={toolsRef} collapsable={false}>
+        <View>
           <ToolGrid
             tools={activeTools}
             currentStage={state.stage}
@@ -988,14 +963,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* 首次引导 */}
-      {showGuide && (
-        <GuideOverlay
-          onDismiss={dismissGuide}
-          targets={{ urgent: urgentRef, prep: prepRef, support: supportRef, tools: toolsRef }}
-        />
-      )}
     </View>
   );
 }

@@ -29,6 +29,7 @@ const KEYS = {
   MOOD_RECORDS:          (userId: string) => `mood_records_${userId}`,
   MOOD_CONFIG:           (userId: string) => `mood_config_${userId}`,
   DAD_PREP:              (userId: string) => `dad_prep_${userId}`,
+  ONBOARDING_COMPLETED:  (userId: string) => `onboarding_completed_${userId}`,
 };
 
 // 旧 key 基础名映射（用于懒迁移：旧 key = `<legacyBase>_<userId>`）
@@ -92,6 +93,36 @@ export async function loadActiveTools(userId: string): Promise<StoredToolInstanc
 
 export async function saveActiveTools(userId: string, tools: StoredToolInstance[]): Promise<void> {
   try { await AsyncStorage.setItem(KEYS.ACTIVE_TOOLS(userId), JSON.stringify(tools)); } catch (e) { console.error('saveActiveTools failed', e); }
+}
+
+// =============================================================
+// 新手引导完成标志（user-level, 新增）
+// 兼容旧版 `guide_shown_<userId>` 键（一次性迁移）
+// =============================================================
+export async function loadOnboardingCompleted(userId: string): Promise<boolean> {
+  try {
+    const v = await AsyncStorage.getItem(KEYS.ONBOARDING_COMPLETED(userId));
+    if (v === '1') return true;
+    // 兼容：旧版首页 GuideOverlay 的完成标志
+    const legacy = await AsyncStorage.getItem(`guide_shown_${userId}`);
+    return legacy === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function saveOnboardingCompleted(userId: string, done: boolean): Promise<void> {
+  try {
+    if (done) {
+      await AsyncStorage.setItem(KEYS.ONBOARDING_COMPLETED(userId), '1');
+      // 清理旧版键，避免冗余
+      await AsyncStorage.removeItem(`guide_shown_${userId}`).catch(() => {});
+    } else {
+      await AsyncStorage.removeItem(KEYS.ONBOARDING_COMPLETED(userId));
+    }
+  } catch (e) {
+    console.error('saveOnboardingCompleted failed', e);
+  }
 }
 
 // =============================================================

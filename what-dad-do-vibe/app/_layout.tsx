@@ -3,9 +3,10 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
-import { AppProvider } from '../src/context/AppContext';
+import { AppProvider, useApp } from '../src/context/AppContext';
 import { ThemeProvider, useTheme, useColors } from '../src/context/ThemeContext';
 import { WebScrollbarStyle } from '../src/components/WebScrollbarStyle';
+import { loadOnboardingCompleted } from '../src/lib/storage';
 
 function AuthRedirector() {
   const { session, loading } = useAuth();
@@ -28,6 +29,27 @@ function AuthRedirector() {
   return null;
 }
 
+// 已登录用户首次进入 (tabs) 时，若未完成新手引导则重定向到 /onboarding
+function OnboardingRedirector() {
+  const { user } = useAuth();
+  const { state } = useApp();
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (!user || state.loading) return;
+    const inTabs = segments[0] === '(tabs)';
+    const inOnboarding = segments[0] === 'onboarding';
+    if (inTabs && !inOnboarding) {
+      loadOnboardingCompleted(user.id).then(done => {
+        if (!done) router.replace('/onboarding');
+      });
+    }
+  }, [user, state.loading, segments, router]);
+
+  return null;
+}
+
 function StatusBarManager() {
   const { isDark } = useTheme();
   return <StatusBar style={isDark ? 'light' : 'dark'} />;
@@ -46,6 +68,7 @@ function StackNavigator() {
         <Stack.Screen name="congratulations" />
         <Stack.Screen name="profile-edit" />
         <Stack.Screen name="tool-detail" />
+        <Stack.Screen name="onboarding" />
       </Stack>
     </>
   );
@@ -60,6 +83,7 @@ export default function RootLayout() {
             <StatusBarManager />
             <Suspense fallback={null}>
               <AuthRedirector />
+              <OnboardingRedirector />
             </Suspense>
             <StackNavigator />
           </AppProvider>
