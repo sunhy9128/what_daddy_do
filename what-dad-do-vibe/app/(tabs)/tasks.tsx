@@ -59,6 +59,7 @@ export default function TasksScreen() {
   const [savingTask, setSavingTask] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [presetFilter, setPresetFilter] = useState<'all' | 'prenatal' | 'checkin' | 'daily'>('all');
   const taskBusy = useRef(false);
   const colors = useColors();
 
@@ -92,6 +93,22 @@ export default function TasksScreen() {
   },
   viewToggleTxt: { ...typography.footnote, color: colors.muted },
   viewToggleTxtActive: { ...typography.footnote, color: colors.fg, fontWeight: '600' },
+  filterToggle: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  filterBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSecondary,
+  },
+  filterBtnActive: {
+    backgroundColor: colors.accent,
+  },
+  filterTxt: { ...typography.footnote, color: colors.muted },
+  filterTxtActive: { ...typography.footnote, color: '#fff', fontWeight: '600' },
   progressCard: {
     marginTop: spacing.sm,
     marginHorizontal: spacing.lg,
@@ -501,6 +518,9 @@ export default function TasksScreen() {
   const presetsForStage = presetTasks.filter(p => p.stage === currentStageKey);
   const existingTitles = filteredTasks.map(t => t.title);
   const availablePresets = presetsForStage.filter(p => !existingTitles.includes(p.title));
+  const filteredAvailablePresets = presetFilter === 'all'
+    ? availablePresets
+    : availablePresets.filter(p => p.type === presetFilter);
 
   // 获取该任务所在阶段之前的所有产检中最晚的日期（作为最小允许日期）
   const getMinPrenatalDate = useCallback((stage: string, excludeTaskId?: string) => {
@@ -768,7 +788,7 @@ export default function TasksScreen() {
             <View style={styles.presetGroupTitleRow}>
               <Text style={styles.presetGroupTitle}>可添加任务</Text>
               <View style={styles.presetGroupBadge}>
-                <Text style={styles.presetGroupBadgeText}>{availablePresets.length}</Text>
+                <Text style={styles.presetGroupBadgeText}>{filteredAvailablePresets.length}</Text>
               </View>
             </View>
             <Ionicons name={showPresets ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
@@ -776,8 +796,22 @@ export default function TasksScreen() {
 
           {showPresets && (
             <View style={styles.presetGroupContent}>
+              {/* 类型过滤 */}
+              <View style={styles.filterToggle}>
+                {(['all', 'prenatal', 'checkin', 'daily'] as const).map((f) => (
+                  <TouchableOpacity
+                    key={f}
+                    style={[styles.filterBtn, presetFilter === f && styles.filterBtnActive]}
+                    onPress={() => setPresetFilter(f)}
+                  >
+                    <Text style={presetFilter === f ? styles.filterTxtActive : styles.filterTxt}>
+                      {f === 'all' ? '全部' : f === 'prenatal' ? '产检' : f === 'checkin' ? '打卡' : '日常'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                {availablePresets.map((task) => (
+                {filteredAvailablePresets.map((task) => (
                   <TouchableOpacity
                     key={task.id}
                     style={styles.presetItem}
