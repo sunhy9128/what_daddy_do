@@ -26,6 +26,7 @@ import { BabyFoodRecipeTool } from '../src/components/tools/BabyFoodRecipe';
 import { ChildCheckupTool } from '../src/components/tools/ChildCheckup';
 import { DadDeliveryPrep } from '../src/components/tools/DadDeliveryPrep';
 import { TaskCalendar } from '../src/components/tools/TaskCalendar';
+import { OvulationTracker } from '../src/components/tools/OvulationTracker';
 
 interface ToolComponentProps {
   userId: string;
@@ -53,6 +54,7 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'baby-sleep-log': BabySleepLog,
   'dad-delivery-prep': DadDeliveryPrep,
   'task-calendar': TaskCalendar,
+  'ovulation-tracker': OvulationTracker,
 };
 
 // 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中
@@ -64,6 +66,7 @@ const TOOL_JUSTIFY: Record<string, 'center' | 'flex-start'> = {
   'baby-care-log': 'flex-start',
   'baby-food-recipe': 'flex-start',
   'child-checkup': 'flex-start',
+  'ovulation-tracker': 'flex-start',
 };
 
 export default function ToolDetailPage() {

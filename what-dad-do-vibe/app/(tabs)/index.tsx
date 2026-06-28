@@ -900,6 +900,41 @@ export default function HomeScreen() {
           </CollapsibleGroup>
         )}
 
+        {/* ===== AI 助手入口 ===== */}
+        <TouchableOpacity
+          style={{
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.lg,
+            backgroundColor: colors.accent,
+            borderRadius: radius.md,
+            paddingVertical: spacing.lg,
+            paddingHorizontal: spacing.lg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+          }}
+          onPress={() => router.push('/ai')}
+          activeOpacity={0.75}
+        >
+          <View style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.headline, color: '#fff' }}>AI 问答助手</Text>
+            <Text style={{ ...typography.footnote, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
+              关于孕期育儿的任何问题，AI 随时回答
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+        </TouchableOpacity>
+
         {/* ===== 工具箱九宫格 ===== */}
         <View>
           <ToolGrid

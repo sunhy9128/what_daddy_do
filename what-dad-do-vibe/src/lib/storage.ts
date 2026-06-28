@@ -30,6 +30,8 @@ const KEYS = {
   MOOD_CONFIG:           (userId: string) => `mood_config_${userId}`,
   DAD_PREP:              (userId: string) => `dad_prep_${userId}`,
   ONBOARDING_COMPLETED:  (userId: string) => `onboarding_completed_${userId}`,
+  OVULATION_RECORDS:     (userId: string) => `ovulation_records_${userId}`,
+  OVULATION_CONFIG:      (userId: string) => `ovulation_config_${userId}`,
 };
 
 // 旧 key 基础名映射（用于懒迁移：旧 key = `<legacyBase>_<userId>`）
@@ -486,6 +488,45 @@ export async function loadDadPrepProgress(userId: string): Promise<DadPrepProgre
 
 export async function saveDadPrepProgress(userId: string, progress: DadPrepProgress[]): Promise<void> {
   try { await AsyncStorage.setItem(KEYS.DAD_PREP(userId), JSON.stringify(progress)); } catch (e) { console.error('saveDadPrepProgress failed', e); }
+}
+
+// =============================================================
+// 备孕排卵追踪记录（user-level, 准妈妈自身）
+// =============================================================
+export interface OvulationRecord {
+  date: string;           // YYYY-MM-DD
+  temperature?: number;   // 基础体温 °C
+  opkResult?: 'positive' | 'weak' | 'negative'; // 排卵试纸结果
+  cervicalMucus?: 'dry' | 'sticky' | 'creamy' | 'watery' | 'egg-white'; // 宫颈粘液
+  notes?: string;
+}
+
+export interface OvulationConfig {
+  cycleLength: number;    // 周期长度，默认28
+  periodLength: number;   // 经期长度，默认5
+  lastPeriodStart?: string; // 上次经期开始日期 YYYY-MM-DD
+}
+
+export async function loadOvulationRecords(userId: string): Promise<OvulationRecord[]> {
+  try {
+    const json = await AsyncStorage.getItem(KEYS.OVULATION_RECORDS(userId));
+    return json ? JSON.parse(json) : [];
+  } catch { return []; }
+}
+
+export async function saveOvulationRecords(userId: string, records: OvulationRecord[]): Promise<void> {
+  try { await AsyncStorage.setItem(KEYS.OVULATION_RECORDS(userId), JSON.stringify(records)); } catch (e) { console.error('saveOvulationRecords failed', e); }
+}
+
+export async function loadOvulationConfig(userId: string): Promise<OvulationConfig | null> {
+  try {
+    const json = await AsyncStorage.getItem(KEYS.OVULATION_CONFIG(userId));
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+
+export async function saveOvulationConfig(userId: string, config: OvulationConfig): Promise<void> {
+  try { await AsyncStorage.setItem(KEYS.OVULATION_CONFIG(userId), JSON.stringify(config)); } catch (e) { console.error('saveOvulationConfig failed', e); }
 }
 
 // =============================================================

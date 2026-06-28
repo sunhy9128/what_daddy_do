@@ -25,6 +25,8 @@ export default function BabyInfoScreen() {
   const isPostpartum = state.stage === 'postpartum';
 
   const [dueDate, setDueDate] = useState(existingBaby?.dueDate || new Date().toISOString().split('T')[0]);
+  // 备孕中模式（仅新增时可用）
+  const [isPreconception, setIsPreconception] = useState(false);
   const [preWeight, setPreWeight] = useState('');
   const [height, setHeight] = useState('');
   const [hospitalName, setHospitalName] = useState(existingBaby?.hospitalName || '');
@@ -182,13 +184,17 @@ export default function BabyInfoScreen() {
   };
 
   const handleSave = async () => {
-    if (!dueDate) { safeAlert('请选择预产期'); return; }
+    if (!isPreconception && !dueDate) { safeAlert('请选择预产期'); return; }
     setSaving(true);
     try {
+      // 备孕中模式：设一个远期假日期（2年后），数据库 due_date 有 not null 约束
+      const effectiveDueDate = isPreconception
+        ? new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        : dueDate;
       if (existingBaby) {
         await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate, undefined, undefined, hospitalName || undefined, hospitalLocationJson);
       } else {
-        await addBaby(dueDate, `宝宝${state.babies.length + 1}`, undefined, hospitalName || undefined, hospitalLocationJson);
+        await addBaby(effectiveDueDate, `宝宝${state.babies.length + 1}`, undefined, hospitalName || undefined, hospitalLocationJson);
       }
       // 保存孕前体重/身高配置
       const pw = parseFloat(preWeight);
@@ -344,7 +350,49 @@ export default function BabyInfoScreen() {
           ) : null}
         </View>
 
+        {/* 阶段选择（仅新增时显示） */}
+        {!existingBaby && (
+          <View style={styles.formSection}>
+            <Text style={styles.formTitle}>宝宝状态</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: spacing.md,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: isPreconception ? colors.accent : colors.border,
+                  backgroundColor: isPreconception ? colors.accent : 'transparent',
+                  alignItems: 'center',
+                }}
+                onPress={() => setIsPreconception(true)}
+              >
+                <Text style={{ ...typography.callout, fontWeight: '600', color: isPreconception ? '#fff' : colors.fg }}>
+                  备孕中
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: spacing.md,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: !isPreconception ? colors.accent : colors.border,
+                  backgroundColor: !isPreconception ? colors.accent : 'transparent',
+                  alignItems: 'center',
+                }}
+                onPress={() => setIsPreconception(false)}
+              >
+                <Text style={{ ...typography.callout, fontWeight: '600', color: !isPreconception ? '#fff' : colors.fg }}>
+                  孕期中
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* 修改预产期 */}
+        {!isPreconception && (
         <View style={styles.formSection}>
         <Text style={styles.formTitle}>
           {existingBaby ? '修改预产期' : '录入预产期'}
@@ -361,6 +409,14 @@ export default function BabyInfoScreen() {
           <Text style={styles.saveText}>{saving ? '保存中…' : existingBaby ? '更新信息' : '保存'}</Text>
         </TouchableOpacity>
         </View>
+        )}
+
+        {/* 备孕中保存按钮 */}
+        {isPreconception && (
+          <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
+            <Text style={styles.saveText}>{saving ? '保存中…' : '开始备孕'}</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
