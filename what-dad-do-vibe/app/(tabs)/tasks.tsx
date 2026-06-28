@@ -779,6 +779,21 @@ export default function TasksScreen() {
             </View>
           </View>
 
+          {/* 类型快速筛选 */}
+          <View style={styles.filterToggle}>
+            {(['all', 'prenatal', 'checkin', 'daily'] as const).map((f) => (
+              <TouchableOpacity
+                key={f}
+                style={[styles.filterBtn, presetFilter === f && styles.filterBtnActive]}
+                onPress={() => setPresetFilter(f)}
+              >
+                <Text style={presetFilter === f ? styles.filterTxtActive : styles.filterTxt}>
+                  {f === 'all' ? '全部' : f === 'prenatal' ? '产检' : f === 'checkin' ? '打卡' : '日常'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {/* 横向滑动卡片 */}
           <ScrollView
             horizontal
