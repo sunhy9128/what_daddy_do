@@ -108,6 +108,102 @@ export default function TasksScreen() {
   },
   filterTxt: { ...typography.footnote, color: colors.muted },
   filterTxtActive: { ...typography.footnote, color: '#fff', fontWeight: '600' },
+  // 可添加任务
+  presetSection: {
+    paddingTop: spacing.md,
+  },
+  presetSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  presetSectionTitle: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+  },
+  presetSectionCount: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
+  presetFilterRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  presetFilterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSecondary,
+  },
+  presetFilterChipActive: {
+    backgroundColor: colors.accent,
+  },
+  presetFilterTxt: { ...typography.footnote, color: colors.muted },
+  presetFilterTxtActive: { ...typography.footnote, color: '#fff', fontWeight: '600' },
+  presetScroll: {
+    paddingHorizontal: spacing.lg,
+  },
+  presetCardOuter: {
+    marginRight: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  presetCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minWidth: 160,
+    maxWidth: 220,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  presetCardAdd: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  presetCardAddText: {
+    fontSize: 18,
+    color: colors.accent,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  presetCardBody: {
+    flex: 1,
+  },
+  presetCardTitle: {
+    ...typography.callout,
+    fontWeight: '500',
+    color: colors.fg,
+    marginBottom: 2,
+  },
+  presetCardDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  presetEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.xs,
+  },
+  presetEmptyTxt: {
+    ...typography.footnote,
+    color: colors.muted,
+  },
   progressCard: {
     marginTop: spacing.sm,
     marginHorizontal: spacing.lg,
@@ -125,60 +221,6 @@ export default function TasksScreen() {
   },
   progressTitle: { ...typography.callout, fontWeight: '500', color: colors.fg },
   progressValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
-  // 可添加任务分组
-  presetGroupTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
-  presetGroupTitle: {
-    ...typography.callout,
-    fontWeight: '600',
-    color: colors.fg,
-  },
-  presetGroupBadge: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  presetGroupBadgeText: {
-    ...typography.footnote,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-  // 横向滑动卡片
-  presetScrollContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  presetCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginRight: spacing.sm,
-    minWidth: 140,
-    maxWidth: 180,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  presetCardTitle: {
-    ...typography.callout,
-    fontWeight: '500',
-    color: colors.fg,
-    marginBottom: 4,
-  },
-  presetCardDesc: {
-    ...typography.footnote,
-    color: colors.fgSecondary,
-    lineHeight: 16,
-  },
-  presetCardTag: {
-    marginTop: spacing.xs,
-  },
   fab: {
     position: 'absolute',
     bottom: 90,
@@ -770,24 +812,22 @@ export default function TasksScreen() {
 
         {/* 可添加的预设任务 — 过去阶段隐藏；无可添加时隐藏 */}
         {!isPastStage && availablePresets.length > 0 && (
-        <View>
-          {/* 标题栏 */}
-          <View style={styles.presetGroupTitleRow}>
-            <Text style={styles.presetGroupTitle}>可添加任务</Text>
-            <View style={styles.presetGroupBadge}>
-              <Text style={styles.presetGroupBadgeText}>{filteredAvailablePresets.length}</Text>
-            </View>
+        <View style={styles.presetSection}>
+          {/* 标题行 */}
+          <View style={styles.presetSectionHeader}>
+            <Text style={styles.presetSectionTitle}>可添加任务</Text>
+            <Text style={styles.presetSectionCount}>{filteredAvailablePresets.length} 项</Text>
           </View>
 
-          {/* 类型快速筛选 */}
-          <View style={styles.filterToggle}>
+          {/* 类型筛选 */}
+          <View style={styles.presetFilterRow}>
             {(['all', 'prenatal', 'checkin', 'daily'] as const).map((f) => (
               <TouchableOpacity
                 key={f}
-                style={[styles.filterBtn, presetFilter === f && styles.filterBtnActive]}
+                style={[styles.presetFilterChip, presetFilter === f && styles.presetFilterChipActive]}
                 onPress={() => setPresetFilter(f)}
               >
-                <Text style={presetFilter === f ? styles.filterTxtActive : styles.filterTxt}>
+                <Text style={presetFilter === f ? styles.presetFilterTxtActive : styles.presetFilterTxt}>
                   {f === 'all' ? '全部' : f === 'prenatal' ? '产检' : f === 'checkin' ? '打卡' : '日常'}
                 </Text>
               </TouchableOpacity>
@@ -795,29 +835,40 @@ export default function TasksScreen() {
           </View>
 
           {/* 横向滑动卡片 */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.presetScrollContainer}
-          >
-            {filteredAvailablePresets.map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                style={styles.presetCard}
-                onPress={() => handleAddPreset(task)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.presetCardTitle} numberOfLines={1}>{task.title}</Text>
-                <Text style={styles.presetCardDesc} numberOfLines={2}>{task.description}</Text>
-                <View style={styles.presetCardTag}>
-                  <Tag
-                    label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
-                    variant={task.type === 'prenatal' ? 'short' : 'long'}
-                  />
+          {filteredAvailablePresets.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.presetScroll}
+            >
+              {filteredAvailablePresets.map((task) => (
+                <View key={task.id} style={styles.presetCardOuter}>
+                  <TouchableOpacity
+                    style={styles.presetCard}
+                    onPress={() => handleAddPreset(task)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.presetCardAdd}>
+                      <Text style={styles.presetCardAddText}>+</Text>
+                    </View>
+                    <View style={styles.presetCardBody}>
+                      <Text style={styles.presetCardTitle} numberOfLines={1}>{task.title}</Text>
+                      <Text style={styles.presetCardDesc} numberOfLines={2}>{task.description}</Text>
+                      <Tag
+                        label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
+                        variant={task.type === 'prenatal' ? 'short' : 'long'}
+                      />
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.presetEmpty}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.muted} />
+              <Text style={styles.presetEmptyTxt}>该类型任务已全部添加</Text>
+            </View>
+          )}
         </View>
         )}
         </>
