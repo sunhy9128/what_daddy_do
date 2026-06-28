@@ -57,7 +57,6 @@ export default function TasksScreen() {
   const [presetTasks, setPresetTasks] = useState<PresetTask[]>([]);
   const [loadingPresets, setLoadingPresets] = useState(true);
   const [savingTask, setSavingTask] = useState(false);
-  const [showPresets, setShowPresets] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [presetFilter, setPresetFilter] = useState<'all' | 'prenatal' | 'checkin' | 'daily'>('all');
   const taskBusy = useRef(false);
@@ -127,25 +126,12 @@ export default function TasksScreen() {
   progressTitle: { ...typography.callout, fontWeight: '500', color: colors.fg },
   progressValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
   // 可添加任务分组
-  presetGroup: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  presetGroupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-    backgroundColor: colors.surfaceSecondary,
-  },
   presetGroupTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   presetGroupTitle: {
     ...typography.callout,
@@ -163,35 +149,36 @@ export default function TasksScreen() {
     fontWeight: '600',
     color: '#fff',
   },
-  presetGroupArrow: {
-    fontSize: 16,
-    color: colors.muted,
-  },
-  presetGroupContent: {
-    paddingHorizontal: spacing.sm,
-  },
   emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
-  presetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // 横向滑动卡片
+  presetScrollContainer: {
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
   },
-  presetIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
+  presetCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginRight: spacing.sm,
+    minWidth: 140,
+    maxWidth: 180,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  presetIconText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
-  presetInfo: { flex: 1 },
-  presetTitle: { ...typography.callout, fontWeight: '500', color: colors.fg, marginBottom: 2 },
-  presetDesc: { ...typography.footnote, color: colors.fgSecondary, lineHeight: 18 },
+  presetCardTitle: {
+    ...typography.callout,
+    fontWeight: '500',
+    color: colors.fg,
+    marginBottom: 4,
+  },
+  presetCardDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    lineHeight: 16,
+  },
+  presetCardTag: {
+    marginTop: spacing.xs,
+  },
   fab: {
     position: 'absolute',
     bottom: 90,
@@ -783,57 +770,39 @@ export default function TasksScreen() {
 
         {/* 可添加的预设任务 — 过去阶段隐藏；无可添加时隐藏 */}
         {!isPastStage && availablePresets.length > 0 && (
-        <View style={styles.presetGroup}>
-          <TouchableOpacity style={styles.presetGroupHeader} onPress={() => setShowPresets(!showPresets)} activeOpacity={0.7}>
-            <View style={styles.presetGroupTitleRow}>
-              <Text style={styles.presetGroupTitle}>可添加任务</Text>
-              <View style={styles.presetGroupBadge}>
-                <Text style={styles.presetGroupBadgeText}>{filteredAvailablePresets.length}</Text>
-              </View>
+        <View>
+          {/* 标题栏 */}
+          <View style={styles.presetGroupTitleRow}>
+            <Text style={styles.presetGroupTitle}>可添加任务</Text>
+            <View style={styles.presetGroupBadge}>
+              <Text style={styles.presetGroupBadgeText}>{filteredAvailablePresets.length}</Text>
             </View>
-            <Ionicons name={showPresets ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
-          </TouchableOpacity>
+          </View>
 
-          {showPresets && (
-            <View style={styles.presetGroupContent}>
-              {/* 类型过滤 */}
-              <View style={styles.filterToggle}>
-                {(['all', 'prenatal', 'checkin', 'daily'] as const).map((f) => (
-                  <TouchableOpacity
-                    key={f}
-                    style={[styles.filterBtn, presetFilter === f && styles.filterBtnActive]}
-                    onPress={() => setPresetFilter(f)}
-                  >
-                    <Text style={presetFilter === f ? styles.filterTxtActive : styles.filterTxt}>
-                      {f === 'all' ? '全部' : f === 'prenatal' ? '产检' : f === 'checkin' ? '打卡' : '日常'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                {filteredAvailablePresets.map((task) => (
-                  <TouchableOpacity
-                    key={task.id}
-                    style={styles.presetItem}
-                    onPress={() => handleAddPreset(task)}
-                  >
-                    <View style={styles.presetIcon}>
-                      <Text style={styles.presetIconText}>+</Text>
-                    </View>
-                    <View style={styles.presetInfo}>
-                      <Text style={styles.presetTitle}>{task.title}</Text>
-                      <Text style={styles.presetDesc}>{task.description}</Text>
-                      <Tag
-                        label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
-                        variant={task.type === 'prenatal' ? 'short' : 'long'}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
+          {/* 横向滑动卡片 */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.presetScrollContainer}
+          >
+            {filteredAvailablePresets.map((task) => (
+              <TouchableOpacity
+                key={task.id}
+                style={styles.presetCard}
+                onPress={() => handleAddPreset(task)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.presetCardTitle} numberOfLines={1}>{task.title}</Text>
+                <Text style={styles.presetCardDesc} numberOfLines={2}>{task.description}</Text>
+                <View style={styles.presetCardTag}>
+                  <Tag
+                    label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
+                    variant={task.type === 'prenatal' ? 'short' : 'long'}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
         )}
         </>
