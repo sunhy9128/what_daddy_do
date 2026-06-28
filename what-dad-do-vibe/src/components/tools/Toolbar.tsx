@@ -25,7 +25,6 @@ import { BabyCareLog } from './BabyCareLog';
 import { BabySleepLog } from './BabySleepLog';
 import { ChildCheckupTool } from './ChildCheckup';
 import { DadDeliveryPrep } from './DadDeliveryPrep';
-import { TaskCalendar } from './TaskCalendar';
 import { OvulationTracker } from './OvulationTracker';
 import { useColors } from '../../context/ThemeContext';
 import { radius, spacing, typography } from '../../styles/tokens';
@@ -49,7 +48,6 @@ export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'baby-care-log', name: '护理日志', icon: 'clipboard-outline', description: '尿布/喂奶/俯趴记录，每日综合看板', hideInStages: ['preconception', 'first', 'second', 'third'] },
   { id: 'baby-sleep-log', name: '宝宝睡眠', icon: 'moon-outline', description: '记录宝宝睡眠时长和质量', hideInStages: ['preconception', 'first', 'second', 'third'] },
   { id: 'dad-delivery-prep', name: '爸爸分娩准备', icon: 'man-outline', description: '爸爸专属分娩准备清单', hideInStages: ['postpartum'] },
-  { id: 'task-calendar', name: '日历总览', icon: 'calendar-outline', description: '按日查看所有待办任务和产检安排' },
   { id: 'ovulation-tracker', name: '备孕排卵追踪', icon: 'calendar-outline', description: '基础体温+排卵试纸记录，预测排卵日', hideInStages: ['first', 'second', 'third', 'postpartum'] },
 ];
 
@@ -72,7 +70,6 @@ const TOOL_COMPONENTS: Record<string, React.FC<{ userId: string; babyGender?: st
   'baby-care-log': BabyCareLog,
   'baby-sleep-log': BabySleepLog,
   'dad-delivery-prep': DadDeliveryPrep,
-  'task-calendar': TaskCalendar,
   'ovulation-tracker': OvulationTracker,
 };
 

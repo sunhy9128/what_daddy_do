@@ -25,7 +25,6 @@ import { BabySleepLog } from '../src/components/tools/BabySleepLog';
 import { BabyFoodRecipeTool } from '../src/components/tools/BabyFoodRecipe';
 import { ChildCheckupTool } from '../src/components/tools/ChildCheckup';
 import { DadDeliveryPrep } from '../src/components/tools/DadDeliveryPrep';
-import { TaskCalendar } from '../src/components/tools/TaskCalendar';
 import { OvulationTracker } from '../src/components/tools/OvulationTracker';
 
 interface ToolComponentProps {
@@ -53,7 +52,6 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'baby-care-log': BabyCareLog,
   'baby-sleep-log': BabySleepLog,
   'dad-delivery-prep': DadDeliveryPrep,
-  'task-calendar': TaskCalendar,
   'ovulation-tracker': OvulationTracker,
 };
 

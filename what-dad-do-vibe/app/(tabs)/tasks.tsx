@@ -16,6 +16,7 @@ import { radius, spacing, shadows, typography } from '../../src/styles/tokens';
 import { Ionicons } from '@expo/vector-icons';
 import { DatePicker } from '../../src/components/DatePicker';
 import * as Linking from 'expo-linking';
+import { TaskCalendar } from '../../src/components/tools/TaskCalendar';
 
 // 孕期阶段顺序（用于判断是否为已过阶段）
 const STAGE_ORDER: PregnancyStage[] = ['preconception', 'first', 'second', 'third', 'postpartum'];
@@ -57,6 +58,7 @@ export default function TasksScreen() {
   const [loadingPresets, setLoadingPresets] = useState(true);
   const [savingTask, setSavingTask] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const taskBusy = useRef(false);
   const colors = useColors();
 
@@ -68,6 +70,28 @@ export default function TasksScreen() {
   header: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
   title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
   subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.sm,
+    padding: 2,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  viewToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.sm - 2,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: colors.surface,
+    ...shadows.sm,
+  },
+  viewToggleTxt: { ...typography.footnote, color: colors.muted },
+  viewToggleTxtActive: { ...typography.footnote, color: colors.fg, fontWeight: '600' },
   progressCard: {
     marginTop: spacing.sm,
     marginHorizontal: spacing.lg,
@@ -657,9 +681,34 @@ export default function TasksScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>待办清单</Text>
           <Text style={styles.subtitle}>当前阶段：{selectedStage}</Text>
+          {/* 视图切换 */}
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+              onPress={() => setViewMode('list')}
+            >
+              <Ionicons name="list-outline" size={14} color={viewMode === 'list' ? colors.accent : colors.muted} />
+              <Text style={viewMode === 'list' ? styles.viewToggleTxtActive : styles.viewToggleTxt}>列表</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.viewToggleBtn, viewMode === 'calendar' && styles.viewToggleBtnActive]}
+              onPress={() => setViewMode('calendar')}
+            >
+              <Ionicons name="calendar-outline" size={14} color={viewMode === 'calendar' ? colors.accent : colors.muted} />
+              <Text style={viewMode === 'calendar' ? styles.viewToggleTxtActive : styles.viewToggleTxt}>日历</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* 日历视图 */}
+        {viewMode === 'calendar' && (
+          <View style={{ paddingHorizontal: spacing.lg }}>
+            <TaskCalendar userId={user?.id || ''} expanded />
+          </View>
+        )}
+
         {/* Stage Tabs */}
+        {viewMode === 'list' && ( <>
         <StageTabs
           stages={STAGE_LABEL_LIST}
           activeStage={selectedStage}
@@ -752,6 +801,8 @@ export default function TasksScreen() {
           )}
 
         </View>
+        )}
+        </>
         )}
 
         <View style={{ height: 100 }} />
