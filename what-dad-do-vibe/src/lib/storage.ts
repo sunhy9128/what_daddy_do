@@ -32,6 +32,7 @@ const KEYS = {
   ONBOARDING_COMPLETED:  (userId: string) => `onboarding_completed_${userId}`,
   OVULATION_RECORDS:     (userId: string) => `ovulation_records_${userId}`,
   OVULATION_CONFIG:      (userId: string) => `ovulation_config_${userId}`,
+  NOTIFICATION_CONFIG:   (userId: string) => `notification_config_${userId}`,
 };
 
 // 旧 key 基础名映射（用于懒迁移：旧 key = `<legacyBase>_<userId>`）
@@ -527,6 +528,36 @@ export async function loadOvulationConfig(userId: string): Promise<OvulationConf
 
 export async function saveOvulationConfig(userId: string, config: OvulationConfig): Promise<void> {
   try { await AsyncStorage.setItem(KEYS.OVULATION_CONFIG(userId), JSON.stringify(config)); } catch (e) { console.error('saveOvulationConfig failed', e); }
+}
+
+// =============================================================
+// 通知配置
+// =============================================================
+export interface NotificationConfig {
+  enabled: boolean;
+  checkinEnabled: boolean;
+  checkinHour: number;
+  checkinMinute: number;
+  prenatalEnabled: boolean;
+  vaccineEnabled: boolean;
+}
+
+export async function loadNotificationConfig(userId: string): Promise<NotificationConfig> {
+  try {
+    const json = await AsyncStorage.getItem(KEYS.NOTIFICATION_CONFIG(userId));
+    return json ? JSON.parse(json) : {
+      enabled: true,
+      checkinEnabled: true,
+      checkinHour: 9,
+      checkinMinute: 0,
+      prenatalEnabled: true,
+      vaccineEnabled: true,
+    };
+  } catch { return { enabled: true, checkinEnabled: true, checkinHour: 9, checkinMinute: 0, prenatalEnabled: true, vaccineEnabled: true }; }
+}
+
+export async function saveNotificationConfig(userId: string, config: NotificationConfig): Promise<void> {
+  try { await AsyncStorage.setItem(KEYS.NOTIFICATION_CONFIG(userId), JSON.stringify(config)); } catch (e) { console.error('saveNotificationConfig failed', e); }
 }
 
 // =============================================================

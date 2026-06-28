@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import { useColors, useTheme } from '../../src/context/ThemeContext';
 import { Card } from '../../src/components/atoms';
 import { STAGES, calculateStageFromDueDate, calculateBirthAge } from '../../src/lib/stages';
 import { spacing, radius, typography } from '../../src/styles/tokens';
+import { loadNotificationConfig, saveNotificationConfig, NotificationConfig } from '../../src/lib/storage';
+import { requestNotificationPermissions, scheduleDailyCheckinReminder, cancelAllNotifications } from '../../src/lib/notifications';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -30,9 +32,38 @@ export default function ProfileScreen() {
 
   const [signingOut, setSigningOut] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [notifConfig, setNotifConfig] = useState<NotificationConfig | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const programmaticScrolling = useRef(false);
   const pageIndexRef = useRef(0);
+
+  // Load notification config
+  useEffect(() => {
+    if (user?.id) {
+      loadNotificationConfig(user.id).then(setNotifConfig);
+    }
+  }, [user?.id]);
+
+  const handleNotifToggle = useCallback(async (key: keyof NotificationConfig, value: boolean) => {
+    if (!user?.id || !notifConfig) return;
+    const updated = { ...notifConfig, [key]: value };
+    setNotifConfig(updated);
+    await saveNotificationConfig(user.id, updated);
+
+    // Request permission if enabling notifications
+    if (key === 'enabled' && value) {
+      await requestNotificationPermissions();
+    }
+
+    // If enabling daily checkin, schedule it; if disabling, cancel all
+    if (key === 'checkinEnabled') {
+      if (value) {
+        await scheduleDailyCheckinReminder({ hour: updated.checkinHour, minute: updated.checkinMinute });
+      } else {
+        await cancelAllNotifications();
+      }
+    }
+  }, [user?.id, notifConfig]);
 
   const scrollToBaby = useCallback((index: number) => {
     if (index < 0 || index >= activeBabies.length || index === pageIndexRef.current) return;
@@ -432,6 +463,73 @@ export default function ProfileScreen() {
                 thumbColor={isDark ? colors.accent : '#FCFAF5'}
               />
             </View>
+          </Card>
+        </View>
+
+        {/* 通知设置 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>通知</Text>
+          <Card style={styles.menuCard}>
+            <View style={styles.menuRow}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                  <Ionicons name="notifications-outline" size={18} color={colors.accent} />
+                </View>
+                <Text style={styles.menuText}>接收通知</Text>
+              </View>
+              <Switch
+                value={notifConfig?.enabled ?? true}
+                onValueChange={(v) => handleNotifToggle('enabled', v)}
+                trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
+                thumbColor={(notifConfig?.enabled ?? true) ? colors.accent : '#FCFAF5'}
+              />
+            </View>
+            {notifConfig?.enabled && (
+              <>
+                <View style={[styles.menuRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <View style={styles.menuLeft}>
+                    <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                      <Ionicons name="checkbox-outline" size={18} color={colors.accent} />
+                    </View>
+                    <Text style={styles.menuText}>每日打卡提醒</Text>
+                  </View>
+                  <Switch
+                    value={notifConfig?.checkinEnabled ?? true}
+                    onValueChange={(v) => handleNotifToggle('checkinEnabled', v)}
+                    trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
+                    thumbColor={(notifConfig?.checkinEnabled ?? true) ? colors.accent : '#FCFAF5'}
+                  />
+                </View>
+                <View style={[styles.menuRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <View style={styles.menuLeft}>
+                    <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                      <Ionicons name="medkit-outline" size={18} color={colors.accent} />
+                    </View>
+                    <Text style={styles.menuText}>产检提醒</Text>
+                  </View>
+                  <Switch
+                    value={notifConfig?.prenatalEnabled ?? true}
+                    onValueChange={(v) => handleNotifToggle('prenatalEnabled', v)}
+                    trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
+                    thumbColor={(notifConfig?.prenatalEnabled ?? true) ? colors.accent : '#FCFAF5'}
+                  />
+                </View>
+                <View style={[styles.menuRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <View style={styles.menuLeft}>
+                    <View style={[styles.menuIcon, { backgroundColor: colors.accentLight }]}>
+                      <Ionicons name="bandage-outline" size={18} color={colors.accent} />
+                    </View>
+                    <Text style={styles.menuText}>疫苗提醒</Text>
+                  </View>
+                  <Switch
+                    value={notifConfig?.vaccineEnabled ?? true}
+                    onValueChange={(v) => handleNotifToggle('vaccineEnabled', v)}
+                    trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
+                    thumbColor={(notifConfig?.vaccineEnabled ?? true) ? colors.accent : '#FCFAF5'}
+                  />
+                </View>
+              </>
+            )}
           </Card>
         </View>
 
