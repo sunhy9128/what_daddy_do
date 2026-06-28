@@ -100,7 +100,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const { isDark } = useTheme();
 
-  // 下次产检倒计时（放在早期 return 之前，避免 hook 数量变化）
+  // 下次产检倒计时
   const nextPrenatal = useMemo(() => {
     if (state.stage === 'postpartum' || state.stage === 'preconception') return null;
     const upcoming = state.tasks
@@ -117,6 +117,8 @@ export default function HomeScreen() {
     due.setHours(0, 0, 0, 0);
     return Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   }, [nextPrenatal]);
+
+  const dailyTip = useMemo(() => getDailyTip(state.stage), [state.stage]);
 
   const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
@@ -754,7 +756,6 @@ export default function HomeScreen() {
   }
 
   const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
-  const dailyTip = useMemo(() => getDailyTip(state.stage), [state.stage]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
