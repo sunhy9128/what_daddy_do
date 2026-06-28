@@ -141,27 +141,38 @@ export default function HomeScreen() {
   // 每日小贴士
   tipCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.accentLight,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent,
+    overflow: 'hidden',
+  },
+  tipBody: {
+    flex: 1,
     padding: spacing.md,
-    gap: spacing.sm,
   },
-  tipIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.accent,
+  tipLabelRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: spacing.xs,
+    gap: spacing.xs,
   },
-  tipIconText: { fontSize: 16, color: '#fff' },
+  tipLabel: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  tipLabelText: {
+    ...typography.caption2,
+    fontWeight: '600',
+    color: '#fff',
+  },
   tipText: {
     ...typography.footnote,
-    color: colors.accent,
-    flex: 1,
+    color: colors.fg,
     lineHeight: 20,
   },
 
@@ -778,10 +789,14 @@ export default function HomeScreen() {
 
         {/* ===== 每日小贴士 ===== */}
         <View style={styles.tipCard}>
-          <View style={styles.tipIcon}>
-            <Text style={styles.tipIconText}>💡</Text>
+          <View style={styles.tipBody}>
+            <View style={styles.tipLabelRow}>
+              <View style={styles.tipLabel}>
+                <Text style={styles.tipLabelText}>今日贴士</Text>
+              </View>
+            </View>
+            <Text style={styles.tipText}>{dailyTip}</Text>
           </View>
-          <Text style={styles.tipText}>{dailyTip}</Text>
         </View>
 
         {/* ===== 宝宝大小对比 ===== */}
