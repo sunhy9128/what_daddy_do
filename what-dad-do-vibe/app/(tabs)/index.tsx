@@ -18,6 +18,65 @@ import { spacing, typography, radius } from '../../src/styles/tokens';
 import { STAGES } from '../../src/lib/stages';
 import { BUMP_SIZE_DATA } from '../../src/lib/bump-size-data';
 
+const DAILY_TIPS: Record<string, string[]> = {
+  preconception: [
+    '备孕期间，准爸爸补充叶酸和锌，有助于提高精子质量。',
+    '戒烟戒酒至少3个月，给宝宝一个健康的开始。',
+    '避免泡温泉、蒸桑拿，高温会影响精子活力。',
+    '保持规律作息，每晚睡够7-8小时。',
+    '多吃富含锌的食物，如瘦肉、海鲜、坚果。',
+    '和准妈妈一起做孕前体检，了解双方身体状况。',
+    '避免久坐，每小时起来活动5-10分钟。',
+    '保持心情愉悦，压力太大会影响受孕几率。',
+  ],
+  first: [
+    '孕早期宝宝神经系统快速发育，爸爸要多陪准妈妈散步。',
+    '为准妈妈准备清淡易消化的食物，少食多餐。',
+    '陪准妈妈一起听产检结果，给她安全感。',
+    '孕早期避免性生活，减少流产风险。',
+    '陪准妈妈记录怀孕日记，留下美好回忆。',
+    '为准妈妈准备缓解孕吐的小零食，如姜糖。',
+    '学习孕期知识，了解这个阶段需要注意什么。',
+    '给准妈妈多一些拥抱和安慰，她可能情绪波动。',
+  ],
+  second: [
+    '孕中期是宝宝大脑发育黄金期，多和宝宝说话。',
+    '陪准妈妈做孕期瑜伽，增进感情又锻炼身体。',
+    '孕中期可以开始准备宝宝用品了列个清单。',
+    '每天花10分钟抚摸准妈妈的肚子，感受胎动。',
+    '陪准妈妈数胎动，这是了解宝宝健康的好方法。',
+    '孕中期睡眠质量可能下降，帮她准备孕妇枕。',
+    '可以开始给宝宝讲故事，进行语言胎教。',
+    '陪准妈妈拍照记录孕肚，留下珍贵纪念。',
+  ],
+  third: [
+    '准备好待产包，放在车里随时可以出发。',
+    '学习拉玛泽呼吸法，分娩时能帮到准妈妈。',
+    '了解分娩信号：见红、破水、规律宫缩。',
+    '和准妈妈讨论分娩计划，了解她的意愿。',
+    '提前规划去医院的路线和时间。',
+    '陪准妈妈练习分娩姿势，减轻分娩疼痛。',
+    '给宝宝准备安全的婴儿床和寝具。',
+    '准备好产后照顾妈妈和宝宝的一切。',
+  ],
+  postpartum: [
+    '宝宝哭闹时，爸爸的安抚声有独特效果。',
+    '换尿布时，用棉柔巾从前往后擦更干净。',
+    '喂奶后记得拍嗝，竖抱10-15分钟效果好。',
+    '每天给宝宝做抚触，促进发育又增进感情。',
+    '记录宝宝的吃奶、睡眠、排便规律。',
+    '让妈妈多休息，你来承担更多护理工作。',
+    '多和宝宝说话、唱歌，促进语言发育。',
+    '不要忽视妈妈的情绪，给她足够的关心。',
+  ],
+};
+
+function getDailyTip(stage: string): string {
+  const tips = DAILY_TIPS[stage] || DAILY_TIPS.preconception;
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  return tips[dayOfYear % tips.length];
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { state, dismissUrgentNote, addUrgentNote } = useApp();
@@ -77,6 +136,33 @@ export default function HomeScreen() {
     color: colors.fgSecondary,
     marginTop: spacing.xs,
     lineHeight: 22,
+  },
+
+  // 每日小贴士
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.accentLight,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  tipIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipIconText: { fontSize: 16, color: '#fff' },
+  tipText: {
+    ...typography.footnote,
+    color: colors.accent,
+    flex: 1,
+    lineHeight: 20,
   },
 
   // 紧急关注
@@ -657,6 +743,7 @@ export default function HomeScreen() {
   }
 
   const stageLabel = STAGES.find(s => s.key === state.stage)?.label || '孕晚期';
+  const dailyTip = useMemo(() => getDailyTip(state.stage), [state.stage]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -687,6 +774,14 @@ export default function HomeScreen() {
             {state.stage === 'third' && '胜利在望，为宝宝的到来做最后准备'}
             {state.stage === 'postpartum' && '新的人生阶段开始了，享受每一刻'}
           </Text>
+        </View>
+
+        {/* ===== 每日小贴士 ===== */}
+        <View style={styles.tipCard}>
+          <View style={styles.tipIcon}>
+            <Text style={styles.tipIconText}>💡</Text>
+          </View>
+          <Text style={styles.tipText}>{dailyTip}</Text>
         </View>
 
         {/* ===== 宝宝大小对比 ===== */}
