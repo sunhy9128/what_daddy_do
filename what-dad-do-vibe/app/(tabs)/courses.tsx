@@ -603,7 +603,10 @@ export default function CoursesScreen() {
               <Text style={styles.modalContentText}>{selectedCourse?.content}</Text>
               {selectedCourse?.tips && selectedCourse.tips.length > 0 && (
                 <View style={styles.tipCard}>
-                  <Text style={styles.tipTitle}>💡 小贴士</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.xs }}>
+                    <Ionicons name="bulb-outline" size={14} color={colors.accent} />
+                    <Text style={styles.tipTitle}>小贴士</Text>
+                  </View>
                   {selectedCourse.tips.map((tip, i) => (
                     <Text key={i} style={styles.tipTxt}>• {tip}</Text>
                   ))}

@@ -327,7 +327,7 @@ export default function ProfileScreen() {
                           </View>
                           <View style={styles.babyTagRow}>
                             <View style={styles.babyTag}><Text style={styles.babyTagText}>{item.gender === 'girl' ? '女宝' : item.gender === 'boy' ? '男宝' : '未知'}</Text></View>
-                            <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}>🎂 {item.birthDate || item.dueDate}</Text></View>
+                            <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}><Ionicons name="gift-outline" size={12} color={isDark ? '#D4A84E' : '#D4A574'} /> {item.birthDate || item.dueDate}</Text></View>
                           </View>
                         </View>
                       </View>

@@ -811,12 +811,11 @@ export default function HomeScreen() {
                 const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
                   !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
                 , null as typeof BUMP_SIZE_DATA[0] | null);
-                const emoji = entry?.emoji || '🫐';
                 if (!entry) return null;
                 return (
                   <>
                     <View style={styles.bumpEmojiCol}>
-                      <Text style={styles.bumpEmoji}>{emoji}</Text>
+                      <Ionicons name={entry.iconName} size={40} color={colors.accent} />
                     </View>
                     <View style={styles.bumpInfo}>
                       <View style={styles.bumpFruitRow}>

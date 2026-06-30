@@ -48,11 +48,11 @@ const STAGE_SUGGESTIONS: Record<string, { q: string; label: string }[]> = {
 
 // ─── 欢迎消息 ───
 const WELCOME_MESSAGES: Record<string, string> = {
-  preconception: '你好！我是你的孕期陪护助手 🤝\n\n备孕期是打好基础的关键阶段，有什么想问的吗？',
-  first: '你好！我是你的孕期陪护助手 🤝\n\n恭喜进入孕早期！这个阶段妈妈可能会有早孕反应，爸爸的陪伴很重要哦。有什么想了解的？',
-  second: '你好！我是你的孕期陪护助手 🤝\n\n孕中期是相对舒适的阶段，可以多陪妈妈散步、做胎教。有什么想聊的？',
-  third: '你好！我是你的孕期陪护助手 🤝\n\n进入孕晚期啦！准备工作要做好，随时关注妈妈的身体变化。有什么问题尽管问！',
-  postpartum: '你好！我是你的孕期陪护助手 🤝\n\n宝宝出生了，恭喜你当爸爸啦！育儿之路刚刚开始，有疑问随时找我！',
+  preconception: '你好！我是你的孕期陪护助手。\n\n备孕期是打好基础的关键阶段，有什么想问的吗？',
+  first: '你好！我是你的孕期陪护助手。\n\n恭喜进入孕早期！这个阶段妈妈可能会有早孕反应，爸爸的陪伴很重要哦。有什么想了解的？',
+  second: '你好！我是你的孕期陪护助手。\n\n孕中期是相对舒适的阶段，可以多陪妈妈散步、做胎教。有什么想聊的？',
+  third: '你好！我是你的孕期陪护助手。\n\n进入孕晚期啦！准备工作要做好，随时关注妈妈的身体变化。有什么问题尽管问！',
+  postpartum: '你好！我是你的孕期陪护助手。\n\n宝宝出生了，恭喜你当爸爸啦！育儿之路刚刚开始，有疑问随时找我！',
 };
 
 export function AIChat({ expanded, babyGender }: { userId: string; babyGender?: string; expanded?: boolean }) {
@@ -145,7 +145,7 @@ export function AIChat({ expanded, babyGender }: { userId: string; babyGender?: 
       setError(errMsg);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `⚠️ ${errMsg}\n\n你可以稍后再试。`,
+        content: `[Error] ${errMsg}\n\n你可以稍后再试。`,
       }]);
     } finally {
       setLoading(false);

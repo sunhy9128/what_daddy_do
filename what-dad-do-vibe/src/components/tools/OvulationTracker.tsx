@@ -91,35 +91,40 @@ export function OvulationTracker({ userId }: { userId: string; babyGender?: stri
   const getNextOvulationDay = (): string | null => {
     if (!config?.lastPeriodStart) return null;
     const cycleLen = config.cycleLength || CYCLE_LENGTH_DEFAULT;
-    const lastStart = new Date(config.lastPeriodStart);
-    const daysSinceStart = Math.floor((new Date(todayStr).getTime() - lastStart.getTime()) / 86400000);
+    const lastStartMs = Date.parse(config.lastPeriodStart + 'T00:00:00Z');
+    if (isNaN(lastStartMs)) return null;
+    const todayMs = Date.parse(todayStr + 'T00:00:00Z');
+    const daysSinceStart = Math.floor((todayMs - lastStartMs) / 86400000);
     const daysUntilNext = cycleLen - (daysSinceStart % cycleLen);
-    if (daysUntilNext <= 0 || daysUntilNext > cycleLen - 5) return null;
-    const nextOvulation = new Date();
-    nextOvulation.setDate(nextOvulation.getDate() + daysUntilNext);
+    // daysUntilNext === 0 → 今天就是排卵日（valid），> cycleLen-5 才是预测失效
+    if (daysUntilNext > cycleLen - 5) return null;
+    const nextOvulation = new Date(todayMs + daysUntilNext * 86400000);
     return nextOvulation.toISOString().split('T')[0];
   };
 
   // 获取周期的月经期日期（假设经期长度固定）
+  // 所有计算使用 UTC 毫秒数，避免本地时区偏移导致跨日偏差
   const getPeriodDays = (year: number, month: number): string[] => {
     if (!config?.lastPeriodStart) return [];
     const cycleLen = config.cycleLength || CYCLE_LENGTH_DEFAULT;
     const periodLen = config.periodLength || PERIOD_LENGTH_DEFAULT;
-    const lastStart = new Date(config.lastPeriodStart);
+    const lastStartMs = Date.parse(config.lastPeriodStart + 'T00:00:00Z');
+    if (isNaN(lastStartMs)) return [];
+    const firstDayOfMonthMs = Date.UTC(year, month, 1);
+    const lastDayOfMonthMs = Date.UTC(year, month + 1, 0);
     const periodDays: string[] = [];
-    // 从上次经期开始日往前推算本月的经期
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    let current = new Date(lastStart);
-    while (current <= lastDayOfMonth) {
-      if (current >= firstDayOfMonth) {
-        const dateStr = current.toISOString().split('T')[0];
-        const dayOfCycle = Math.floor((current.getTime() - lastStart.getTime()) / 86400000) % cycleLen;
-        if (dayOfCycle < periodLen && dayOfCycle >= 0) {
+    let cycleMs = lastStartMs;
+    // 用 UTC 步进 cycleLen 天，避免 setDate 的时区问题
+    while (cycleMs <= lastDayOfMonthMs) {
+      if (cycleMs >= firstDayOfMonthMs) {
+        const d = new Date(cycleMs);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayOfCycle = Math.floor((cycleMs - lastStartMs) / 86400000) % cycleLen;
+        if (dayOfCycle >= 0 && dayOfCycle < periodLen) {
           periodDays.push(dateStr);
         }
       }
-      current.setDate(current.getDate() + cycleLen);
+      cycleMs += cycleLen * 86400000;
     }
     return periodDays;
   };
@@ -128,19 +133,21 @@ export function OvulationTracker({ userId }: { userId: string; babyGender?: stri
   const getOvulationDays = (year: number, month: number): string[] => {
     if (!config?.lastPeriodStart) return [];
     const cycleLen = config.cycleLength || CYCLE_LENGTH_DEFAULT;
-    const lastStart = new Date(config.lastPeriodStart);
+    const lastStartMs = Date.parse(config.lastPeriodStart + 'T00:00:00Z');
+    if (isNaN(lastStartMs)) return [];
+    const firstDayOfMonthMs = Date.UTC(year, month, 1);
+    const lastDayOfMonthMs = Date.UTC(year, month + 1, 0);
     const ovulationDays: string[] = [];
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    let current = new Date(lastStart);
-    while (current <= lastDayOfMonth) {
-      if (current >= firstDayOfMonth) {
-        const dayOfCycle = Math.floor((current.getTime() - lastStart.getTime()) / 86400000) % cycleLen;
+    let cycleMs = lastStartMs;
+    while (cycleMs <= lastDayOfMonthMs) {
+      if (cycleMs >= firstDayOfMonthMs) {
+        const dayOfCycle = Math.floor((cycleMs - lastStartMs) / 86400000) % cycleLen;
         if (dayOfCycle === cycleLen - 14) {
-          ovulationDays.push(current.toISOString().split('T')[0]);
+          const d = new Date(cycleMs);
+          ovulationDays.push(d.toISOString().split('T')[0]);
         }
       }
-      current.setDate(current.getDate() + cycleLen);
+      cycleMs += cycleLen * 86400000;
     }
     return ovulationDays;
   };

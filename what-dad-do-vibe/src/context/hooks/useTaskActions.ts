@@ -9,6 +9,10 @@
  * - 失败时回滚到原状态
  *
  * 接收 user / state / dispatch 作为依赖，不持有自己的 ref。
+ *
+ * 通知调度（产检任务）：
+ * - addTask（type=prenatal 且有 dueDate）→ schedulePrenatalReminder
+ * - removeTask（type=prenatal）→ cancelNotification（通过 storage 中的 prenatalNotificationIds 找到 identifier）
  */
 import { useCallback, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -22,6 +26,14 @@ import { toSnakeCaseKeys } from '../../lib/utils/camelToSnake';
 import { PregnancyStage } from '../../lib/stages';
 import { notifyError } from '../notifyError';
 import type { AppAction, AppState, Task } from '../types';
+import {
+  schedulePrenatalReminder,
+  cancelNotification,
+} from '../../lib/notifications';
+import {
+  loadNotificationConfig,
+  saveNotificationConfig,
+} from '../../lib/storage';
 
 export interface UseTaskActionsResult {
   toggleTask: (id: string) => Promise<void>;
@@ -107,6 +119,32 @@ export function useTaskActions(
           lastCheckinDate: undefined,
         },
       });
+
+      // ── 产检任务通知调度 ───────────────────────────────
+      if (newTask.type === 'prenatal' && newTask.due_date && newTask.title) {
+        const notifConfig = await loadNotificationConfig(user.id);
+        if (notifConfig.prenatalEnabled) {
+          const triggerDate = new Date(newTask.due_date + 'T09:00:00');
+          if (triggerDate.getTime() > Date.now()) {
+            const identifier = await schedulePrenatalReminder({
+              id: newTask.id,
+              title: newTask.title,
+              body: newTask.description || '记得按时去做产检哦',
+              triggerDate,
+            });
+            if (identifier) {
+              const updatedConfig = {
+                ...notifConfig,
+                prenatalNotificationIds: {
+                  ...notifConfig.prenatalNotificationIds,
+                  [newTask.id]: identifier,
+                },
+              };
+              await saveNotificationConfig(user.id, updatedConfig);
+            }
+          }
+        }
+      }
     } catch (error) {
       notifyError('添加任务', error);
     }
@@ -114,14 +152,29 @@ export function useTaskActions(
 
   const removeTask = useCallback(async (id: string) => {
     const taskToRestore = state.tasks.find(t => t.id === id);
+    const wasPrenatal = taskToRestore?.type === 'prenatal';
     dispatch({ type: 'DELETE_TASK', payload: id });
     try {
       await deleteTask(id);
+
+      // ── 取消产检任务通知 ──────────────────────────────
+      if (wasPrenatal && user) {
+        const notifConfig = await loadNotificationConfig(user.id);
+        const identifier = notifConfig.prenatalNotificationIds?.[id];
+        if (identifier) {
+          await cancelNotification(identifier);
+          const { [id]: _removed, ...restIds } = notifConfig.prenatalNotificationIds ?? {};
+          await saveNotificationConfig(user.id, {
+            ...notifConfig,
+            prenatalNotificationIds: restIds,
+          });
+        }
+      }
     } catch (error) {
       notifyError('删除任务', error);
       if (taskToRestore) dispatch({ type: 'ADD_TASK', payload: taskToRestore });
     }
-  }, [state.tasks, dispatch]);
+  }, [state.tasks, user, dispatch]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     const original = state.tasks.find(t => t.id === id);
