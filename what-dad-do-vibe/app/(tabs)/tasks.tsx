@@ -37,8 +37,8 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PRESET_PAGE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
-const PRESET_CARD_WIDTH = 200;
-const PRESET_GAP = spacing.sm;
+const PRESET_ITEMS_PER_PAGE = 5;
+const PRESET_ROW_GAP = spacing.xs;
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
@@ -200,6 +200,30 @@ export default function TasksScreen() {
     color: colors.fgSecondary,
     lineHeight: 16,
     marginBottom: 4,
+  },
+  // 预设任务行卡片（垂直列表）
+  presetRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  presetRowBody: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  presetRowTitle: {
+    ...typography.callout,
+    fontWeight: '500',
+    color: colors.fg,
+    marginBottom: 2,
+  },
+  presetRowDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
   },
   presetEmpty: {
     flexDirection: 'row',
@@ -778,7 +802,7 @@ export default function TasksScreen() {
     minimumViewTime: 100,
   }), []);
 
-  // 预设任务分页数据（每页2个任务）
+  // 预设任务分页数据（每页5个任务，垂直排列）
   const presetPageData = useMemo(() => {
     const pages: PresetTask[][] = [];
     for (let i = 0; i < filteredAvailablePresets.length; i += PRESET_ITEMS_PER_PAGE) {
@@ -911,7 +935,7 @@ export default function TasksScreen() {
             ))}
           </View>
 
-          {/* 分页滑动卡片 */}
+          {/* 分页滑动卡片（每页5条垂直列表） */}
           {filteredAvailablePresets.length > 0 ? (
             <>
               <FlatList
@@ -925,27 +949,26 @@ export default function TasksScreen() {
                 viewabilityConfig={presetViewabilityConfig}
                 getItemLayout={(_, index) => ({ length: PRESET_PAGE_WIDTH, offset: PRESET_PAGE_WIDTH * index, index })}
                 renderItem={({ item: pageTasks }) => (
-                  <View style={{ width: PRESET_PAGE_WIDTH, flexDirection: 'row', gap: PRESET_GAP, paddingHorizontal: spacing.lg }}>
+                  <View style={{ width: PRESET_PAGE_WIDTH, paddingHorizontal: spacing.lg }}>
                     {pageTasks.map((task: PresetTask) => (
-                      <View key={task.id} style={{ width: PRESET_CARD_WIDTH }}>
-                        <TouchableOpacity
-                          style={styles.presetCard}
-                          onPress={() => handleAddPreset(task)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.presetCardAdd}>
-                            <Text style={styles.presetCardAddText}>+</Text>
-                          </View>
-                          <View style={styles.presetCardBody}>
-                            <Text style={styles.presetCardTitle} numberOfLines={1}>{task.title}</Text>
-                            <Text style={styles.presetCardDesc} numberOfLines={2}>{task.description}</Text>
-                            <Tag
-                              label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
-                              variant={task.type === 'prenatal' ? 'short' : 'long'}
-                            />
-                          </View>
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        key={task.id}
+                        style={[styles.presetRowCard, pageTasks.indexOf(task) < pageTasks.length - 1 && { marginBottom: PRESET_ROW_GAP }]}
+                        onPress={() => handleAddPreset(task)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.presetCardAdd}>
+                          <Text style={styles.presetCardAddText}>+</Text>
+                        </View>
+                        <View style={styles.presetRowBody}>
+                          <Text style={styles.presetRowTitle} numberOfLines={1}>{task.title}</Text>
+                          <Text style={styles.presetRowDesc} numberOfLines={1}>{task.description}</Text>
+                        </View>
+                        <Tag
+                          label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
+                          variant={task.type === 'prenatal' ? 'short' : 'long'}
+                        />
+                      </TouchableOpacity>
                     ))}
                   </View>
                 )}
