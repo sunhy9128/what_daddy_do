@@ -948,6 +948,7 @@ export default function TasksScreen() {
                 onViewableItemsChanged={onPresetViewable}
                 viewabilityConfig={presetViewabilityConfig}
                 getItemLayout={(_, index) => ({ length: PRESET_PAGE_WIDTH, offset: PRESET_PAGE_WIDTH * index, index })}
+                style={{ height: 320 }}
                 renderItem={({ item: pageTasks }) => (
                   <View style={{ width: PRESET_PAGE_WIDTH, paddingHorizontal: spacing.lg }}>
                     {pageTasks.map((task: PresetTask) => (
