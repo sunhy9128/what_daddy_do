@@ -38,7 +38,8 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PRESET_PAGE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 const PRESET_ITEMS_PER_PAGE = 5;
-const PRESET_ROW_GAP = spacing.xs;
+const PRESET_ROW_HEIGHT = 52;
+const PRESET_PAGE_HEIGHT = PRESET_ROW_HEIGHT * PRESET_ITEMS_PER_PAGE + spacing.xs * (PRESET_ITEMS_PER_PAGE - 1);
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
@@ -935,7 +936,7 @@ export default function TasksScreen() {
             ))}
           </View>
 
-          {/* 分页滑动卡片（每页5条垂直列表） */}
+          {/* 分页滑动列表（每页5条垂直列表） */}
           {filteredAvailablePresets.length > 0 ? (
             <>
               <FlatList
@@ -947,28 +948,24 @@ export default function TasksScreen() {
                 keyExtractor={(_, index) => `preset-page-${index}`}
                 onViewableItemsChanged={onPresetViewable}
                 viewabilityConfig={presetViewabilityConfig}
-                getItemLayout={(_, index) => ({ length: PRESET_PAGE_WIDTH, offset: PRESET_PAGE_WIDTH * index, index })}
-                style={{ height: 320 }}
+                getItemLayout={(_, index) => ({ length: PRESET_PAGE_HEIGHT, offset: PRESET_PAGE_HEIGHT * index, index })}
+                style={{ height: PRESET_PAGE_HEIGHT }}
                 renderItem={({ item: pageTasks }) => (
                   <View style={{ width: PRESET_PAGE_WIDTH, paddingHorizontal: spacing.lg }}>
-                    {pageTasks.map((task: PresetTask) => (
+                    {pageTasks.map((task: PresetTask, idx: number) => (
                       <TouchableOpacity
                         key={task.id}
-                        style={[styles.presetRowCard, pageTasks.indexOf(task) < pageTasks.length - 1 && { marginBottom: PRESET_ROW_GAP }]}
+                        style={{ height: PRESET_ROW_HEIGHT, flexDirection: 'row', alignItems: 'center', borderBottomWidth: idx < pageTasks.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }}
                         onPress={() => handleAddPreset(task)}
                         activeOpacity={0.7}
                       >
-                        <View style={styles.presetCardAdd}>
-                          <Text style={styles.presetCardAddText}>+</Text>
+                        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
+                          <Text style={{ fontSize: 16, color: colors.accent, fontWeight: '500' }}>+</Text>
                         </View>
-                        <View style={styles.presetRowBody}>
-                          <Text style={styles.presetRowTitle} numberOfLines={1}>{task.title}</Text>
-                          <Text style={styles.presetRowDesc} numberOfLines={1}>{task.description}</Text>
+                        <View style={{ flex: 1, marginRight: spacing.sm }}>
+                          <Text style={{ ...typography.callout, fontWeight: '500', color: colors.fg }} numberOfLines={1}>{task.title}</Text>
                         </View>
-                        <Tag
-                          label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
-                          variant={task.type === 'prenatal' ? 'short' : 'long'}
-                        />
+                        <Tag label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'} variant={task.type === 'prenatal' ? 'short' : 'long'} />
                       </TouchableOpacity>
                     ))}
                   </View>
