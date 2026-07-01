@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform, FlatList, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -35,7 +35,10 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
 
 // 物品准备/心理支持已迁移到首页（index.tsx）
 
-
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PRESET_PAGE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
+const PRESET_CARD_WIDTH = 200;
+const PRESET_GAP = spacing.sm;
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
@@ -60,6 +63,9 @@ export default function TasksScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [presetFilter, setPresetFilter] = useState<'all' | 'prenatal' | 'checkin' | 'daily'>('all');
   const taskBusy = useRef(false);
+  const [presetPageIndex, setPresetPageIndex] = useState(0);
+  const presetFlatListRef = useRef<FlatList>(null);
+  const isPresetScrolling = useRef(false);
   const colors = useColors();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -67,9 +73,11 @@ export default function TasksScreen() {
   centered: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingBottom: 100 },
   taskScroll: { maxHeight: 280 },
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.sm },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xs },
+  titleIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center' },
   title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
-  subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
+  subtitle: { ...typography.callout, color: colors.muted },
   viewToggle: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceSecondary,
@@ -203,6 +211,35 @@ export default function TasksScreen() {
   presetEmptyTxt: {
     ...typography.footnote,
     color: colors.muted,
+  },
+  // 可添加任务分页
+  presetPagerContainer: {
+    marginTop: spacing.xs,
+  },
+  presetPager: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  presetDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+  },
+  presetDotActive: {
+    backgroundColor: colors.accent,
+    width: 18,
+  },
+  presetPagerBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressCard: {
     marginTop: spacing.sm,
@@ -715,6 +752,41 @@ export default function TasksScreen() {
     checkin: '每日打卡',
   };
 
+  // 计算预设任务总页数（每页放2个卡片）
+  const PRESET_ITEMS_PER_PAGE = 2;
+  const totalPresetPages = Math.ceil(filteredAvailablePresets.length / PRESET_ITEMS_PER_PAGE) || 1;
+
+  // 分页滑动到指定页
+  const scrollToPresetPage = useCallback((index: number) => {
+    if (index < 0 || index >= totalPresetPages) return;
+    isPresetScrolling.current = true;
+    setPresetPageIndex(index);
+    presetFlatListRef.current?.scrollToIndex({ index, animated: true });
+    setTimeout(() => { isPresetScrolling.current = false; }, 600);
+  }, [totalPresetPages]);
+
+  // FlatList 可见项变化检测（更新指示器）
+  const onPresetViewable = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+    if (isPresetScrolling.current) return;
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setPresetPageIndex(viewableItems[0].index);
+    }
+  }, []);
+
+  const presetViewabilityConfig = useMemo(() => ({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
+  }), []);
+
+  // 预设任务分页数据（每页2个任务）
+  const presetPageData = useMemo(() => {
+    const pages: PresetTask[][] = [];
+    for (let i = 0; i < filteredAvailablePresets.length; i += PRESET_ITEMS_PER_PAGE) {
+      pages.push(filteredAvailablePresets.slice(i, i + PRESET_ITEMS_PER_PAGE));
+    }
+    return pages;
+  }, [filteredAvailablePresets]);
+
   if (loadingPresets) {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
@@ -728,7 +800,12 @@ export default function TasksScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>待办清单</Text>
+          <View style={styles.titleRow}>
+            <View style={styles.titleIcon}>
+              <Ionicons name="checkbox-outline" size={24} color={colors.accent} />
+            </View>
+            <Text style={styles.title}>待办清单</Text>
+          </View>
           <Text style={styles.subtitle}>当前阶段：{selectedStage}</Text>
           {/* 视图切换 */}
           <View style={styles.viewToggle}>
@@ -834,35 +911,69 @@ export default function TasksScreen() {
             ))}
           </View>
 
-          {/* 横向滑动卡片 */}
+          {/* 分页滑动卡片 */}
           {filteredAvailablePresets.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.presetScroll}
-            >
-              {filteredAvailablePresets.map((task) => (
-                <View key={task.id} style={styles.presetCardOuter}>
-                  <TouchableOpacity
-                    style={styles.presetCard}
-                    onPress={() => handleAddPreset(task)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.presetCardAdd}>
-                      <Text style={styles.presetCardAddText}>+</Text>
-                    </View>
-                    <View style={styles.presetCardBody}>
-                      <Text style={styles.presetCardTitle} numberOfLines={1}>{task.title}</Text>
-                      <Text style={styles.presetCardDesc} numberOfLines={2}>{task.description}</Text>
-                      <Tag
-                        label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
-                        variant={task.type === 'prenatal' ? 'short' : 'long'}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
+            <>
+              <FlatList
+                ref={presetFlatListRef}
+                data={presetPageData}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(_, index) => `preset-page-${index}`}
+                onViewableItemsChanged={onPresetViewable}
+                viewabilityConfig={presetViewabilityConfig}
+                getItemLayout={(_, index) => ({ length: PRESET_PAGE_WIDTH, offset: PRESET_PAGE_WIDTH * index, index })}
+                renderItem={({ item: pageTasks }) => (
+                  <View style={{ width: PRESET_PAGE_WIDTH, flexDirection: 'row', gap: PRESET_GAP, paddingHorizontal: spacing.lg }}>
+                    {pageTasks.map((task: PresetTask) => (
+                      <View key={task.id} style={{ width: PRESET_CARD_WIDTH }}>
+                        <TouchableOpacity
+                          style={styles.presetCard}
+                          onPress={() => handleAddPreset(task)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.presetCardAdd}>
+                            <Text style={styles.presetCardAddText}>+</Text>
+                          </View>
+                          <View style={styles.presetCardBody}>
+                            <Text style={styles.presetCardTitle} numberOfLines={1}>{task.title}</Text>
+                            <Text style={styles.presetCardDesc} numberOfLines={2}>{task.description}</Text>
+                            <Tag
+                              label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'}
+                              variant={task.type === 'prenatal' ? 'short' : 'long'}
+                            />
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              />
+              {/* 分页指示器 */}
+              <View style={styles.presetPager}>
+                <TouchableOpacity
+                  style={[styles.presetPagerBtn, presetPageIndex === 0 && { opacity: 0.4 }]}
+                  onPress={() => scrollToPresetPage(presetPageIndex - 1)}
+                  disabled={presetPageIndex === 0}
+                >
+                  <Ionicons name="chevron-back" size={14} color={colors.fg} />
+                </TouchableOpacity>
+                {Array.from({ length: totalPresetPages }).map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={[styles.presetDot, idx === presetPageIndex && styles.presetDotActive]}
+                  />
+                ))}
+                <TouchableOpacity
+                  style={[styles.presetPagerBtn, presetPageIndex >= totalPresetPages - 1 && { opacity: 0.4 }]}
+                  onPress={() => scrollToPresetPage(presetPageIndex + 1)}
+                  disabled={presetPageIndex >= totalPresetPages - 1}
+                >
+                  <Ionicons name="chevron-forward" size={14} color={colors.fg} />
+                </TouchableOpacity>
+              </View>
+            </>
           ) : (
             <View style={styles.presetEmpty}>
               <Ionicons name="checkmark-circle" size={16} color={colors.muted} />
