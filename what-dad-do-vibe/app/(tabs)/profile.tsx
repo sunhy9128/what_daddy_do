@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, Dimensions, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -31,11 +31,10 @@ export default function ProfileScreen() {
   const CARD_WIDTH = PAGE_WIDTH - GAP;
 
   const [signingOut, setSigningOut] = useState(false);
-  const [pageIndex, setPageIndex] = useState(0);
+  const [babyPageIndex, setBabyPageIndex] = useState(0);
   const [notifConfig, setNotifConfig] = useState<NotificationConfig | null>(null);
   const flatListRef = useRef<FlatList>(null);
-  const programmaticScrolling = useRef(false);
-  const pageIndexRef = useRef(0);
+  const isScrolling = useRef(false);
 
   // Load notification config
   useEffect(() => {
@@ -65,42 +64,43 @@ export default function ProfileScreen() {
     }
   }, [user?.id, notifConfig]);
 
+  // 滚动到指定宝宝卡片
   const scrollToBaby = useCallback((index: number) => {
-    if (index < 0 || index >= activeBabies.length || index === pageIndexRef.current) return;
-    programmaticScrolling.current = true;
-    flatListRef.current?.scrollToOffset({ offset: index * PAGE_WIDTH, animated: true });
-    pageIndexRef.current = index;
-    setPageIndex(index);
-  }, [activeBabies.length, PAGE_WIDTH]);
+    if (index < 0 || index >= activeBabies.length) return;
+    isScrolling.current = true;
+    setBabyPageIndex(index);
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+    // 等待滚动动画结束后释放守卫
+    setTimeout(() => { isScrolling.current = false; }, 600);
+  }, [activeBabies.length]);
 
-  // onScroll 实时同步指示器，但跳过按钮触发的程序化滚动（防抖动）
-  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (programmaticScrolling.current) return;
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / PAGE_WIDTH);
-    if (newIndex >= 0 && newIndex < activeBabies.length && newIndex !== pageIndexRef.current) {
-      pageIndexRef.current = newIndex;
-      setPageIndex(newIndex);
+  // 使用可见项变化检测当前页（忽略滚动过程中的中间回调）
+  const onBabyViewable = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+    if (isScrolling.current) return;
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setBabyPageIndex(viewableItems[0].index);
     }
-  }, [PAGE_WIDTH, activeBabies.length]);
-
-  // 程序化滚动结束后释放守卫，后续手动滑动可正常同步
-  const onMomentumEnd = useCallback(() => {
-    programmaticScrolling.current = false;
   }, []);
 
-  // 进入页面时自动滚动到当前选中的宝宝
+  const viewabilityConfig = useMemo(() => ({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
+  }), []);
+
+  // 进入页面时滚动到当前选中的宝宝（只在首次加载时执行）
+  const hasInitialized = useRef(false);
   useFocusEffect(
     useCallback(() => {
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
       const currentIdx = activeBabies.findIndex(b => b.id === state.currentBabyId);
-      if (currentIdx > 0) {
-        programmaticScrolling.current = true;
-        flatListRef.current?.scrollToOffset({ offset: currentIdx * PAGE_WIDTH, animated: false });
-        pageIndexRef.current = currentIdx;
-        setPageIndex(currentIdx);
-        programmaticScrolling.current = false;
+      if (currentIdx >= 0 && flatListRef.current) {
+        setBabyPageIndex(currentIdx);
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({ index: currentIdx, animated: false });
+        }, 100);
       }
-    }, [activeBabies, state.currentBabyId, PAGE_WIDTH])
+    }, [activeBabies, state.currentBabyId])
   );
 
   const handleLogout = async () => {
@@ -196,20 +196,20 @@ export default function ProfileScreen() {
 
     // 宝宝信息卡片（滑页内用）
     babyCard: {
-      backgroundColor: isDark ? '#1E1E30' : '#FFF8F5', borderRadius: radius.lg, padding: spacing.xl,
+      backgroundColor: colors.babyCardBg, borderRadius: radius.lg, padding: spacing.xl,
       alignItems: 'center',
-      borderWidth: 1, borderColor: isDark ? '#333348' : '#F5E0D0',
+      borderWidth: 1, borderColor: colors.babyCardBorder,
     },
     babyHeader: { alignItems: 'center', marginBottom: spacing.md },
     babyNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    babyName: { ...typography.title2, fontWeight: '700', color: isDark ? '#E8DCC8' : '#5A3E2B' },
+    babyName: { ...typography.title2, fontWeight: '700', color: colors.babyName },
     babyStage: {
       fontSize: 11, fontWeight: '600', color: '#fff',
-      backgroundColor: isDark ? '#5A4040' : '#D4A574', paddingHorizontal: spacing.sm, paddingVertical: 2,
+      backgroundColor: colors.babyAccent, paddingHorizontal: spacing.sm, paddingVertical: 2,
       borderRadius: radius.sm, overflow: 'hidden',
     },
     babyInfoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
-    babyInfoText: { ...typography.callout, color: isDark ? '#B8A88A' : '#8B6F4A' },
+    babyInfoText: { ...typography.callout, color: colors.genderUnknown },
     cardSettings: {
       position: 'absolute', top: spacing.sm, right: spacing.sm,
       width: 32, height: 32, borderRadius: radius.md,
@@ -230,11 +230,11 @@ export default function ProfileScreen() {
       paddingVertical: spacing.md + 2,
       borderRadius: radius.sm,
       borderWidth: 1,
-      borderColor: isDark ? '#5A3A3A' : '#FECACA',
-      backgroundColor: isDark ? '#2A1A1A' : '#FEF2F2',
+      borderColor: colors.dangerBorder,
+      backgroundColor: colors.dangerSurface,
       alignItems: 'center',
     },
-    logoutText: { ...typography.callout, fontWeight: '500', color: colors.error },
+    logoutText: { ...typography.callout, fontWeight: '500', color: colors.dangerFg },
 
     // 分页指示器（匹配工具箱样式）
     dotsContainer: {
@@ -271,20 +271,25 @@ export default function ProfileScreen() {
         </View>
 
         {/* 多宝宝信息卡片 - 左右滑动 */}
-        {activeBabies.length > 0 && (
+        {(activeBabies.length > 0 || state.loading) && (
           <>
             <View style={{ width: PAGE_WIDTH }}>
-              <FlatList
-                ref={flatListRef}
-                data={activeBabies}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={item => item.id}
-                onScroll={onScroll}
-                scrollEventThrottle={16}
-                onMomentumScrollEnd={onMomentumEnd}
-                renderItem={({ item, index }) => {
+              {state.loading ? (
+                <View style={[styles.babyCard, { justifyContent: 'center', alignItems: 'center' }]}>
+                  <ActivityIndicator size="large" color={colors.accent} />
+                </View>
+              ) : (
+                <FlatList
+                  ref={flatListRef}
+                  data={activeBabies}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={item => item.id}
+                  onViewableItemsChanged={onBabyViewable}
+                  viewabilityConfig={viewabilityConfig}
+                  getItemLayout={(_, index) => ({ length: PAGE_WIDTH, offset: PAGE_WIDTH * index, index })}
+                  renderItem={({ item, index }) => {
                 const isLast = index === activeBabies.length - 1;
                 // 每张卡片外层"页容器"宽度 = PAGE_WIDTH (让 paging 步长 = 卡片+间距)
                 // 卡片实际宽度 = PAGE_WIDTH - GAP (右侧留 GAP 视觉空隙)
@@ -300,15 +305,15 @@ export default function ProfileScreen() {
                       <View style={{ width: cardWidth }}>
                         <View style={styles.babyCard}>
                           <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
-                            <Ionicons name="settings-outline" size={16} color={isDark ? '#B8A88A' : '#D4A574'} />
+                            <Ionicons name="settings-outline" size={16} color={colors.muted} />
                           </TouchableOpacity>
                           <View style={styles.babyHeader}>
                             {item.gender === 'girl' ? (
-                              <Ionicons name="female" size={48} color={isDark ? '#E8B4D8' : '#D89BB8'} style={{ marginBottom: spacing.sm }} />
+                              <Ionicons name="female" size={48} color={colors.babyGirl} style={{ marginBottom: spacing.sm }} />
                             ) : item.gender === 'boy' ? (
-                              <Ionicons name="male" size={48} color={isDark ? '#B4D8E8' : '#9BB8D8'} style={{ marginBottom: spacing.sm }} />
+                              <Ionicons name="male" size={48} color={colors.babyBoy} style={{ marginBottom: spacing.sm }} />
                             ) : (
-                              <Ionicons name="help-circle-outline" size={48} color={isDark ? '#B8A88A' : '#8B6F4A'} style={{ marginBottom: spacing.sm }} />
+                              <Ionicons name="help-circle-outline" size={48} color={colors.genderUnknown} style={{ marginBottom: spacing.sm }} />
                             )}
                             <View style={styles.babyNameRow}>
                               <Text style={styles.babyName}>{item.name || '宝宝'}</Text>
@@ -317,17 +322,17 @@ export default function ProfileScreen() {
                           </View>
                           {item.birthDate && (
                             <View style={styles.babyInfoRow}>
-                              <Ionicons name="gift-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
+                              <Ionicons name="gift-outline" size={14} color={colors.warning} />
                               <Text style={styles.babyInfoText}>出生日期：{item.birthDate}</Text>
                             </View>
                           )}
                           <View style={styles.babyInfoRow}>
-                            <Ionicons name="time-outline" size={14} color={isDark ? '#B8A88A' : '#D4A574'} />
+                            <Ionicons name="time-outline" size={14} color={colors.warning} />
                             <Text style={styles.babyInfoText}>宝宝 {birthAgeLabel}</Text>
                           </View>
                           <View style={styles.babyTagRow}>
                             <View style={styles.babyTag}><Text style={styles.babyTagText}>{item.gender === 'girl' ? '女宝' : item.gender === 'boy' ? '男宝' : '未知'}</Text></View>
-                            <View style={[styles.babyTag, { backgroundColor: isDark ? '#3A2A1E' : '#FFF0E6' }]}><Text style={[styles.babyTagText, { color: isDark ? '#D4A84E' : '#D4A574' }]}><Ionicons name="gift-outline" size={12} color={isDark ? '#D4A84E' : '#D4A574'} /> {item.birthDate || item.dueDate}</Text></View>
+                            <View style={[styles.babyTag, { backgroundColor: colors.warningSurface }]}><Text style={[styles.babyTagText, { color: colors.warning }]}><Ionicons name="gift-outline" size={12} color={colors.warning} /> {item.birthDate || item.dueDate}</Text></View>
                           </View>
                         </View>
                       </View>
@@ -367,17 +372,18 @@ export default function ProfileScreen() {
                 );
                 }}
               />
+            )}
             </View>
             {/* 分页指示器 */}
             {activeBabies.length > 1 && (
               <View style={styles.dotsContainer}>
                 <TouchableOpacity
-                  style={[styles.pageBtn, pageIndex === 0 && styles.pageBtnDisabled]}
-                  onPress={() => scrollToBaby(pageIndex - 1)}
-                  disabled={pageIndex === 0}
+                  style={[styles.pageBtn, babyPageIndex === 0 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToBaby(babyPageIndex - 1)}
+                  disabled={babyPageIndex === 0}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="chevron-back" size={16} color={pageIndex === 0 ? colors.muted : colors.accent} />
+                  <Ionicons name="chevron-back" size={16} color={babyPageIndex === 0 ? colors.muted : colors.accent} />
                 </TouchableOpacity>
 
                 {activeBabies.map((_, index) => (
@@ -385,7 +391,7 @@ export default function ProfileScreen() {
                     key={index}
                     style={[
                       styles.dot,
-                      index === pageIndex && styles.dotActive,
+                      index === babyPageIndex && styles.dotActive,
                     ]}
                     onPress={() => scrollToBaby(index)}
                     activeOpacity={0.7}
@@ -393,12 +399,12 @@ export default function ProfileScreen() {
                 ))}
 
                 <TouchableOpacity
-                  style={[styles.pageBtn, pageIndex >= activeBabies.length - 1 && styles.pageBtnDisabled]}
-                  onPress={() => scrollToBaby(pageIndex + 1)}
-                  disabled={pageIndex >= activeBabies.length - 1}
+                  style={[styles.pageBtn, babyPageIndex >= activeBabies.length - 1 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToBaby(babyPageIndex + 1)}
+                  disabled={babyPageIndex >= activeBabies.length - 1}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="chevron-forward" size={16} color={pageIndex >= activeBabies.length - 1 ? colors.muted : colors.accent} />
+                  <Ionicons name="chevron-forward" size={16} color={babyPageIndex >= activeBabies.length - 1 ? colors.muted : colors.accent} />
                 </TouchableOpacity>
               </View>
             )}
@@ -459,8 +465,8 @@ export default function ProfileScreen() {
               <Switch
                 value={isDark}
                 onValueChange={toggleTheme}
-                trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
-                thumbColor={isDark ? colors.accent : '#FCFAF5'}
+                trackColor={{ false: colors.switchTrackOff, true: colors.accentLight }}
+                thumbColor={isDark ? colors.accent : colors.surface}
               />
             </View>
           </Card>
@@ -480,8 +486,8 @@ export default function ProfileScreen() {
               <Switch
                 value={notifConfig?.enabled ?? true}
                 onValueChange={(v) => handleNotifToggle('enabled', v)}
-                trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
-                thumbColor={(notifConfig?.enabled ?? true) ? colors.accent : '#FCFAF5'}
+                trackColor={{ false: colors.switchTrackOff, true: colors.accentLight }}
+                thumbColor={(notifConfig?.enabled ?? true) ? colors.accent : colors.surface}
               />
             </View>
             {notifConfig?.enabled && (
@@ -496,8 +502,8 @@ export default function ProfileScreen() {
                   <Switch
                     value={notifConfig?.checkinEnabled ?? true}
                     onValueChange={(v) => handleNotifToggle('checkinEnabled', v)}
-                    trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
-                    thumbColor={(notifConfig?.checkinEnabled ?? true) ? colors.accent : '#FCFAF5'}
+                    trackColor={{ false: colors.switchTrackOff, true: colors.accentLight }}
+                    thumbColor={(notifConfig?.checkinEnabled ?? true) ? colors.accent : colors.surface}
                   />
                 </View>
                 <View style={[styles.menuRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
@@ -510,8 +516,8 @@ export default function ProfileScreen() {
                   <Switch
                     value={notifConfig?.prenatalEnabled ?? true}
                     onValueChange={(v) => handleNotifToggle('prenatalEnabled', v)}
-                    trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
-                    thumbColor={(notifConfig?.prenatalEnabled ?? true) ? colors.accent : '#FCFAF5'}
+                    trackColor={{ false: colors.switchTrackOff, true: colors.accentLight }}
+                    thumbColor={(notifConfig?.prenatalEnabled ?? true) ? colors.accent : colors.surface}
                   />
                 </View>
                 <View style={[styles.menuRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
@@ -524,8 +530,8 @@ export default function ProfileScreen() {
                   <Switch
                     value={notifConfig?.vaccineEnabled ?? true}
                     onValueChange={(v) => handleNotifToggle('vaccineEnabled', v)}
-                    trackColor={{ false: '#D4D0C8', true: colors.accentLight }}
-                    thumbColor={(notifConfig?.vaccineEnabled ?? true) ? colors.accent : '#FCFAF5'}
+                    trackColor={{ false: colors.switchTrackOff, true: colors.accentLight }}
+                    thumbColor={(notifConfig?.vaccineEnabled ?? true) ? colors.accent : colors.surface}
                   />
                 </View>
               </>
