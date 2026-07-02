@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.taro/
+.project
+.idea/
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 临时
+.tmp/
+.cache/
+
+# Taro 编译产物
+miniprogram_npm/
+*.wxss
+*.js.map
+*.wxml
+
+# Supabase 本地密钥
+.env
+.env.local

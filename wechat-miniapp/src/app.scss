@@ -1,0 +1,11 @@
+/* 全局样式 - 与 RN 端对齐 Kami 设计 token */
+page {
+  background-color: #FAF6EF; /* 暖羊皮纸 bg */
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+  color: #1F2937;
+}
+
+view, text, image, scroll-view {
+  box-sizing: border-box;
+}
