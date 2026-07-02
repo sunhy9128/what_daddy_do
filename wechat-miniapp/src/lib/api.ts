@@ -1,4 +1,4 @@
-import { supabase, Baby, Task, CommunityPost, KnowledgeArticle } from './supabase';
+import { supabase, Baby, Task, CommunityPost, KnowledgeArticle, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety } from './supabase';
 
 // ===== Babies =====
 export async function getBabies(userId: string): Promise<Baby[]> {
@@ -50,4 +50,52 @@ export async function getKnowledgeArticles(): Promise<KnowledgeArticle[]> {
     .from('knowledge_articles').select('*').order('id', { ascending: true });
   if (error) throw error;
   return (data ?? []) as KnowledgeArticle[];
+}
+
+// ===== Preset Items + User Preparations =====
+export async function getPresetItems(stage?: string): Promise<PresetItem[]> {
+  let q = supabase.from('preset_items').select('*').order('id', { ascending: true });
+  if (stage) q = q.or(`stage.eq.${stage},stage.is.null`);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as PresetItem[];
+}
+
+export async function getUserPreparations(userId: string): Promise<UserPreparation[]> {
+  const { data, error } = await supabase
+    .from('user_preparations').select('*').eq('user_id', userId);
+  if (error) throw error;
+  return (data ?? []) as UserPreparation[];
+}
+
+export async function togglePreparation(userId: string, presetItemId: number, completed: boolean): Promise<void> {
+  const { data: existing } = await supabase
+    .from('user_preparations').select('id')
+    .eq('user_id', userId).eq('preset_item_id', presetItemId).maybeSingle();
+  if (existing) {
+    await supabase.from('user_preparations')
+      .update({ completed }).eq('id', existing.id);
+  } else {
+    await supabase.from('user_preparations').insert({
+      user_id: userId, preset_item_id: presetItemId, completed,
+    });
+  }
+}
+
+// ===== Psychological Support =====
+export async function getPsychologicalSupport(stage?: string): Promise<PsychologicalSupport[]> {
+  let q = supabase.from('psychological_support').select('*').order('id', { ascending: true });
+  if (stage) q = q.or(`stage.eq.${stage},stage.is.null`);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as PsychologicalSupport[];
+}
+
+// ===== Food Safety =====
+export async function getFoodSafety(query?: string): Promise<FoodSafety[]> {
+  let q = supabase.from('food_safety').select('*').order('name', { ascending: true });
+  if (query) q = q.ilike('name', `%${query}%`);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as FoodSafety[];
 }

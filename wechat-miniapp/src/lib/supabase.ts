@@ -33,6 +33,10 @@ export interface Task {
   category: string;          // 产检 / 日常 / 打卡
   stage: string | null;
   due_date: string | null;
+  hospital_name?: string | null;
+  hospital_address?: string | null;
+  hospital_lat?: number | null;
+  hospital_lng?: number | null;
   completed: boolean;
   completed_at: string | null;
   created_at: string;
@@ -56,4 +60,32 @@ export interface KnowledgeArticle {
   read_time: string;
   category: string;
   stage: string | null;
+}
+
+export interface PresetItem {
+  id: number;
+  title: string;
+  category: string;        // 待产包 / 婴儿用品 / 哺乳用品 ...
+  stage: PregnancyStage | null;
+}
+
+export interface UserPreparation {
+  id: number;
+  user_id: string;
+  preset_item_id: number;
+  completed: boolean;
+}
+
+export interface PsychologicalSupport {
+  id: number;
+  title: string;
+  content: string;
+  stage: PregnancyStage | null;
+}
+
+export interface FoodSafety {
+  id: number;
+  name: string;
+  category: 'safe' | 'caution' | 'avoid';
+  note: string | null;
 }

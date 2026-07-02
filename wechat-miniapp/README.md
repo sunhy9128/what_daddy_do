@@ -53,17 +53,48 @@ src/
 
 ## 已有 vs 待补
 
-- [x] tabBar 4 模块骨架 + 登录页
+### 已实现 (本轮)
+
+- [x] tabBar 4 模块 + 登录页
 - [x] Supabase 接入 + Auth 持久化
-- [x] 任务列表 (完成态切换)
-- [x] 社区 (分类过滤 + 知识区)
-- [ ] 首页：物品准备 / 心理支持 / 工具栏
-- [ ] 我的：宝宝信息编辑 / 通知设置二级菜单
-- [ ] tabBar 图标 (assets/tab/* 待补 PNG)
-- [ ] DeepSeek AI 问答工具
+- [x] **首页**：阶段信息卡 / 物品准备 (勾选持久化) / 心理支持 / 工具栏 grid
+- [x] **任务**：列表 (按分类 Tab) + 详情页 + 完成态切换
+- [x] **任务详情**：产检医院导航 (`Taro.openLocation`) + 注意事项解析
+- [x] **社区**：分类过滤 + 知识区 + 帖子列表
+- [x] **我的**：宝宝信息卡 (左右切换) / 宝宝信息编辑 / 通知设置二级 Modal
+- [x] **工具**：
+  - 🍼 喂奶计时 (start/stop/历史)
+  - 📏 生长记录 (柱状趋势 + 增删)
+  - 🍽️ 食物禁忌 (搜索 + 三色分类)
+  - 🤖 AI 问答 (DeepSeek 调用 + 按宝宝阶段定制)
+  - 💉 疫苗 / ⚖️ 妈妈体重 / 💗 情绪自评 / 🩺 产检 (占位页)
+
+### 待补
+
+- [ ] tabBar 图标 PNG (`src/assets/tab/*`)
+- [ ] 工具栏拖拽排序 (PanResponder 手写)
+- [ ] 妈妈体重曲线 / 情绪 EPDS 评估 (目前占位)
+- [ ] 微信订阅消息 (替换 RN 端的 Notifications API)
+- [ ] 微信原生登录 (`wx.login` → supabase.auth.signInWithIdToken)
+
+## 路由表
+
+| 路径 | tab | 说明 |
+|---|---|---|
+| `/pages/index/index` | ✓ | 首页 |
+| `/pages/tasks/index` | ✓ | 任务列表 |
+| `/pages/tasks/detail?id=N` | - | 任务详情 |
+| `/pages/community/index` | ✓ | 社区 |
+| `/pages/profile/index` | ✓ | 我的 |
+| `/pages/profile/baby-info` | - | 宝宝信息编辑 |
+| `/pages/login/index` | - | 登录 |
+| `/pages/tools/{feeding,growth,food,ai,...}` | - | 工具页 |
+
+跳转统一通过 `src/lib/router.ts` 的 `goTo()`，自动判断 tab vs navigateTo。
 
 ## 与 RN 端的设计对齐
 
 - 设计 token (`src/styles/tokens.ts`) 直接对齐 `what-dad-do-vibe/src/styles/tokens.ts`
 - 行类型 (`src/lib/supabase.ts`) 直接对齐 RN 端 `src/lib/supabase.ts`
 - API 函数 (`src/lib/api.ts`) 与 RN 端 `src/lib/api.ts` 字段保持一致
+- hooks (`useUserTools` / `useFeedingRecords` / `useGrowthRecords`) 字段与 RN 端同名 hook 一致
