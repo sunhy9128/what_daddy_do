@@ -51,6 +51,7 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
     title: {
       ...typography.callout,
       fontWeight: '600',
+      color: colors.fg,
     },
     badge: {
       backgroundColor: colors.accent,

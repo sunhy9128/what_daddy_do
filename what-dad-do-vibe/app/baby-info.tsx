@@ -244,17 +244,17 @@ export default function BabyInfoScreen() {
             <View style={styles.babyTag}><Text style={styles.babyTagText}>已出生</Text></View>
             <View style={styles.babyDivider} />
             <View style={styles.infoRow}>
-              <Ionicons name="gift-outline" size={16} color="#D4A574" />
+              <Ionicons name="gift-outline" size={16} color={colors.warning} />
               <Text style={styles.infoLabel}>出生日期</Text>
               <Text style={styles.infoValue}>{existingBaby.birthDate || '未记录'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={16} color="#D4A574" />
+              <Ionicons name="time-outline" size={16} color={colors.warning} />
               <Text style={styles.infoLabel}>宝宝</Text>
               <Text style={styles.infoValue}>{state.birthAgeLabel}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={16} color="#D4A574" />
+              <Ionicons name="calendar-outline" size={16} color={colors.warning} />
               <Text style={styles.infoLabel}>原预产期</Text>
               <Text style={styles.infoValue}>{existingBaby.dueDate}</Text>
             </View>

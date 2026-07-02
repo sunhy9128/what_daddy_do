@@ -35,6 +35,9 @@ export function PostCard({
       padding: spacing.lg,
       marginHorizontal: spacing.lg,
       marginBottom: spacing.md,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     header: {
       flexDirection: 'row',

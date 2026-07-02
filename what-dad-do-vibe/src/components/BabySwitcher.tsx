@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useApp } from '../context/AppContext';
 import { useColors } from '../context/ThemeContext';
-import { radius, spacing, typography } from '../styles/tokens';
+import { radius, spacing, typography, shadows } from '../styles/tokens';
 import { calculateStageFromDueDate, calculateBirthAge } from '../lib/stages';
 
 function getBabyWeekLabel(baby: { dueDate?: string | null; birthDate?: string | null }): { text: string; type: 'postpartum' | 'pregnant' | 'preconception' } | null {
@@ -59,7 +59,7 @@ export function BabySwitcher() {
     pill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
+      justifyContent: 'space-between',
       backgroundColor: colors.surface,
       paddingVertical: spacing.xs,
       paddingHorizontal: spacing.md,
@@ -67,11 +67,18 @@ export function BabySwitcher() {
       borderWidth: 1,
       borderColor: colors.border,
     },
+    pillLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
     pillText: {
       ...typography.footnote,
       fontWeight: '600',
       color: colors.fg,
       maxWidth: 80,
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     backdrop: {
       flex: 1,
@@ -233,24 +240,25 @@ export function BabySwitcher() {
 
     // ===== 切换宝宝 Loading =====
     loadingOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.3)',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.45)',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 9999,
     },
     loadingBox: {
       backgroundColor: colors.surface,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.xxl,
       alignItems: 'center',
       gap: spacing.md,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
+      minWidth: 140,
+      ...shadows.lg,
     },
     loadingText: {
       ...typography.callout,
@@ -267,10 +275,12 @@ export function BabySwitcher() {
         accessibilityRole="button"
         accessibilityLabel={`切换宝宝，当前 ${current?.name ?? '未选择'}`}
       >
-        <Ionicons name="happy-outline" size={16} color={colors.accent} />
-        <Text style={styles.pillText} numberOfLines={1}>
-          {current?.name || '选择宝宝'}
-        </Text>
+        <View style={styles.pillLeft}>
+          <Ionicons name="happy-outline" size={16} color={colors.accent} />
+          <Text style={styles.pillText} numberOfLines={1}>
+            {current?.name || '选择宝宝'}
+          </Text>
+        </View>
         <Ionicons name="chevron-down" size={14} color={colors.muted} />
       </Pressable>
 
@@ -402,14 +412,14 @@ export function BabySwitcher() {
       </Modal>
 
       {/* 切换宝宝 Loading */}
-      {switching && (
+      <Modal visible={switching} transparent animationType="fade">
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={colors.accent} />
             <Text style={styles.loadingText}>正在切换宝宝…</Text>
           </View>
         </View>
-      )}
+      </Modal>
     </>
   );
 }

@@ -124,7 +124,7 @@ export function useBabyActions(
     } catch (error) {
       notifyError('更新宝宝信息', error);
     }
-  }, [state.babies, state.stage, state.weeksPregnant, dispatch]);
+  }, [state.babies, state.stage, state.weeksPregnant, state.currentBabyId, dispatch]);
 
   const setActiveBaby = useCallback(async (id: string) => {
     if (!user || switchingRef.current) return;

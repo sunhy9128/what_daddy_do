@@ -106,14 +106,28 @@ export async function deleteRecord(id: string): Promise<void> {
 }
 
 // 社区帖子
-export async function getCommunityPosts(category?: string): Promise<CommunityPost[]> {
+export interface CommunityPostsQueryOpts {
+  category?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function getCommunityPosts(opts?: CommunityPostsQueryOpts): Promise<CommunityPost[]> {
   let query = supabase
     .from('community_posts')
     .select('*')
     .order('created_at', { ascending: false });
 
+  const category = opts?.category;
   if (category && category !== '全部') {
     query = query.eq('category', category);
+  }
+
+  if (opts?.limit != null) {
+    query = query.range(
+      opts.offset ?? 0,
+      (opts.offset ?? 0) + opts.limit - 1
+    );
   }
 
   const { data, error } = await query;

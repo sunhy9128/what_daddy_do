@@ -36,14 +36,8 @@ const KEYS = {
 };
 
 // 旧 key 基础名映射（用于懒迁移：旧 key = `<legacyBase>_<userId>`）
-const LEGACY_BABY_BASES: Record<string, string> = {
-  [KEYS.GROWTH_RECORDS('', '')]:    'growth_records',
-  [KEYS.FEEDING_RECORDS('', '')]:   'feeding_records',
-  [KEYS.BABY_CARE_LOG('', '')]:     'baby_care_log',
-  [KEYS.SLEEP_RECORDS('', '')]:     'sleep_records',
-  [KEYS.PRENATAL_CHECKUPS('', '')]: 'prenatal_checkups',
-  [KEYS.CHILD_CHECKUPS('', '')]:    'child_checkups',
-};
+// 注意：LEGACY_BABY_BASES 已被 inline 到 loadBabyScoped 调用中，此处保留作文档参考
+// const LEGACY_BABY_BASES: Record<string, string> = { ... }
 
 /**
  * 通用懒迁移读：先查新 key `<base>_<userId>_<babyId>`，未命中查旧 key `<legacyBase>_<userId>` 并写回新 key
@@ -540,20 +534,27 @@ export interface NotificationConfig {
   checkinMinute: number;
   prenatalEnabled: boolean;
   vaccineEnabled: boolean;
+  /** 已调度的产检通知 identifier，key = taskId，value = Expo notification identifier */
+  prenatalNotificationIds?: Record<string, string>;
 }
 
 export async function loadNotificationConfig(userId: string): Promise<NotificationConfig> {
   try {
     const json = await AsyncStorage.getItem(KEYS.NOTIFICATION_CONFIG(userId));
-    return json ? JSON.parse(json) : {
-      enabled: true,
-      checkinEnabled: true,
-      checkinHour: 9,
-      checkinMinute: 0,
-      prenatalEnabled: true,
-      vaccineEnabled: true,
-    };
-  } catch { return { enabled: true, checkinEnabled: true, checkinHour: 9, checkinMinute: 0, prenatalEnabled: true, vaccineEnabled: true }; }
+    return json ? JSON.parse(json) : defaultNotifConfig();
+  } catch { return defaultNotifConfig(); }
+}
+
+function defaultNotifConfig(): NotificationConfig {
+  return {
+    enabled: true,
+    checkinEnabled: true,
+    checkinHour: 9,
+    checkinMinute: 0,
+    prenatalEnabled: true,
+    vaccineEnabled: true,
+    prenatalNotificationIds: {},
+  };
 }
 
 export async function saveNotificationConfig(userId: string, config: NotificationConfig): Promise<void> {

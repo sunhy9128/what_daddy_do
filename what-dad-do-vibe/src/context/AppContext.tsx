@@ -17,7 +17,7 @@
  * const { state, dispatch, toggleTask, addTask, ... } = useApp();
  * ```
  */
-import { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useReducer, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import {
   getBabies, getTasks, getRecords, getCommunityPosts, getUrgentNotes,
@@ -57,6 +57,7 @@ interface AppContextType {
   addRecord: (record: Partial<import('./types').UserRecord>) => Promise<void>;
   removeRecord: (id: string) => Promise<void>;
   refreshCommunityPosts: (category?: string) => Promise<void>;
+  fetchMoreCommunityPosts: (category?: string, limit?: number, offset?: number) => Promise<number>;
   addPost: (post: { title: string; content: string; category: string }) => Promise<void>;
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
@@ -80,16 +81,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const babyActions = useBabyActions(user, state, dispatch);
 
   // ─── 数据加载 / 登出清理 ───
-  useEffect(() => {
-    if (user) {
-      loadUserData();
-    } else {
-      // P1 #6 修复：登出后清理 state，避免下一个登录账号短暂看到旧数据
-      dispatch({ type: 'RESET' });
-    }
-  }, [user]);
-
-  async function loadUserData() {
+  // P0 #2 修复：用 useCallback 缓存 loadUserData，避免每次渲染重建函数引用
+  const loadUserData = useCallback(async () => {
     // 函数依赖 user；useEffect 已经判断过 user 非空才调用，这里再做一次安全检查
     if (!user) return;
     const userId = user.id;
@@ -123,7 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const [tasksData, recordsData, postsData, urgentNotesData] = await Promise.all([
         currentBabyId ? getTasks(userId, currentBabyId) : Promise.resolve([]),
         currentBabyId ? getRecords(userId, currentBabyId) : Promise.resolve([]),
-        getCommunityPosts(),
+        getCommunityPosts({ limit: 10 }),
         getUrgentNotes(userId),
       ]);
 
@@ -218,9 +211,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }
+  }, [user]); // P0 #2: 依赖 user，确保每次 user 变化时 loadUserData 引用更新
 
-  // ─── Provider 值 ───
+  // ─── 数据加载 / 登出清理 ───
+  useEffect(() => {
+    if (user) {
+      loadUserData();
+    } else {
+      // P1 #6 修复：登出后清理 state，避免下一个登录账号短暂看到旧数据
+      dispatch({ type: 'RESET' });
+    }
+  }, [user, loadUserData]);
   const value: AppContextType = {
     state,
     dispatch,

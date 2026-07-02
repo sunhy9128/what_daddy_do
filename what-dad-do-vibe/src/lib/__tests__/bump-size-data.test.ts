@@ -42,12 +42,10 @@ describe('BUMP_SIZE_DATA', () => {
     }
   });
 
-  it('emoji 字段存在（即使项目偏好 icon 也不应被删除以保兼容）', () => {
-    // 当前数据保留 emoji 以兼容历史 UI；这里仅做"如果存在则是字符串"的检查
+  it('iconName 字段是有效的 Ionicons glyph key', () => {
     for (const entry of BUMP_SIZE_DATA) {
-      if (entry.emoji !== undefined) {
-        expect(typeof entry.emoji).toBe('string');
-      }
+      expect(typeof entry.iconName).toBe('string');
+      expect(entry.iconName.length).toBeGreaterThan(0);
     }
   });
 

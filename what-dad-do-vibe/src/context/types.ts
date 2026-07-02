@@ -85,6 +85,7 @@ export type AppAction =
   | { type: 'DELETE_RECORD'; payload: string }
   | { type: 'ADD_COMMUNITY_POST'; payload: CommunityPost }
   | { type: 'SET_COMMUNITY_POSTS'; payload: CommunityPost[] }
+  | { type: 'APPEND_COMMUNITY_POSTS'; payload: CommunityPost[] }
   | { type: 'SET_URGENT_NOTES'; payload: UrgentNote[] }
   | { type: 'ADD_URGENT_NOTE'; payload: UrgentNote }
   | { type: 'REMOVE_URGENT_NOTE'; payload: string }
@@ -149,6 +150,8 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, communityPosts: [action.payload, ...state.communityPosts] };
     case 'SET_COMMUNITY_POSTS':
       return { ...state, communityPosts: action.payload };
+    case 'APPEND_COMMUNITY_POSTS':
+      return { ...state, communityPosts: [...state.communityPosts, ...action.payload] };
     case 'SET_URGENT_NOTES':
       return { ...state, urgentNotes: action.payload };
     case 'ADD_URGENT_NOTE':

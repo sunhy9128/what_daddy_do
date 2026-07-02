@@ -26,6 +26,23 @@ export const colors = {
   warning: '#B8963E',       // oklch(62% 0.10 85)  哑琥珀
   error: '#B84A4A',         // oklch(46% 0.10 25)  哑红
   info: '#4A6B8A',          // oklch(48% 0.06 250) 哑钢蓝
+  // 危险/警告状态色
+  dangerSurface: '#FEF2F2',
+  dangerBorder: '#FECACA',
+  dangerFg: '#991B1B',
+  warningSurface: '#FFFBEB',
+  warningBorder: '#FDE68A',
+  warningFg: '#92400E',
+  // 宝宝相关色
+  babyCardBg: '#FFF8F5',
+  babyCardBorder: '#F5E0D0',
+  babyName: '#5A3E2B',
+  babyAccent: '#D4A574',
+  babyGirl: '#D89BB8',
+  babyBoy: '#9BB8D8',
+  genderUnknown: '#8B6F4A',
+  // 开关轨道
+  switchTrackOff: '#D4D0C8',
 } as const;
 
 export type ColorScheme = {
@@ -44,6 +61,23 @@ export type ColorScheme = {
   warning: string;
   error: string;
   info: string;
+  // 危险/警告状态色
+  dangerSurface: string;
+  dangerBorder: string;
+  dangerFg: string;
+  warningSurface: string;
+  warningBorder: string;
+  warningFg: string;
+  // 宝宝相关色
+  babyCardBg: string;
+  babyCardBorder: string;
+  babyName: string;
+  babyAccent: string;
+  babyGirl: string;
+  babyBoy: string;
+  genderUnknown: string;
+  // 开关轨道
+  switchTrackOff: string;
 };
 
 export const darkColors: ColorScheme = {
@@ -71,6 +105,23 @@ export const darkColors: ColorScheme = {
   warning: '#D4A84E',       // oklch(68% 0.12 85)  亮琥珀
   error: '#D46A6A',         // oklch(55% 0.12 25)  亮哑红
   info: '#5A8AB0',          // oklch(55% 0.08 250) 亮钢蓝
+  // 危险/警告状态色
+  dangerSurface: '#3A1A1A',
+  dangerBorder: '#5A2A2A',
+  dangerFg: '#FCA5A5',
+  warningSurface: '#3A2A1A',
+  warningBorder: '#5A4030',
+  warningFg: '#FCD34D',
+  // 宝宝相关色
+  babyCardBg: '#1E1E30',
+  babyCardBorder: '#333348',
+  babyName: '#E8DCC8',
+  babyAccent: '#5A4040',
+  babyGirl: '#E8B4D8',
+  babyBoy: '#B4D8E8',
+  genderUnknown: '#B8A88A',
+  // 开关轨道
+  switchTrackOff: '#4A4A5A',
 } as const;
 
 export const fonts = {

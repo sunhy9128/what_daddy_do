@@ -1,12 +1,45 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const supabaseUrl = 'https://bckqyruxcusaaarrpyif.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJja3F5cnV4Y3VzYWFhcnJweWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMzU4MTUsImV4cCI6MjA5MzYxMTgxNX0.2FOrt5mdReu_Agmf_oOHewDhITS7dwio-ZbB4aVHaKA';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+/**
+ * AsyncStorage → Supabase Storage 适配层
+ *
+ * Supabase v2 的 Storage 接口与 React Native AsyncStorage 存在类型差异：
+ * - AsyncStorage: setItem(key: string, value: string) / getItem(key: string) / removeItem(key: string)
+ * - Supabase 期望: setItem(key: string, value: string) / getItem(key: string) / removeItem(key: string)
+ *   但 supabase-js 内部对返回值类型有更严格的推断，用 `as unknown as Storage` 桥接。
+ * - 不使用 `as any`（会掩盖类型错误），改用 `as unknown as X` 显式承认类型转换。
+ */
+const supabaseStorage = {
+  getItem: async (key: string): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch {
+      // AsyncStorage 满了或不可用时静默失败，避免阻塞认证流程
+    }
+  },
+  removeItem: async (key: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch {
+      // 同样静默失败
+    }
+  },
+};
+
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage as any,
+    storage: supabaseStorage as unknown as SupabaseClient['auth']['storage'],
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

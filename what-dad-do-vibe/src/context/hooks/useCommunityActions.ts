@@ -18,6 +18,7 @@ import type { AppAction, AppState, CommunityPost, UrgentNote } from '../types';
 
 export interface UseCommunityActionsResult {
   refreshCommunityPosts: (category?: string) => Promise<void>;
+  fetchMoreCommunityPosts: (category?: string, limit?: number, offset?: number) => Promise<number>;
   addPost: (post: { title: string; content: string; category: string }) => Promise<void>;
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
@@ -30,7 +31,7 @@ export function useCommunityActions(
 ): UseCommunityActionsResult {
   const refreshCommunityPosts = useCallback(async (category?: string) => {
     try {
-      const posts = await getCommunityPosts(category);
+      const posts = await getCommunityPosts({ category, limit: 10 });
       dispatch({
         type: 'SET_COMMUNITY_POSTS',
         payload: posts.map<CommunityPost>(p => ({
@@ -49,6 +50,32 @@ export function useCommunityActions(
       notifyError('刷新社区帖子', error);
     }
   }, [dispatch]);
+
+  const fetchMoreCommunityPosts = useCallback(async (category?: string, limit = 10, offset?: number): Promise<number> => {
+    try {
+      const effectiveOffset = offset ?? state.communityPosts.length;
+      const posts = await getCommunityPosts({ category, limit, offset: effectiveOffset });
+      if (posts.length === 0) return 0;
+      dispatch({
+        type: 'APPEND_COMMUNITY_POSTS',
+        payload: posts.map<CommunityPost>(p => ({
+          id: p.id,
+          userId: p.user_id,
+          authorName: p.author_name,
+          title: p.title,
+          content: p.content,
+          category: p.category,
+          likes: p.likes,
+          comments: p.comments,
+          createdAt: p.created_at,
+        })),
+      });
+      return posts.length;
+    } catch (error) {
+      notifyError('加载更多帖子', error);
+      return 0;
+    }
+  }, [dispatch, state.communityPosts.length]);
 
   const addPost = useCallback(async (post: { title: string; content: string; category: string }) => {
     if (!user) return;
@@ -107,5 +134,5 @@ export function useCommunityActions(
     }
   }, [state.urgentNotes, dispatch]);
 
-  return { refreshCommunityPosts, addPost, addUrgentNote, dismissUrgentNote };
+  return { refreshCommunityPosts, fetchMoreCommunityPosts, addPost, addUrgentNote, dismissUrgentNote };
 }

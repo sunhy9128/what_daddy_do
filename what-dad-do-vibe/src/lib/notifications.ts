@@ -23,37 +23,55 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     return false;
   }
 
-  const existing = await Notifications.getPermissionsAsync() as any;
-  const existingStatus = existing.status as string;
-  let finalStatus = existingStatus;
+  try {
+    // SDK 54: getPermissionsAsync returns NotificationPermissionsStatus directly
+    const existing = await Notifications.getPermissionsAsync();
+    let finalStatus: string = (existing as unknown as { status?: string }).status ?? (existing as unknown as string);
 
-  if (existingStatus !== Notifications.PermissionStatus.GRANTED) {
-    const requested = await Notifications.requestPermissionsAsync() as any;
-    finalStatus = requested.status as string;
-  }
+    // Normalize: if it's still an object, try to extract granted property
+    if (typeof finalStatus !== 'string') {
+      finalStatus = (existing as unknown as { granted?: boolean }).granted ? 'granted' : 'undetermined';
+    }
 
-  if (finalStatus !== Notifications.PermissionStatus.GRANTED) {
+    if (finalStatus !== 'granted') {
+      try {
+        const requested = await Notifications.requestPermissionsAsync();
+        finalStatus = (requested as unknown as { status?: string }).status ?? (requested as unknown as string);
+        if (typeof finalStatus !== 'string') {
+          finalStatus = (requested as unknown as { granted?: boolean }).granted ? 'granted' : 'undetermined';
+        }
+      } catch (e) {
+        console.warn('Failed to request notification permissions:', e);
+        return false;
+      }
+    }
+
+    if (finalStatus !== 'granted') {
+      return false;
+    }
+
+    // Android-specific: set notification channel
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: '默认',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF6B6B',
+      });
+
+      await Notifications.setNotificationChannelAsync('reminders', {
+        name: '每日提醒',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#4ECDC4',
+      });
+    }
+
+    return true;
+  } catch (e) {
+    console.warn('Failed to get notification permissions:', e);
     return false;
   }
-
-  // Android-specific: set notification channel
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: '默认',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF6B6B',
-    });
-
-    await Notifications.setNotificationChannelAsync('reminders', {
-      name: '每日提醒',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#4ECDC4',
-    });
-  }
-
-  return true;
 }
 
 /**
@@ -94,7 +112,7 @@ export async function scheduleDailyCheckinReminder(params: {
   try {
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
-        title: '每日打卡提醒 ⭐',
+        title: '每日打卡提醒',
         body: '今天还有待完成的任务哦，点击看看~',
         data: { type: 'checkin' },
       },
@@ -174,7 +192,9 @@ export async function getPendingNotifications(): Promise<Notifications.Notificat
 }
 
 /**
- * Send an immediate notification (for testing or direct alerts)
+ * Send an immediate notification (for testing or direct alerts).
+ * Uses TIME_INTERVAL trigger (1 second) since `trigger: null` is not
+ * guaranteed to fire immediately in all Expo SDK versions.
  */
 export async function sendImmediateNotification(params: {
   title: string;
@@ -188,7 +208,10 @@ export async function sendImmediateNotification(params: {
         body: params.body,
         data: params.data,
       },
-      trigger: null, // null means immediate
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 1,
+      },
     });
   } catch (e) {
     console.warn('Failed to send immediate notification:', e);

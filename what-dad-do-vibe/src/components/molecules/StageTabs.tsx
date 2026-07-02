@@ -28,7 +28,7 @@ export function StageTabs({ stages, activeStage, onStageChange }: StageTabsProps
     },
     tag: {
       paddingVertical: spacing.sm,
-      borderRadius: radius.sm,
+      borderRadius: radius.full,
       backgroundColor: colors.bg,
       borderWidth: 0.5,
       borderColor: colors.border,

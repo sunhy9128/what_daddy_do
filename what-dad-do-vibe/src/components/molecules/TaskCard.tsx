@@ -95,6 +95,7 @@ export function TaskCard({
     title: {
       ...typography.callout,
       fontWeight: '500',
+      color: colors.fg,
       marginBottom: spacing.xs,
     },
     titleCompleted: {

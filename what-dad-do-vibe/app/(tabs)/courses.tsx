@@ -418,8 +418,10 @@ export default function CoursesScreen() {
     centered: { justifyContent: 'center', alignItems: 'center' },
     scrollContent: { paddingBottom: 100 },
     header: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.md },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xs },
+    titleIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center' },
     title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
-    subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
+    subtitle: { ...typography.callout, color: colors.muted },
     stageTabs: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
     categoryScroll: { paddingHorizontal: spacing.lg, marginBottom: spacing.md },
     categoryChip: {
@@ -509,7 +511,12 @@ export default function CoursesScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>育儿课程</Text>
+          <View style={styles.titleRow}>
+            <View style={styles.titleIcon}>
+              <Ionicons name="play-circle-outline" size={24} color={colors.accent} />
+            </View>
+            <Text style={styles.title}>育儿课程</Text>
+          </View>
           <Text style={styles.subtitle}>跟着视频和文章，轻松学会带娃</Text>
         </View>
 
