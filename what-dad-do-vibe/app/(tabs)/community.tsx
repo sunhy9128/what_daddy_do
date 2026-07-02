@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform, Modal, Pressable } from 'react-native';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getKnowledgeArticles, getReadKnowledgeIds, markKnowledgeRead as markKnowledgeReadInDb } from '../../src/lib/api';
 import { KnowledgeArticle } from '../../src/lib/supabase';
@@ -21,7 +21,7 @@ const CATEGORIES = ['推荐', '知识', '经验', '问答'];
 
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
-  const { state, refreshCommunityPosts, addPost } = useApp();
+  const { state, refreshCommunityPosts, fetchMoreCommunityPosts, addPost } = useApp();
   const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [activeCategory, setActiveCategory] = useState('推荐');
@@ -67,6 +67,9 @@ export default function CommunityScreen() {
   const [comments, setComments] = useState<PostComment[]>([]);
   const [sendingComment, setSendingComment] = useState(false);
   const [commentLimit, setCommentLimit] = useState(3);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 10;
 
   // 缓存最后选中的帖子，用于 modal 关闭动画时不闪空
   useEffect(() => {
@@ -172,6 +175,7 @@ export default function CommunityScreen() {
 
   async function loadPosts() {
     setLoading(true);
+    setHasMore(true);
     try {
       await refreshCommunityPosts(activeCategory === '推荐' ? undefined : activeCategory);
     } catch (error) {
@@ -183,17 +187,54 @@ export default function CommunityScreen() {
 
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
+    setHasMore(true);
     refreshCommunityPosts(category === '推荐' ? undefined : category);
   };
+
+  // 搜索过滤
+  const sq = searchText.trim().toLowerCase();
+  // 知识区按当前分类过滤：'推荐' / '知识' 显示全部，其他分类(经验/问答)只显示对应 category
+  const filteredKnowledge = useMemo(() => {
+    let list = visibleKnowledge;
+    if (activeCategory === '经验' || activeCategory === '问答') {
+      list = list.filter(item => item.category === activeCategory);
+    }
+    return sq ? list.filter(item => item.title.toLowerCase().includes(sq)) : list;
+  }, [sq, visibleKnowledge, activeCategory]);
+  const filteredPosts = useMemo(() =>
+    sq
+      ? postList.filter(p =>
+          p.title.toLowerCase().includes(sq) ||
+          p.content.toLowerCase().includes(sq) ||
+          p.authorName.toLowerCase().includes(sq)
+        )
+      : postList,
+    [sq, postList]
+  );
+
+  // 滚动触底加载更多
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    if (sq) return;
+    setLoadingMore(true);
+    const count = await fetchMoreCommunityPosts(
+      activeCategory !== '全部' ? activeCategory : undefined,
+      PAGE_SIZE
+    );
+    setLoadingMore(false);
+    if (count < PAGE_SIZE) setHasMore(false);
+  }, [loadingMore, hasMore, fetchMoreCommunityPosts, activeCategory, PAGE_SIZE, sq]);
   const colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingBottom: 100 },
-  header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
-  title: { ...typography.largeTitle, fontWeight: '700' },
-  subtitle: { ...typography.callout, color: colors.muted, marginTop: spacing.xs },
-  sectionHeader: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.sm },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xs },
+  titleIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center' },
+  title: { ...typography.largeTitle, fontWeight: '700', color: colors.fg },
+  subtitle: { ...typography.callout, color: colors.muted },
+  sectionHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   sectionTitle: { ...typography.caption1, fontWeight: '600', color: colors.muted, textTransform: 'uppercase' },
   emptyText: { ...typography.callout, color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   fab: {
@@ -572,70 +613,11 @@ function PostDetailContent({
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>社区</Text>
-          <Text style={styles.subtitle}>知识 + 爸爸经验</Text>
-        </View>
-
-        {/* Search */}
-        <SearchBar
-          placeholder="搜索知识/经验..."
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-
-        {/* Categories */}
-        <StageTabs
-          stages={CATEGORIES}
-          activeStage={activeCategory}
-          onStageChange={handleCategoryChange}
-        />
-
-        {/* 搜索过滤 */}
-        {(() => {
-          const q = searchText.trim().toLowerCase();
-          const filteredKnowledge = q
-            ? visibleKnowledge.filter(item => item.title.toLowerCase().includes(q))
-            : visibleKnowledge;
-          const filteredPosts = q
-            ? postList.filter(p =>
-                p.title.toLowerCase().includes(q) ||
-                p.content.toLowerCase().includes(q) ||
-                p.authorName.toLowerCase().includes(q)
-              )
-            : postList;
-
-          return (
-            <>
-        {/* Knowledge Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>热门知识</Text>
-        </View>
-        {filteredKnowledge.length > 0 ? (
-        <Card>
-          {filteredKnowledge.map((item) => (
-            <KnowledgeCard
-              key={item.id}
-              emoji={item.emoji}
-              title={item.title}
-              readTime={item.read_time}
-              onPress={() => setSelectedKnowledge(item)}
-            />
-          ))}
-        </Card>
-        ) : q ? (
-          <Text style={styles.emptyText}>未找到匹配的知识</Text>
-        ) : (
-          <Text style={styles.emptyText}>暂无知识文章</Text>
-        )}
-
-        {/* Community Posts */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>爸爸经验</Text>
-        </View>
-        {filteredPosts.slice(0, 5).map(post => (
+      <FlatList
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        data={filteredPosts}
+        renderItem={({ item: post }) => (
           <PostCard
             key={post.id}
             authorName={post.authorName}
@@ -647,16 +629,79 @@ function PostDetailContent({
             comments={post.comments}
             onPress={() => setSelectedPost(post)}
           />
-        ))}
-        {filteredPosts.length === 0 && (
-          <Text style={styles.emptyText}>暂无爸爸经验，快来分享</Text>
         )}
-            </>
-          );
-        })()}
+        keyExtractor={item => item.id}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        ListEmptyComponent={<Text style={styles.emptyText}>暂无爸爸经验，快来分享</Text>}
+        ListHeaderComponent={
+          <>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.titleRow}>
+                <View style={styles.titleIcon}>
+                  <Ionicons name="people-outline" size={24} color={colors.accent} />
+                </View>
+                <Text style={styles.title}>社区</Text>
+              </View>
+              <Text style={styles.subtitle}>知识 + 爸爸经验</Text>
+            </View>
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+            {/* Search */}
+            <SearchBar
+              placeholder="搜索知识/经验..."
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+
+            {/* Categories */}
+            <StageTabs
+              stages={CATEGORIES}
+              activeStage={activeCategory}
+              onStageChange={handleCategoryChange}
+            />
+
+            {/* Knowledge Section */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>热门知识</Text>
+            </View>
+            {filteredKnowledge.length > 0 ? (
+              <Card>
+                {filteredKnowledge.map((item) => (
+                  <KnowledgeCard
+                    key={item.id}
+                    emoji={item.emoji}
+                    title={item.title}
+                    readTime={item.read_time}
+                    onPress={() => setSelectedKnowledge(item)}
+                  />
+                ))}
+              </Card>
+            ) : searchText.trim() ? (
+              <Text style={styles.emptyText}>未找到匹配的知识</Text>
+            ) : (
+              <Text style={styles.emptyText}>暂无知识文章</Text>
+            )}
+
+            {/* Community Posts Header */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>爸爸经验</Text>
+            </View>
+          </>
+        }
+        ListFooterComponent={
+          <View style={{ paddingVertical: 24 }}>
+            {loadingMore ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : postList.length > 0 ? (
+              <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>
+                {hasMore ? '上滑加载更多' : '已加载全部'}
+              </Text>
+            ) : null}
+            <View style={{ height: 100 }} />
+          </View>
+        }
+      />
 
       {/* FAB — 发布帖子 */}
       <TouchableOpacity style={styles.fab} onPress={() => {

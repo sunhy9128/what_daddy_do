@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput } from 'react-native';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -11,12 +11,23 @@ import { useAuth } from '../../src/context/AuthContext';
 import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
 import { CollapsibleGroup } from '../../src/components/organisms';
+import Card from '../../src/components/atoms/Card';
 
 import { useColors, useTheme } from '../../src/context/ThemeContext';
 import { spacing, typography, radius } from '../../src/styles/tokens';
 
 import { STAGES } from '../../src/lib/stages';
 import { BUMP_SIZE_DATA } from '../../src/lib/bump-size-data';
+
+const PAGE_WIDTH = Dimensions.get('window').width - spacing.lg * 2;
+// CollapsibleGroup 内容区实际宽度 = PAGE_WIDTH - paddingHorizontal(sm*2)
+const CONTENT_WIDTH = PAGE_WIDTH - spacing.sm * 2;
+const ITEMS_PER_PAGE = 5; // 每页显示5个
+const ITEM_GAP = spacing.xs; // 物品间距
+// 每个物品宽度：(内容区宽度 - 间距) / 每行物品数
+const ITEM_WIDTH = (CONTENT_WIDTH - ITEM_GAP * (ITEMS_PER_PAGE - 1)) / ITEMS_PER_PAGE;
+// 每行一个物品的垂直列表布局
+const ROW_ITEM_WIDTH = CONTENT_WIDTH;
 
 const DAILY_TIPS: Record<string, string[]> = {
   preconception: [
@@ -130,7 +141,7 @@ export default function HomeScreen() {
   // Header
   header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   greeting: { ...typography.footnote, color: colors.muted, marginBottom: spacing.xs },
-  stageText: { ...typography.title1, fontWeight: '700' },
+  stageText: { ...typography.title1, fontWeight: '700', color: colors.fg },
   stageRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   weekText: { ...typography.callout, color: colors.accent, fontWeight: '500' },
   stageMotto: {
@@ -187,10 +198,10 @@ export default function HomeScreen() {
   urgentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: isDark ? '#3A1A1A' : '#FEF2F2',
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: isDark ? '#5A2A2A' : '#FECACA',
+    borderColor: colors.dangerBorder,
     paddingVertical: spacing.md,
     paddingLeft: spacing.md,
     paddingRight: spacing.sm,
@@ -210,7 +221,7 @@ export default function HomeScreen() {
   },
   urgentText: {
     ...typography.callout,
-    color: isDark ? '#FCA5A5' : '#991B1B',
+    color: colors.dangerFg,
     lineHeight: 22,
     flexShrink: 1,
   },
@@ -270,6 +281,7 @@ export default function HomeScreen() {
   urgentModalTitle: {
     ...typography.title3,
     fontWeight: '700',
+    color: colors.fg,
     marginBottom: spacing.md,
   },
   urgentModalInput: {
@@ -464,10 +476,10 @@ export default function HomeScreen() {
     minWidth: 64,
   },
   checkupCountdownUrgent: {
-    backgroundColor: isDark ? '#3A1A1A' : '#FEF2F2',
+    backgroundColor: colors.dangerSurface,
   },
   checkupCountdownSoon: {
-    backgroundColor: isDark ? '#3A2A1A' : '#FFFBEB',
+    backgroundColor: colors.warningSurface,
   },
   checkupDaysNum: {
     ...typography.title2,
@@ -605,10 +617,7 @@ export default function HomeScreen() {
   supportCard: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: 10,
+    backgroundColor: 'transparent',
   },
   supportHeader: {
     flexDirection: 'row',
@@ -674,6 +683,32 @@ export default function HomeScreen() {
     flex: 1,
   },
 
+  // ===== 物品/支持分页样式 =====
+  dotsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
+  },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+  dotActive: { width: 24, borderRadius: 4, backgroundColor: colors.accent },
+  pageBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  pageBtnDisabled: { opacity: 0.25 },
+  // 物品/支持项单列布局（每页5行）
+  itemGrid: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    gap: ITEM_GAP,
+  },
+  itemCard: {
+    width: ROW_ITEM_WIDTH,
+  },
+
 }), [colors, isDark]);
 
   // 物品准备 + 心理支持
@@ -682,6 +717,117 @@ export default function HomeScreen() {
   const [loadingItems, setLoadingItems] = useState(false);
   const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
   const [loadingSupport, setLoadingSupport] = useState(false);
+
+  // 分页状态
+  const [prepPageIndex, setPrepPageIndex] = useState(0);
+  const [supportPageIndex, setSupportPageIndex] = useState(0);
+  const prepFlatListRef = useRef<FlatList>(null);
+  const supportFlatListRef = useRef<FlatList>(null);
+  const prepProgrammatic = useRef(false);
+  const supportProgrammatic = useRef(false);
+
+  // 心理支持详情弹窗
+  const [selectedTip, setSelectedTip] = useState<PsychologicalSupport | null>(null);
+
+  // 预分页数据：每页 ITEMS_PER_PAGE 个物品
+  const prepPages = useMemo(() => {
+    const pages: PresetItem[][] = [];
+    for (let i = 0; i < presetItems.length; i += ITEMS_PER_PAGE) {
+      pages.push(presetItems.slice(i, i + ITEMS_PER_PAGE));
+    }
+    return pages;
+  }, [presetItems]);
+
+  const supportPages = useMemo(() => {
+    const pages: PsychologicalSupport[][] = [];
+    for (let i = 0; i < supportTips.length; i += ITEMS_PER_PAGE) {
+      pages.push(supportTips.slice(i, i + ITEMS_PER_PAGE));
+    }
+    return pages;
+  }, [supportTips]);
+
+  const prepPageCount = prepPages.length;
+  const supportPageCount = supportPages.length;
+
+  // 分页滚动处理（跳过程序化滚动触发的回调）
+  const onPrepScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (prepProgrammatic.current) return;
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    if (newIndex >= 0 && newIndex < prepPageCount) {
+      setPrepPageIndex(newIndex);
+    }
+  }, [prepPageCount]);
+
+  // 滚动结束/拖拽结束时同步指示器
+  const onPrepMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    if (newIndex >= 0 && newIndex < prepPageCount) {
+      setPrepPageIndex(newIndex);
+    }
+    prepProgrammatic.current = false;
+  }, [prepPageCount]);
+
+  const onSupportScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (supportProgrammatic.current) return;
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    if (newIndex >= 0 && newIndex < supportPageCount) {
+      setSupportPageIndex(newIndex);
+    }
+  }, [supportPageCount]);
+
+  const onSupportMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    if (newIndex >= 0 && newIndex < supportPageCount) {
+      setSupportPageIndex(newIndex);
+    }
+    supportProgrammatic.current = false;
+  }, [supportPageCount]);
+
+  const scrollToPrepPage = useCallback((index: number) => {
+    if (index < 0 || index >= prepPageCount) return;
+    const targetOffset = index * CONTENT_WIDTH;
+    prepProgrammatic.current = true;
+    // 立即更新指示器
+    setPrepPageIndex(index);
+    prepFlatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
+    // 等待滚动动画完成（长距离滚动需要更长时间）
+    setTimeout(() => {
+      prepProgrammatic.current = false;
+      // 滚动结束后检查实际位置并修正指示器
+      const finalOffset = (prepFlatListRef.current as any)?.scrollOffset;
+      if (finalOffset !== undefined) {
+        const actualIndex = Math.round(finalOffset / CONTENT_WIDTH);
+        if (actualIndex !== index) {
+          setPrepPageIndex(actualIndex);
+        }
+      }
+    }, 600);
+  }, [prepPageCount]);
+
+  const scrollToSupportPage = useCallback((index: number) => {
+    if (index < 0 || index >= supportPageCount) return;
+    const targetOffset = index * CONTENT_WIDTH;
+    supportProgrammatic.current = true;
+    // 立即更新指示器
+    setSupportPageIndex(index);
+    supportFlatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
+    // 等待滚动动画完成（长距离滚动需要更长时间）
+    setTimeout(() => {
+      supportProgrammatic.current = false;
+      // 滚动结束后检查实际位置并修正指示器
+      const finalOffset = (supportFlatListRef.current as any)?.scrollOffset;
+      if (finalOffset !== undefined) {
+        const actualIndex = Math.round(finalOffset / CONTENT_WIDTH);
+        if (actualIndex !== index) {
+          setSupportPageIndex(actualIndex);
+        }
+      }
+    }, 600);
+  }, [supportPageCount]);
 
   const periods = [state.stage];
   useEffect(() => {
@@ -761,7 +907,12 @@ export default function HomeScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={{ paddingTop: spacing.lg, paddingRight: spacing.lg, alignItems: 'flex-end', marginBottom: spacing.lg }}>
+          <View style={{ width: '33%', minWidth: 80 }}>
+            <BabySwitcher />
+          </View>
+        </View>
+        <Card>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
               <Ionicons name="heart-outline" size={18} color={colors.accent} />
@@ -769,7 +920,6 @@ export default function HomeScreen() {
                 {state.stage === 'postpartum' ? '新晋奶爸，辛苦了' : '准爸爸，你好'}
               </Text>
             </View>
-            <BabySwitcher />
           </View>
           <View style={styles.stageRow}>
             <Text style={styles.stageText}>{stageLabel}</Text>
@@ -786,7 +936,7 @@ export default function HomeScreen() {
             {state.stage === 'third' && '胜利在望，为宝宝的到来做最后准备'}
             {state.stage === 'postpartum' && '新的人生阶段开始了，享受每一刻'}
           </Text>
-        </View>
+        </Card>
 
         {/* ===== 每日小贴士 ===== */}
         <View style={styles.tipCard}>
@@ -932,81 +1082,161 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* ===== 物品准备 ===== */}
+        {/* ===== 物品准备（水平分页） ===== */}
         {presetItems.length > 0 && (
           <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
-            {presetItems.map(item => {
-              const prep = userPreparations.find(p => p.item_id === item.id);
-              const isPrepared = prep?.status === 'prepared';
-              const level = item.essential_level;
-              const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
-              const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
+            <FlatList
+              ref={prepFlatListRef}
+              data={prepPages}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, index) => `prep-page-${index}`}
+              onScroll={onPrepScroll}
+              onMomentumScrollEnd={onPrepMomentumEnd}
+              scrollEventThrottle={16}
+              renderItem={({ item: pageItems }) => (
+                <View style={[styles.itemGrid, { width: CONTENT_WIDTH }]}>
+                  {pageItems.map((item: PresetItem) => {
+                    const prep = userPreparations.find(p => p.item_id === item.id);
+                    const isPrepared = prep?.status === 'prepared';
+                    const level = item.essential_level;
+                    const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
+                    const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
 
-              return (
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.prepItem, isPrepared && styles.prepItemDone]}
+                        onPress={() => handleToggleItem(item.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
+                          {isPrepared && <Ionicons name="checkmark" size={14} color="#fff" />}
+                        </View>
+                        <View style={styles.prepInfo}>
+                          <View style={styles.prepHeaderRow}>
+                            <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
+                            <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
+                          </View>
+                          {item.description && (
+                            <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={1}>
+                              {item.description}
+                            </Text>
+                          )}
+                          <View style={styles.prepMeta}>
+                            <Text style={styles.prepMetaCategory}>{item.category}</Text>
+                            {item.quantity_suggestion && (
+                              <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
+                            )}
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            />
+            {/* 分页指示器 */}
+            {prepPageCount > 1 && (
+              <View style={styles.dotsContainer}>
                 <TouchableOpacity
-                  key={item.id}
-                  style={[styles.prepItem, isPrepared && styles.prepItemDone]}
-                  onPress={() => handleToggleItem(item.id)}
+                  style={[styles.pageBtn, prepPageIndex === 0 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToPrepPage(prepPageIndex - 1)}
+                  disabled={prepPageIndex === 0}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
-                    {isPrepared && <Ionicons name="checkmark" size={14} color="#fff" />}
-                  </View>
-                  <View style={styles.prepInfo}>
-                    <View style={styles.prepHeaderRow}>
-                      <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
-                      <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
-                    </View>
-                    {item.description && (
-                      <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={2}>
-                        {item.description}
-                      </Text>
-                    )}
-                    <View style={styles.prepMeta}>
-                      <Text style={styles.prepMetaCategory}>{item.category}</Text>
-                      {item.quantity_suggestion && (
-                        <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
-                      )}
-                    </View>
-                  </View>
+                  <Ionicons name="chevron-back" size={16} color={prepPageIndex === 0 ? colors.muted : colors.accent} />
                 </TouchableOpacity>
-              );
-            })}
+
+                {Array.from({ length: prepPageCount }).map((_, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.dot, index === prepPageIndex && styles.dotActive]}
+                    onPress={() => scrollToPrepPage(index)}
+                    activeOpacity={0.7}
+                  />
+                ))}
+
+                <TouchableOpacity
+                  style={[styles.pageBtn, prepPageIndex >= prepPageCount - 1 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToPrepPage(prepPageIndex + 1)}
+                  disabled={prepPageIndex >= prepPageCount - 1}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={prepPageIndex >= prepPageCount - 1 ? colors.muted : colors.accent} />
+                </TouchableOpacity>
+              </View>
+            )}
           </CollapsibleGroup>
         )}
 
-        {/* ===== 心理支持 ===== */}
+        {/* ===== 心理支持（水平分页） ===== */}
         {supportTips.length > 0 && (
           <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
-            {supportTips.map(tip => {
-              const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
-              const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
-                : tip.support_type === 'communication' ? styles.supportTypeCommunication
-                : tip.support_type === 'action' ? styles.supportTypeAction
-                : styles.supportTypeKnowledge;
+            <FlatList
+              ref={supportFlatListRef}
+              data={supportPages}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, index) => `support-page-${index}`}
+              onScroll={onSupportScroll}
+              onMomentumScrollEnd={onSupportMomentumEnd}
+              scrollEventThrottle={16}
+              renderItem={({ item: pageItems }) => (
+                <View style={[styles.itemGrid, { width: CONTENT_WIDTH }]}>
+                  {pageItems.map((tip: PsychologicalSupport) => {
+                    const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
+                    const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
+                      : tip.support_type === 'communication' ? styles.supportTypeCommunication
+                      : tip.support_type === 'action' ? styles.supportTypeAction
+                      : styles.supportTypeKnowledge;
 
-              return (
-                <View key={tip.id} style={styles.supportCard}>
-                  <View style={styles.supportHeader}>
-                    <Text style={styles.supportTitle} numberOfLines={2}>{tip.title}</Text>
-                    <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
-                  </View>
-                  <View style={styles.supportContentBlock}>
-                    <Text style={styles.supportContent}>{tip.content}</Text>
-                  </View>
-                  {tip.tips && tip.tips.length > 0 && (
-                    <View style={styles.supportTips}>
-                      {tip.tips.map((t, i) => (
-                        <View key={i} style={styles.supportTipRow}>
-                          <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
-                          <Text style={styles.supportTipText}>{t}</Text>
+                    return (
+                      <TouchableOpacity key={tip.id} style={styles.supportCard} onPress={() => setSelectedTip(tip)} activeOpacity={0.7}>
+                        <View style={styles.supportHeader}>
+                          <Text style={styles.supportTitle} numberOfLines={2}>{tip.title}</Text>
+                          <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
                         </View>
-                      ))}
-                    </View>
-                  )}
+                        <Text style={[styles.supportContent, { fontSize: 12, lineHeight: 18 }]} numberOfLines={2}>{tip.content}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-              );
-            })}
+              )}
+            />
+            {/* 分页指示器 */}
+            {supportPageCount > 1 && (
+              <View style={styles.dotsContainer}>
+                <TouchableOpacity
+                  style={[styles.pageBtn, supportPageIndex === 0 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToSupportPage(supportPageIndex - 1)}
+                  disabled={supportPageIndex === 0}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-back" size={16} color={supportPageIndex === 0 ? colors.muted : colors.accent} />
+                </TouchableOpacity>
+
+                {Array.from({ length: supportPageCount }).map((_, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.dot, index === supportPageIndex && styles.dotActive]}
+                    onPress={() => scrollToSupportPage(index)}
+                    activeOpacity={0.7}
+                  />
+                ))}
+
+                <TouchableOpacity
+                  style={[styles.pageBtn, supportPageIndex >= supportPageCount - 1 && styles.pageBtnDisabled]}
+                  onPress={() => scrollToSupportPage(supportPageIndex + 1)}
+                  disabled={supportPageIndex >= supportPageCount - 1}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={supportPageIndex >= supportPageCount - 1 ? colors.muted : colors.accent} />
+                </TouchableOpacity>
+              </View>
+            )}
           </CollapsibleGroup>
         )}
 
@@ -1107,6 +1337,46 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* 心理支持详情弹窗 */}
+      <Modal visible={!!selectedTip} animationType="fade" transparent onRequestClose={() => setSelectedTip(null)}>
+        <Pressable style={styles.urgentModalOverlay} onPress={() => setSelectedTip(null)}>
+          <Pressable style={styles.urgentModalContent} onPress={e => e.stopPropagation()}>
+            {selectedTip && (() => {
+              const typeLabel = selectedTip.support_type === 'emotion' ? '情绪' : selectedTip.support_type === 'communication' ? '沟通' : selectedTip.support_type === 'action' ? '行动' : '知识';
+              const badgeStyle = selectedTip.support_type === 'emotion' ? styles.supportTypeEmotion
+                : selectedTip.support_type === 'communication' ? styles.supportTypeCommunication
+                : selectedTip.support_type === 'action' ? styles.supportTypeAction
+                : styles.supportTypeKnowledge;
+              return (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+                    <Text style={styles.urgentModalTitle}>{selectedTip.title}</Text>
+                    <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
+                  </View>
+                  <View style={{ borderLeftWidth: 2, borderLeftColor: colors.accentLight, paddingLeft: spacing.md, marginBottom: spacing.md }}>
+                    <Text style={styles.supportContent}>{selectedTip.content}</Text>
+                  </View>
+                  {selectedTip.tips && selectedTip.tips.length > 0 && (
+                    <View style={styles.supportTips}>
+                      <Text style={{ ...typography.callout, fontWeight: '600', marginBottom: spacing.sm }}>具体建议：</Text>
+                      {selectedTip.tips.map((t, i) => (
+                        <View key={i} style={styles.supportTipRow}>
+                          <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
+                          <Text style={styles.supportTipText}>{t}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  <TouchableOpacity style={styles.urgentModalSave} onPress={() => setSelectedTip(null)}>
+                    <Text style={styles.urgentModalSaveText}>关闭</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            })()}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

@@ -38,8 +38,12 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PRESET_PAGE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 const PRESET_ITEMS_PER_PAGE = 5;
-const PRESET_ROW_HEIGHT = 52;
-const PRESET_PAGE_HEIGHT = PRESET_ROW_HEIGHT * PRESET_ITEMS_PER_PAGE + spacing.xs * (PRESET_ITEMS_PER_PAGE - 1);
+// 卡片之间的视觉间距（右侧留出 GAP，让翻页时下一张卡片有视觉缓冲）
+const PRESET_GAP = spacing.md;
+// 单条垂直卡片的预估高度（标题 + 描述 + 徽章），用于 FlatList getItemLayout 精确滚动
+const PRESET_ROW_HEIGHT = 76;
+const PRESET_ROW_GAP = spacing.xs;
+const PRESET_PAGE_HEIGHT = PRESET_ROW_HEIGHT * PRESET_ITEMS_PER_PAGE + PRESET_ROW_GAP * (PRESET_ITEMS_PER_PAGE - 1);
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
@@ -67,6 +71,8 @@ export default function TasksScreen() {
   const [presetPageIndex, setPresetPageIndex] = useState(0);
   const presetFlatListRef = useRef<FlatList>(null);
   const isPresetScrolling = useRef(false);
+  // FlatList 实际视口宽度（用 onLayout 测出，不依赖外层 padding）
+  const [presetListWidth, setPresetListWidth] = useState(0);
   const colors = useColors();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -157,6 +163,44 @@ export default function TasksScreen() {
   presetScroll: {
     paddingHorizontal: spacing.lg,
   },
+  // 可添加任务单条卡片 — 仿首页物品准备样式（圆角边框 + 白色背景）
+  presetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+  },
+  presetCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+    backgroundColor: colors.accentLight,
+  },
+  presetInfo: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  presetName: {
+    ...typography.callout,
+    fontWeight: '600',
+    color: colors.fg,
+    lineHeight: 20,
+  },
+  presetDesc: {
+    ...typography.footnote,
+    color: colors.fgSecondary,
+    marginTop: 2,
+    lineHeight: 17,
+  },
   presetCardOuter: {
     marginRight: spacing.sm,
     marginBottom: spacing.xs,
@@ -203,29 +247,6 @@ export default function TasksScreen() {
     marginBottom: 4,
   },
   // 预设任务行卡片（垂直列表）
-  presetRowCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  presetRowBody: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  presetRowTitle: {
-    ...typography.callout,
-    fontWeight: '500',
-    color: colors.fg,
-    marginBottom: 2,
-  },
-  presetRowDesc: {
-    ...typography.footnote,
-    color: colors.fgSecondary,
-  },
   presetEmpty: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -777,8 +798,7 @@ export default function TasksScreen() {
     checkin: '每日打卡',
   };
 
-  // 计算预设任务总页数（每页放2个卡片）
-  const PRESET_ITEMS_PER_PAGE = 2;
+  // 计算预设任务总页数（每页5条，垂直列表）
   const totalPresetPages = Math.ceil(filteredAvailablePresets.length / PRESET_ITEMS_PER_PAGE) || 1;
 
   // 分页滑动到指定页
@@ -786,9 +806,10 @@ export default function TasksScreen() {
     if (index < 0 || index >= totalPresetPages) return;
     isPresetScrolling.current = true;
     setPresetPageIndex(index);
-    presetFlatListRef.current?.scrollToIndex({ index, animated: true });
+    const step = presetListWidth || PRESET_PAGE_WIDTH;
+    presetFlatListRef.current?.scrollToOffset({ offset: index * step, animated: true });
     setTimeout(() => { isPresetScrolling.current = false; }, 600);
-  }, [totalPresetPages]);
+  }, [totalPresetPages, presetListWidth]);
 
   // FlatList 可见项变化检测（更新指示器）
   const onPresetViewable = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
@@ -939,38 +960,72 @@ export default function TasksScreen() {
           {/* 分页滑动列表（每页5条垂直列表） */}
           {filteredAvailablePresets.length > 0 ? (
             <>
-              <FlatList
-                ref={presetFlatListRef}
-                data={presetPageData}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(_, index) => `preset-page-${index}`}
-                onViewableItemsChanged={onPresetViewable}
-                viewabilityConfig={presetViewabilityConfig}
-                getItemLayout={(_, index) => ({ length: PRESET_PAGE_HEIGHT, offset: PRESET_PAGE_HEIGHT * index, index })}
+              {/* onLayout 测出视口实际宽度，paging 步长精确等于此值 → 不会漏出下一页 */}
+              <View
                 style={{ height: PRESET_PAGE_HEIGHT }}
-                renderItem={({ item: pageTasks }) => (
-                  <View style={{ width: PRESET_PAGE_WIDTH, paddingHorizontal: spacing.lg }}>
-                    {pageTasks.map((task: PresetTask, idx: number) => (
-                      <TouchableOpacity
-                        key={task.id}
-                        style={{ height: PRESET_ROW_HEIGHT, flexDirection: 'row', alignItems: 'center', borderBottomWidth: idx < pageTasks.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }}
-                        onPress={() => handleAddPreset(task)}
-                        activeOpacity={0.7}
+                onLayout={(e) => {
+                  const w = e.nativeEvent.layout.width;
+                  if (w > 0 && w !== presetListWidth) setPresetListWidth(w);
+                }}
+              >
+                <FlatList
+                  ref={presetFlatListRef}
+                  data={presetPageData}
+                  horizontal
+                  pagingEnabled
+                  removeClippedSubviews={false}
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(_, index) => `preset-page-${index}`}
+                  onViewableItemsChanged={onPresetViewable}
+                  viewabilityConfig={presetViewabilityConfig}
+                  getItemLayout={(_, index) => ({ length: presetListWidth, offset: presetListWidth * index, index })}
+                  style={{ height: PRESET_PAGE_HEIGHT }}
+                  renderItem={({ item: pageTasks, index: pageIndex }) => {
+                    const pageWidth = presetListWidth || PRESET_PAGE_WIDTH;
+                    // 所有页（含末页）都左右留出 PRESET_GAP 间距：
+                    //   - 左侧 padding 让首卡片不贴边
+                    //   - 右侧 padding 让末卡片也不贴边
+                    //   - paging 步长 = pageWidth 保持不变
+                    return (
+                      <View
+                        style={{
+                          width: pageWidth,
+                          paddingHorizontal: PRESET_GAP,
+                        }}
                       >
-                        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
-                          <Text style={{ fontSize: 16, color: colors.accent, fontWeight: '500' }}>+</Text>
-                        </View>
-                        <View style={{ flex: 1, marginRight: spacing.sm }}>
-                          <Text style={{ ...typography.callout, fontWeight: '500', color: colors.fg }} numberOfLines={1}>{task.title}</Text>
-                        </View>
-                        <Tag label={task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常'} variant={task.type === 'prenatal' ? 'short' : 'long'} />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              />
+                        {pageTasks.map((task: PresetTask, idx: number) => {
+                          const typeLabel = task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常';
+                          return (
+                            <TouchableOpacity
+                              key={task.id}
+                              style={[
+                                styles.presetRow,
+                                idx < pageTasks.length - 1 && { marginBottom: PRESET_ROW_GAP },
+                              ]}
+                              onPress={() => handleAddPreset(task)}
+                              activeOpacity={0.7}
+                            >
+                              {/* 复选风格的「+」按钮 — 仿物品准备 */}
+                              <View style={styles.presetCheckbox}>
+                                <Ionicons name="add" size={16} color={colors.accent} />
+                              </View>
+                            {/* 标题 + 描述 + 元信息 */}
+                            <View style={styles.presetInfo}>
+                              <Text style={styles.presetName} numberOfLines={1}>{task.title}</Text>
+                              {task.description ? (
+                                <Text style={styles.presetDesc} numberOfLines={2}>{task.description}</Text>
+                              ) : null}
+                            </View>
+                            {/* 右侧类型徽章 */}
+                            <Tag label={typeLabel} variant={task.type === 'prenatal' ? 'short' : 'long'} />
+                          </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    );
+                  }}
+                />
+              </View>
               {/* 分页指示器 */}
               <View style={styles.presetPager}>
                 <TouchableOpacity
