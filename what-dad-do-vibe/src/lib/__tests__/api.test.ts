@@ -611,38 +611,6 @@ describe('WellChild API', () => {
     expect(mockSupabase.from).toHaveBeenCalledWith('well_child_visits');
   });
 
-  it('getCheckupItemsByVisit 按 visit_id 过滤', async () => {
-    mockSupabase.__setTableResponse("well_child_checkup_items", []);
-    await api.getCheckupItemsByVisit(3);
-    const builder = mockSupabase.__getLastBuilderForTable("well_child_checkup_items");
-    const eq = builder._calls.find(
-      (c: any) => c.method === 'eq' && c.args[0] === 'visit_id' && c.args[1] === 3
-    );
-    expect(eq).toBeTruthy();
-  });
-
-  it('getUserWellChildRecords 按 baby_id 过滤', async () => {
-    mockSupabase.__setTableResponse("user_well_child_records", []);
-    await api.getUserWellChildRecords('baby-1');
-    const builder = mockSupabase.__getLastBuilderForTable("user_well_child_records");
-    const eq = builder._calls.find(
-      (c: any) => c.method === 'eq' && c.args[0] === 'baby_id' && c.args[1] === 'baby-1'
-    );
-    expect(eq).toBeTruthy();
-  });
-
-  it('upsertWellChildRecord 使用 onConflict=baby_id, visit_id', async () => {
-    mockSupabase.__setTableResponse("user_well_child_records", { id: 'r1' });
-    await api.upsertWellChildRecord({
-      baby_id: 'baby-1',
-      visit_id: 2,
-      is_completed: true,
-    });
-    const builder = mockSupabase.__getLastBuilderForTable("user_well_child_records");
-    const upsert = builder._calls.find((c: any) => c.method === 'upsert');
-    expect(upsert).toBeTruthy();
-    expect(upsert.args[1].onConflict).toBe('baby_id, visit_id');
-  });
 });
 
 // ============================================================

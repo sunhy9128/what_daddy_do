@@ -1,4 +1,4 @@
-import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostComment, KnowledgeArticle, Vaccine, VaccineDose, UserVaccination, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety, WellChildVisit, WellChildCheckupItem, UserWellChildRecord } from '../lib/supabase';
+import { supabase, Task, Record, CommunityPost, UrgentNote, Baby, PostComment, KnowledgeArticle, Vaccine, VaccineDose, UserVaccination, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety, WellChildVisit, WellChildCheckupItem } from '../lib/supabase';
 
 // 预设任务类型
 export interface PresetTask {
@@ -555,17 +555,6 @@ export async function getWellChildVisits(): Promise<WellChildVisit[]> {
   return data || [];
 }
 
-/** 获取某个时间点的检查项目 */
-export async function getCheckupItemsByVisit(visitId: number): Promise<WellChildCheckupItem[]> {
-  const { data, error } = await supabase
-    .from('well_child_checkup_items')
-    .select('*')
-    .eq('visit_id', visitId)
-    .order('sort_order', { ascending: true });
-  if (error) throw error;
-  return data || [];
-}
-
 /** 批量获取所有检查项目（按 visit_id 分组） */
 export async function getAllCheckupItems(): Promise<WellChildCheckupItem[]> {
   const { data, error } = await supabase
@@ -575,29 +564,5 @@ export async function getAllCheckupItems(): Promise<WellChildCheckupItem[]> {
     .order('sort_order', { ascending: true });
   if (error) throw error;
   return data || [];
-}
-
-/** 获取宝宝的所有儿保记录 */
-export async function getUserWellChildRecords(babyId: string): Promise<UserWellChildRecord[]> {
-  const { data, error } = await supabase
-    .from('user_well_child_records')
-    .select('*')
-    .eq('baby_id', babyId)
-    .order('visit_id', { ascending: true });
-  if (error) throw error;
-  return data || [];
-}
-
-/** 创建或更新儿保记录（按 baby_id + visit_id 去重） */
-export async function upsertWellChildRecord(
-  record: Partial<UserWellChildRecord> & { baby_id: string; visit_id: number }
-): Promise<UserWellChildRecord> {
-  const { data, error } = await supabase
-    .from('user_well_child_records')
-    .upsert(record, { onConflict: 'baby_id, visit_id' })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
 }
 
