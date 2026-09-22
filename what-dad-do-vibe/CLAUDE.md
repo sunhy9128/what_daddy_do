@@ -54,11 +54,9 @@ what-dad-do-vibe/
     congratulations.tsx         # 宝宝性别确认 + 彩纸动画
     profile-edit.tsx            # 编辑个人资料 (用户名、宝宝信息)
     (tabs)/
-      _layout.tsx               # 底部 4 tab: 首页/任务/社区/我的
+      _layout.tsx               # 底部 4 tab: 首页/任务/课程/我的
       index.tsx                 # 首页: 阶段信息 + 物品准备 + 心理支持 + 工具栏
       tasks.tsx                 # 任务管理: 产检/日常/打卡,StageTabs 切换
-      records.tsx               # 孕育记录 (隐藏 tab, 从其他页面链接进入)
-      community.tsx             # 帖子 + 知识文章 + 点赞/评论
       profile.tsx               # 个人中心 + 退出登录
   src/
     lib/
@@ -75,8 +73,8 @@ what-dad-do-vibe/
     navigation/                 # 空目录
     components/
       atoms/                    # 基础组件 (Card, Button, Tag, Avatar, Badge, Progress)
-      molecules/                # 复合组件 (TaskCard, PostCard, KnowledgeCard, RecordEntry, StageTabs, SearchBar)
-      organisms/                # 复杂组件 (TabBar, SegmentControl, CollapsibleGroup)
+      molecules/                # 复合组件 (TaskCard, StageTabs, SearchBar, Progress)
+      organisms/                # 复杂组件 (CollapsibleGroup)
       tools/                    # 可插拔工具栏: Toolbar + ToolBase + 各 Tool 实现
         ToolBase.tsx            # 工具卡片外壳 (拖拽手柄 / 折叠 / 移除)
         Toolbar.tsx             # 工具列表 + 添加选择器 + 按钮拖拽排序
@@ -90,11 +88,10 @@ what-dad-do-vibe/
         PrenatalTimeline.tsx    # 产检时间轴
         ContractionTimer.tsx    # 宫缩计时器
         KickCounter.tsx         # 胎动计数器
-        MomWeightTracker.tsx    # 妈妈体重记录
+        （共 14 个工具；2026-09 已移除排卵/情绪自评/妈妈体重/护理日志/睡眠日志）
     styles/tokens.ts            # Kami 设计 token (colors/spacing/typography/radius/shadows) ← 主用
-    theme/index.ts              # 旧版 token, 部分旧页面仍在用
   supabase/migrations/          # 原始 SQL, 需通过 Dashboard SQL Editor 手动执行
-  scripts/                      # build-apk.sh, eas-build.sh, seed-urgent-notes.mjs, read-xlsx.js
+  scripts/                      # build-apk.sh, eas-build.sh, read-xlsx.js
   preset_tasks.sql              # 100+ 条任务初始数据 (另存于根)
   app.json, eas.json, tsconfig.json, package.json
 ```
@@ -134,19 +131,18 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 
 ## 数据库 Schema
 
-表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `community_posts`, `post_likes`, `post_comments`, `urgent_notes`, `pregnancy_stages`, `user_knowledge_reads`, `knowledge_articles`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`。
+表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。社区相关五张表保留在 DB 但已无代码消费（2026-09 移除，见根 docs/adr/0001）；`pregnancy_stages` 死表由 019 迁移删除。
 
 迁移按编号顺序，见 `supabase/migrations/001-…015_…sql`。后期大量 `00X` 编号迁移以"先聚合再分主题"方式组织（如 `008_create_preparation_and_support_tables.sql` 包含多张物品/心理支持表）。
 
 ## 关键 Watch-outs
 
-- **Supabase RLS 阻挡脚本写入** — `scripts/seed-urgent-notes.mjs` 等用 anon key 跑会被 RLS 拒绝；**数据迁移只能通过 Supabase Dashboard SQL Editor**，不要尝试在 CI/本地脚本里 insert
+- **Supabase RLS 阻挡脚本写入** — seed 脚本用 anon key 跑会被 RLS 拒绝；**数据迁移只能通过 Supabase Dashboard SQL Editor**，不要尝试在 CI/本地脚本里 insert
 - **RLS 在 web 上的 Alert** — `Alert.alert` 在 RN Web 不支持 button callback，web 处理器用 `window.confirm()`
-- **Modal 关闭闪空** — 帖子详情 modal 用 `lastPostRef` 缓存，在 fade-out 期间继续渲染旧内容（`community.tsx`）
 - **Confetti 动画** — `src/components/Confetti.tsx` 用 `translateY` transform 而非 `top`，`useNativeDriver: true` 要求
-- **生长曲线无 SVG** — `GrowthChart.tsx` 纯 View 渲染，曾引入 `react-native-svg` 因 native 兼容问题移除
+- **无 SVG 依赖** — `GrowthChart.tsx` 纯 View 渲染；react-native-svg / gifted-charts 已随被砍工具一起从依赖移除
 - **工具拖拽不用第三方库** — 之前试过 `react-native-draggable-flatlist` 与当前环境不兼容，改为 ▲/▼ 按钮 + LayoutAnimation
-- **AsyncStorage keys 已命名空间化** — `user_tools_<userId>` / `feeding_records_<userId>` / `growth_records_<userId>` / `mom_weight_records_<userId>` / `mom_weight_config_<userId>`，不要改 key 格式以免丢用户数据
+- **AsyncStorage keys 已命名空间化** — `user_tools_<userId>` / `feeding_records_<userId>` / `growth_records_<userId>` 等，不要改 key 格式以免丢用户数据
 - **`EXPO_TOKEN` 硬编码在 `scripts/eas-build.sh`** — 已知问题，正式发布前应迁到环境变量
 - **`src/navigation/`** 存在但为空目录
 - **`app/login.tsx`** 内联了一份 colors 对象，属于遗留代码，不要照搬

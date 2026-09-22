@@ -57,11 +57,10 @@ what-dad-do-vibe/
 │   ├── profile-edit.tsx          # 编辑个人资料 (用户名、宝宝信息)
 │   ├── tool-detail.tsx           # 工具详情页
 │   └── (tabs)/
-│       ├── _layout.tsx           # 底部 4 tab: 首页/任务/社区/我的
+│       ├── _layout.tsx           # 底部 4 tab: 首页/任务/课程/我的
 │       ├── index.tsx             # 首页: 阶段信息 + 物品准备 + 心理支持 + 工具栏
 │       ├── tasks.tsx             # 任务管理: 产检/日常/打卡,StageTabs 切换
 │       ├── records.tsx           # 孕育记录 (隐藏 tab, 从其他页面链接进入)
-│       ├── community.tsx         # 帖子 + 知识文章 + 点赞/评论
 │       └── profile.tsx # 个人中心 + 退出登录
 ├── src/
 │   ├── lib/
@@ -78,8 +77,8 @@ what-dad-do-vibe/
 │   │   └── ThemeContext.tsx       # 主题: colors / darkColors + useColors() hook
 │   ├── components/
 │   │   ├── atoms/                # 基础组件 (Card, Button, Tag, Avatar, Badge, Progress)
-│   │   ├── molecules/            # 复合组件 (TaskCard, PostCard, KnowledgeCard, RecordEntry, StageTabs, SearchBar)
-│   │   ├── organisms/             # 复杂组件 (TabBar, SegmentControl, CollapsibleGroup)
+│   │   ├── molecules/            # 复合组件 (TaskCard, StageTabs, SearchBar, Progress)
+│   │   ├── organisms/             # 复杂组件 (CollapsibleGroup)
 │   │   ├── tools/                # 可插拔工具栏: Toolbar + ToolBase + 各 Tool 实现
 │   │   │   ├── ToolBase.tsx      # 工具卡片外壳 (拖拽手柄 / 折叠 / 移除)
 │   │   │   ├── Toolbar.tsx        # 工具列表 + 添加选择器 + 按钮拖拽排序
@@ -98,7 +97,6 @@ what-dad-do-vibe/
 │   │   ├── AuthGuard.tsx         # 认证守卫组件
 │   │   ├── Confetti.tsx # 彩纸动画
 │   │   ├── DatePicker.tsx        # 日期选择器
-│   │   ├── GuideOverlay.tsx      # 新手引导
 │   │   └── WebScrollbarStyle.tsx # Web 端滚动条样式
 │   └── styles/
 │       └── tokens.ts             # Kami 设计 token (colors/spacing/typography/radius/shadows) ← 主用
@@ -127,7 +125,7 @@ type PregnancyStage = 'preconception' | 'first' | 'second' | 'third' | 'postpart
 
 ## 数据库 Schema
 
-表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `community_posts`, `post_likes`, `post_comments`, `urgent_notes`, `pregnancy_stages`, `user_knowledge_reads`, `knowledge_articles`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`。
+表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。社区相关五张表保留在 DB 但已无代码消费（2026-09 移除，见根 docs/adr/0001）；`pregnancy_stages` 死表由 019 迁移删除。
 
 迁移按编号顺序，见 `supabase/migrations/001-…016_…sql`。后期大量 `00X` 编号迁移以"先聚合再分主题"方式组织（如 `008_create_preparation_and_support_tables.sql` 包含多张物品/心理支持表）。
 
@@ -154,7 +152,6 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 
 - **Supabase RLS 阻挡脚本写入** — `scripts/seed-urgent-notes.mjs` 等用 anon key 跑会被 RLS 拒绝；**数据迁移只能通过 Supabase Dashboard SQL Editor**，不要尝试在 CI/本地脚本里 insert
 - **RLS 在 web 上的 Alert** — `Alert.alert` 在 RN Web 不支持 button callback，web 处理器用 `window.confirm()`
-- **Modal 关闭闪空** — 帖子详情 modal 用 `lastPostRef` 缓存，在 fade-out 期间继续渲染旧内容（`community.tsx`）
 - **Confetti 动画** — `src/components/Confetti.tsx` 用 `translateY` transform 而非 `top`，`useNativeDriver: true` 要求
 - **生长曲线无 SVG** — `GrowthChart.tsx` 纯 View 渲染，曾引入 `react-native-svg` 因 native 兼容问题移除
 - **工具拖拽不用第三方库** — 之前试过 `react-native-draggable-flatlist` 与当前环境不兼容，改为 ▲/▼ 按钮 + LayoutAnimation
