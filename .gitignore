@@ -49,8 +49,10 @@ design-bundle/
 src/lib/api.js
 src/lib/supabase.js
 .claude
-package.json
-package-lock.json
+# 注意：gitignore 无斜杠的模式会匹配任意深度！必须用前导 / 锚定到根目录，
+# 否则会误伤 what-dad-do-vibe/package.json（曾导致 EAS 上传包缺 package.json 构建失败）
+/package.json
+/package-lock.json
 what-dad-do-vibe/supabase/migrations/*
 **/.codewhale/*
 !**/.codewhale/constitution.json
