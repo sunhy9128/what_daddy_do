@@ -4,7 +4,7 @@
  * api.ts 单元测试
  * - 所有 Supabase CRUD 函数经 supabase.from(...) 链路
  * - 通过 mock supabase client 验证：调用的 table / 过滤条件 / 返回数据
- * - 覆盖：Tasks, Records, UrgentNotes, Babies, Posts, Knowledge, Vaccines, Prep, WellChild
+ * - 覆盖：Tasks, Records, UrgentNotes, Babies, Vaccines, Prep, WellChild
  */
 // Mock supabase 模块，必须在 import 之前
 jest.mock('../supabase', () => {
@@ -226,66 +226,6 @@ describe('Records CRUD', () => {
 });
 
 // ============================================================
-// Community Posts
-// ============================================================
-describe('getCommunityPosts', () => {
-  it('未传 category 时不应用 category 过滤', async () => {
-    const posts = [{ id: 'p1' }];
-    mockSupabase.__setTableResponse("community_posts", posts);
-    const result = await api.getCommunityPosts();
-    // getCommunityPosts 调用 from('community_posts') 一次，from('post_likes') 和
-    // from('post_comments') 各 N 次（N=posts.length），用第一个 builder 检查
-    const builder = mockSupabase.__getFirstBuilderForTable("community_posts");
-
-    // 应不包含 category 相关的 eq（但是会有 likes/comments 的 count eq）
-    const categoryEq = builder._calls.find(
-      (c: any) => c.method === 'eq' && c.args[0] === 'category'
-    );
-    expect(categoryEq).toBeUndefined();
-    // 每条 post 都被 enrich：likes/comments count 默认 0
-    expect(result).toEqual([{ id: 'p1', likes: 0, comments: 0 }]);
-  });
-
-  it('传 "全部" 时不应用 category 过滤', async () => {
-    mockSupabase.__setTableResponse("community_posts", []);
-    await api.getCommunityPosts('全部');
-    const builder = mockSupabase.__getLastBuilderForTable("community_posts");
-    const categoryEq = builder._calls.find(
-      (c: any) => c.method === 'eq' && c.args[0] === 'category'
-    );
-    expect(categoryEq).toBeUndefined();
-  });
-
-  it('传非"全部"时应用 category 过滤', async () => {
-    mockSupabase.__setTableResponse("community_posts", []);
-    await api.getCommunityPosts('分享');
-    const builder = mockSupabase.__getLastBuilderForTable("community_posts");
-    const categoryEq = builder._calls.find(
-      (c: any) => c.method === 'eq' && c.args[0] === 'category' && c.args[1] === '分享'
-    );
-    expect(categoryEq).toBeTruthy();
-  });
-});
-
-describe('createCommunityPost', () => {
-  it('插入新帖子并把 likes/comments 计数初始化为 0', async () => {
-    const inserted = { id: 'p1', likes: 5, comments: 3 }; // 服务端可能返回任意值
-    mockSupabase.__setTableResponse('community_posts', inserted);
-    const result = await api.createCommunityPost({
-      user_id: 'u1',
-      author_name: '爸比',
-      title: 't',
-      content: 'c',
-      category: '分享',
-    });
-    // 函数强制 likes=0, comments=0
-    expect(result.likes).toBe(0);
-    expect(result.comments).toBe(0);
-  });
-});
-
-// ============================================================
-// UrgentNotes
 // ============================================================
 describe('UrgentNotes CRUD', () => {
   it('getUrgentNotes 过滤 is_active = true', async () => {
@@ -372,97 +312,6 @@ describe('getBabies / createBaby / updateBaby / archiveBaby / unarchiveBaby / re
       (c: any) => c[0] === 'babies'
     );
     expect(fromCalls.length).toBe(3);
-  });
-});
-
-// ============================================================
-// Post interactions
-// ============================================================
-describe('toggleLike', () => {
-  it('未点赞时插入 like，返回 liked=true', async () => {
-    // toggleLike 调多次 from('post_likes')：
-    //   1) maybeSingle 检查已存在
-    //   2) insert 新点赞
-    //   3) 重新 count
-    //   4) update community_posts 计数
-    // 这里我们让第一次返回 null（不存在），后续忽略。
-    mockSupabase.__pushTableResponse('post_likes', null, null);
-    await api.toggleLike('p1', 'u1');
-    const builders = mockSupabase.__getAllBuildersForTable('post_likes');
-    // 至少有一次 insert 调用
-    const insert = builders.flatMap((b: any) => b._calls).find((c: any) => c.method === 'insert');
-    expect(insert).toBeTruthy();
-  });
-
-  it('getLikeStatus 存在时返回 true', async () => {
-    mockSupabase.__setTableResponse('post_likes', { id: 'l1' }, null);
-    const liked = await api.getLikeStatus('p1', 'u1');
-    expect(liked).toBe(true);
-  });
-
-  it('getLikeStatus 不存在时返回 false', async () => {
-    mockSupabase.__setTableResponse('post_likes', null, null);
-    const liked = await api.getLikeStatus('p1', 'u1');
-    expect(liked).toBe(false);
-  });
-});
-
-describe('getComments / addComment', () => {
-  it('getComments 按 created_at 升序', async () => {
-    mockSupabase.__setTableResponse("post_comments", []);
-    await api.getComments('p1');
-    const builder = mockSupabase.__getLastBuilderForTable("post_comments");
-    const order = builder._calls.find(
-      (c: any) => c.method === 'order' && c.args[0] === 'created_at' && c.args[1]?.ascending === true
-    );
-    expect(order).toBeTruthy();
-  });
-
-  it('addComment 插入评论', async () => {
-    mockSupabase.__setTableResponse("post_comments", { id: 'c1' });
-    await api.addComment('p1', 'u1', '内容');
-    // addComment 调 from('post_comments') 两次（insert + count），任一 builder 包含 insert 即可
-    const builders = mockSupabase.__getAllBuildersForTable("post_comments");
-    const insert = builders
-      .flatMap((b: any) => b._calls)
-      .find((c: any) => c.method === 'insert' && c.args[0].content === '内容');
-    expect(insert).toBeTruthy();
-  });
-});
-
-// ============================================================
-// Knowledge
-// ============================================================
-describe('Knowledge', () => {
-  it('getKnowledgeArticles 过滤 is_published = true', async () => {
-    mockSupabase.__setTableResponse("knowledge_articles", []);
-    await api.getKnowledgeArticles();
-    const builder = mockSupabase.__getLastBuilderForTable("knowledge_articles");
-    const eq = builder._calls.find(
-      (c: any) => c.method === 'eq' && c.args[0] === 'is_published' && c.args[1] === true
-    );
-    expect(eq).toBeTruthy();
-  });
-
-  it('getReadKnowledgeIds 返回 article_id 的 Set', async () => {
-    mockSupabase.__setTableResponse('user_knowledge_reads', [
-      { article_id: 1 },
-      { article_id: 5 },
-    ]);
-    const ids = await api.getReadKnowledgeIds('u1');
-    expect(ids).toBeInstanceOf(Set);
-    expect(ids.has(1)).toBe(true);
-    expect(ids.has(5)).toBe(true);
-    expect(ids.has(2)).toBe(false);
-  });
-
-  it('markKnowledgeRead 不重复插入（已存在时跳过）', async () => {
-    // 模拟查询返回已存在记录
-    mockSupabase.__setTableResponse('user_knowledge_reads', { id: 'r1' });
-    // 不应该再 insert
-    const insertSpy = jest.fn();
-    // 简单断言：函数不抛错
-    await expect(api.markKnowledgeRead('u1', 1)).resolves.toBeUndefined();
   });
 });
 

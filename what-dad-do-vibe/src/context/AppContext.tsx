@@ -8,25 +8,25 @@
  * - ensurePresetTasks.ts → 预设任务注入工具
  * - hooks/useTaskActions.ts     → toggleTask / addTask / removeTask / updateTask
  * - hooks/useRecordActions.ts   → addRecord / removeRecord
- * - hooks/useCommunityActions.ts → refreshCommunityPosts / addPost / 紧急事项
+ * - hooks/useUrgentNoteActions.ts → addUrgentNote / dismissUrgentNote
  * - hooks/useBabyActions.ts     → addBaby / updateBabyGender / setActiveBaby / archiveBaby / reorderBabies
  *
  * 对外接口（不变）：
  * ```
- * import { useApp, Task, Record, Baby, CommunityPost } from '../context/AppContext';
+ * import { useApp, Task, Record, Baby } from '../context/AppContext';
  * const { state, dispatch, toggleTask, addTask, ... } = useApp();
  * ```
  */
 import { createContext, useContext, useEffect, useReducer, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import {
-  getBabies, getTasks, getRecords, getCommunityPosts, getUrgentNotes,
+  getBabies, getTasks, getRecords, getUrgentNotes,
 } from '../lib/api';
 import { calculateStageFromDueDate, calculateBirthAge } from '../lib/stages';
 import { loadCurrentBabyId, saveCurrentBabyId } from '../lib/storage';
 import { useTaskActions } from './hooks/useTaskActions';
 import { useRecordActions } from './hooks/useRecordActions';
-import { useCommunityActions } from './hooks/useCommunityActions';
+import { useUrgentNoteActions } from './hooks/useUrgentNoteActions';
 import { useBabyActions } from './hooks/useBabyActions';
 import { ensurePresetTasksForBaby } from './ensurePresetTasks';
 
@@ -36,7 +36,6 @@ export type {
   UserRecord as Record,
   UrgentNote,
   Baby,
-  CommunityPost,
   AppState,
   AppAction,
 } from './types';
@@ -56,9 +55,6 @@ interface AppContextType {
   removeTask: (id: string) => Promise<void>;
   addRecord: (record: Partial<import('./types').UserRecord>) => Promise<void>;
   removeRecord: (id: string) => Promise<void>;
-  refreshCommunityPosts: (category?: string) => Promise<void>;
-  fetchMoreCommunityPosts: (category?: string, limit?: number, offset?: number) => Promise<number>;
-  addPost: (post: { title: string; content: string; category: string }) => Promise<void>;
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
   addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
@@ -77,7 +73,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ─── 子 hook 组合 ───
   const taskActions = useTaskActions(user, state, dispatch);
   const recordActions = useRecordActions(user, state, dispatch);
-  const communityActions = useCommunityActions(user, state, dispatch);
+  const urgentNoteActions = useUrgentNoteActions(user, state, dispatch);
   const babyActions = useBabyActions(user, state, dispatch);
 
   // ─── 数据加载 / 登出清理 ───
@@ -113,10 +109,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // 并行拉取按当前宝宝维度的数据
-      const [tasksData, recordsData, postsData, urgentNotesData] = await Promise.all([
+      const [tasksData, recordsData, urgentNotesData] = await Promise.all([
         currentBabyId ? getTasks(userId, currentBabyId) : Promise.resolve([]),
         currentBabyId ? getRecords(userId, currentBabyId) : Promise.resolve([]),
-        getCommunityPosts({ limit: 10 }),
         getUrgentNotes(userId),
       ]);
 
@@ -149,21 +144,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           content: r.content,
           isPrivate: r.is_private,
           createdAt: new Date(r.created_at).toLocaleDateString('zh-CN'),
-        })),
-      });
-
-      dispatch({
-        type: 'SET_COMMUNITY_POSTS',
-        payload: postsData.map(p => ({
-          id: p.id,
-          userId: p.user_id,
-          authorName: p.author_name,
-          title: p.title,
-          content: p.content,
-          category: p.category,
-          likes: p.likes,
-          comments: p.comments,
-          createdAt: p.created_at,
         })),
       });
 
@@ -227,7 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch,
     ...taskActions,
     ...recordActions,
-    ...communityActions,
+    ...urgentNoteActions,
     ...babyActions,
   };
 

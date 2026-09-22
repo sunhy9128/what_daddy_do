@@ -56,23 +56,10 @@ interface Baby {
   sort_order: number;
 }
 
-interface CommunityPost {
-  id: string;
-  userId: string;
-  authorName: string;
-  title: string;
-  content: string;
-  category: string;
-  likes: number;
-  comments: number;
-  createdAt: string;
-}
-
 interface AppState {
   stage: PregnancyStage;
   tasks: Task[];
   records: UserRecord[];
-  communityPosts: CommunityPost[];
   urgentNotes: UrgentNote[];
   babies: Baby[];
   currentBabyId: string | null;
@@ -91,8 +78,6 @@ type Action =
   | { type: 'SET_RECORDS'; payload: UserRecord[] }
   | { type: 'ADD_RECORD'; payload: UserRecord }
   | { type: 'DELETE_RECORD'; payload: string }
-  | { type: 'ADD_COMMUNITY_POST'; payload: CommunityPost }
-  | { type: 'SET_COMMUNITY_POSTS'; payload: CommunityPost[] }
   | { type: 'SET_URGENT_NOTES'; payload: UrgentNote[] }
   | { type: 'ADD_URGENT_NOTE'; payload: UrgentNote }
   | { type: 'REMOVE_URGENT_NOTE'; payload: string }
@@ -108,7 +93,6 @@ const initialState: AppState = {
   stage: 'preconception',
   tasks: [],
   records: [],
-  communityPosts: [],
   urgentNotes: [],
   babies: [],
   currentBabyId: null,
@@ -151,10 +135,6 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, records: [action.payload, ...state.records] };
     case 'DELETE_RECORD':
       return { ...state, records: state.records.filter(record => record.id !== action.payload) };
-    case 'ADD_COMMUNITY_POST':
-      return { ...state, communityPosts: [action.payload, ...state.communityPosts] };
-    case 'SET_COMMUNITY_POSTS':
-      return { ...state, communityPosts: action.payload };
     case 'SET_URGENT_NOTES':
       return { ...state, urgentNotes: action.payload };
     case 'ADD_URGENT_NOTE':
