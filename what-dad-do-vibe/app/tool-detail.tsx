@@ -15,17 +15,12 @@ import { FoodSafetyTool } from '../src/components/tools/FoodSafety';
 import { PrenatalTimeline } from '../src/components/tools/PrenatalTimeline';
 import { ContractionTimer } from '../src/components/tools/ContractionTimer';
 import { KickCounter } from '../src/components/tools/KickCounter';
-import { MomWeightTracker } from '../src/components/tools/MomWeightTracker';
 import { HospitalBag } from '../src/components/tools/HospitalBag';
-import { MoodCheckIn } from '../src/components/tools/MoodCheckIn';
 import { MedicationSafetyTool } from '../src/components/tools/MedicationSafety';
 import { BabyMedicationSafetyTool } from '../src/components/tools/BabyMedicationSafety';
-import { BabyCareLog } from '../src/components/tools/BabyCareLog';
-import { BabySleepLog } from '../src/components/tools/BabySleepLog';
 import { BabyFoodRecipeTool } from '../src/components/tools/BabyFoodRecipe';
 import { ChildCheckupTool } from '../src/components/tools/ChildCheckup';
 import { DadDeliveryPrep } from '../src/components/tools/DadDeliveryPrep';
-import { OvulationTracker } from '../src/components/tools/OvulationTracker';
 
 interface ToolComponentProps {
   userId: string;
@@ -42,17 +37,12 @@ const TOOL_COMPONENTS: Record<string, React.FC<ToolComponentProps>> = {
   'prenatal-timeline': PrenatalTimeline,
   'contraction-timer': ContractionTimer,
   'kick-counter': KickCounter,
-  'mom-weight': MomWeightTracker,
   'hospital-bag': HospitalBag,
-  'mood-checkin': MoodCheckIn,
   'medication-safety': MedicationSafetyTool,
   'baby-medication-safety': BabyMedicationSafetyTool,
   'baby-food-recipe': BabyFoodRecipeTool,
   'child-checkup': ChildCheckupTool,
-  'baby-care-log': BabyCareLog,
-  'baby-sleep-log': BabySleepLog,
   'dad-delivery-prep': DadDeliveryPrep,
-  'ovulation-tracker': OvulationTracker,
 };
 
 // 工具垂直对齐方式 — top 的顶对齐，其余默认 center 居中
@@ -61,10 +51,8 @@ const TOOL_JUSTIFY: Record<string, 'center' | 'flex-start'> = {
   'food-safety': 'flex-start',
   'medication-safety': 'flex-start',
   'baby-medication-safety': 'flex-start',
-  'baby-care-log': 'flex-start',
   'baby-food-recipe': 'flex-start',
   'child-checkup': 'flex-start',
-  'ovulation-tracker': 'flex-start',
 };
 
 export default function ToolDetailPage() {

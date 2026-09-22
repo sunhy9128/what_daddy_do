@@ -25,9 +25,13 @@
 | `npm run web` | Web 目标（metro bundler） |
 | `npm run ios` | iOS 模拟器 |
 | `npm run android` | Android 模拟器/设备 |
-| `npx tsc --noEmit` | 类型检查（项目唯一的"lint"） |
-
-**没有 `npm test` / `npm run lint` / `npm run format`** — 不要在改动中引用不存在的脚本。
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm run lint` | ESLint 代码检查 |
+| `npm run lint:fix` | ESLint 自动修复 |
+| `npm run format` | Prettier 格式化代码 |
+| `npm run format:check` | Prettier 检查格式 |
+| `npm test` | Jest 单元测试 |
+| `npm run test:watch` | Jest 监听模式 |
 
 ### 打包与发布
 

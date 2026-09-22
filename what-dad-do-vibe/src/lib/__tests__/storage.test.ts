@@ -24,18 +24,6 @@ import {
   saveContractionRecords,
   loadKickRecords,
   saveKickRecords,
-  loadMomWeightRecords,
-  saveMomWeightRecords,
-  loadMomWeightConfig,
-  saveMomWeightConfig,
-  loadMoodRecords,
-  saveMoodRecords,
-  loadMoodConfig,
-  saveMoodConfig,
-  loadBabyCareLog,
-  saveBabyCareLog,
-  loadSleepRecords,
-  saveSleepRecords,
   loadPrenatalCheckupRecords,
   savePrenatalCheckupRecords,
   loadChildCheckupRecords,
@@ -48,12 +36,6 @@ import {
   FeedingRecordData,
   ContractionRecord,
   KickRecordData,
-  MomWeightRecord,
-  MomWeightConfig,
-  MoodRecord,
-  MoodConfig,
-  BabyCareLogEntry,
-  BabySleepRecord,
   PrenatalCheckupRecord,
   ChildCheckupRecord,
   DadPrepItem,
@@ -206,115 +188,6 @@ describe('loadKickRecords / saveKickRecords', () => {
     ];
     await saveKickRecords(USER_A, records);
     expect(await loadKickRecords(USER_A)).toEqual(records);
-  });
-});
-
-// ============================================================
-// User-scoped: MomWeight
-// ============================================================
-describe('MomWeight CRUD', () => {
-  it('loadMomWeightRecords 首次读取返回空数组', async () => {
-    expect(await loadMomWeightRecords(USER_A)).toEqual([]);
-  });
-
-  it('saveMomWeightRecords + load 能取回', async () => {
-    const records: MomWeightRecord[] = [
-      { week: 12, weight: 55 },
-      { week: 20, weight: 58 },
-    ];
-    await saveMomWeightRecords(USER_A, records);
-    expect(await loadMomWeightRecords(USER_A)).toEqual(records);
-  });
-
-  it('loadMomWeightConfig 首次返回 null', async () => {
-    expect(await loadMomWeightConfig(USER_A)).toBeNull();
-  });
-
-  it('saveMomWeightConfig + load 能取回', async () => {
-    const config: MomWeightConfig = { prePregnancyWeight: 50, height: 165 };
-    await saveMomWeightConfig(USER_A, config);
-    expect(await loadMomWeightConfig(USER_A)).toEqual(config);
-  });
-});
-
-// ============================================================
-// User-scoped: Mood
-// ============================================================
-describe('Mood CRUD', () => {
-  it('loadMoodRecords 首次返回空数组', async () => {
-    expect(await loadMoodRecords(USER_A)).toEqual([]);
-  });
-
-  it('saveMoodRecords + load 能取回', async () => {
-    const records: MoodRecord[] = [
-      {
-        id: 'm1',
-        date: '2026-06-10',
-        score: 15,
-        answers: [1, 1, 1, 2, 1, 1, 2, 1, 2, 2],
-        notes: 'test',
-      },
-    ];
-    await saveMoodRecords(USER_A, records);
-    expect(await loadMoodRecords(USER_A)).toEqual(records);
-  });
-
-  it('loadMoodConfig 首次返回 null', async () => {
-    expect(await loadMoodConfig(USER_A)).toBeNull();
-  });
-
-  it('saveMoodConfig + load 能取回', async () => {
-    const config: MoodConfig = { name: '爸比', createdAt: '2026-06-10T00:00:00Z' };
-    await saveMoodConfig(USER_A, config);
-    expect(await loadMoodConfig(USER_A)).toEqual(config);
-  });
-});
-
-// ============================================================
-// Baby-scoped: BabyCareLog
-// ============================================================
-describe('BabyCareLog CRUD', () => {
-  it('首次读取返回空数组', async () => {
-    expect(await loadBabyCareLog(USER_A, BABY_1)).toEqual([]);
-  });
-
-  it('保存后能取回', async () => {
-    const entries: BabyCareLogEntry[] = [
-      {
-        id: 'e1',
-        timestamp: '2026-06-10T08:00:00Z',
-        date: '2026-06-10',
-        type: 'diaper',
-        data: { id: 'd1', timestamp: '2026-06-10T08:00:00Z', date: '2026-06-10', type: 'wet' },
-      },
-    ];
-    await saveBabyCareLog(USER_A, BABY_1, entries);
-    expect(await loadBabyCareLog(USER_A, BABY_1)).toEqual(entries);
-  });
-});
-
-// ============================================================
-// Baby-scoped: Sleep
-// ============================================================
-describe('Sleep CRUD', () => {
-  it('首次读取返回空数组', async () => {
-    expect(await loadSleepRecords(USER_A, BABY_1)).toEqual([]);
-  });
-
-  it('保存后能取回', async () => {
-    const records: BabySleepRecord[] = [
-      {
-        id: 's1',
-        startTime: '2026-06-10T20:00:00Z',
-        endTime: '2026-06-10T22:00:00Z',
-        date: '2026-06-10',
-        durationSec: 7200,
-        quality: 'good',
-        notes: '',
-      },
-    ];
-    await saveSleepRecords(USER_A, BABY_1, records);
-    expect(await loadSleepRecords(USER_A, BABY_1)).toEqual(records);
   });
 });
 
@@ -474,15 +347,11 @@ describe('purgeBabyStorage', () => {
   it('清理指定宝宝的所有 baby-level 记录', async () => {
     const records1: GrowthRecordData[] = [{ month: 6, height: 65, weight: 7.5 }];
     const records2: FeedingRecordData[] = [{ id: 1, time: '08:00', date: '2026-06-10' }];
-    const careLog: BabyCareLogEntry[] = [];
-    const sleep: BabySleepRecord[] = [];
     const prenatal: PrenatalCheckupRecord[] = [];
     const child: ChildCheckupRecord[] = [];
 
     await saveGrowthRecords(USER_A, BABY_1, records1);
     await saveFeedingRecords(USER_A, BABY_1, records2);
-    await saveBabyCareLog(USER_A, BABY_1, careLog);
-    await saveSleepRecords(USER_A, BABY_1, sleep);
     await savePrenatalCheckupRecords(USER_A, BABY_1, prenatal);
     await saveChildCheckupRecords(USER_A, BABY_1, child);
 
@@ -490,8 +359,6 @@ describe('purgeBabyStorage', () => {
 
     expect(await loadGrowthRecords(USER_A, BABY_1)).toEqual([]);
     expect(await loadFeedingRecords(USER_A, BABY_1)).toEqual([]);
-    expect(await loadBabyCareLog(USER_A, BABY_1)).toEqual([]);
-    expect(await loadSleepRecords(USER_A, BABY_1)).toEqual([]);
     expect(await loadPrenatalCheckupRecords(USER_A, BABY_1)).toEqual([]);
     expect(await loadChildCheckupRecords(USER_A, BABY_1)).toEqual([]);
   });

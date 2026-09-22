@@ -14,8 +14,6 @@ const KEYS = {
   // baby-level: 按宝宝独立（新格式）
   GROWTH_RECORDS:        (userId: string, babyId: string) => `growth_records_${userId}_${babyId}`,
   FEEDING_RECORDS:       (userId: string, babyId: string) => `feeding_records_${userId}_${babyId}`,
-  BABY_CARE_LOG:         (userId: string, babyId: string) => `baby_care_log_${userId}_${babyId}`,
-  SLEEP_RECORDS:         (userId: string, babyId: string) => `sleep_records_${userId}_${babyId}`,
   PRENATAL_CHECKUPS:     (userId: string, babyId: string) => `prenatal_checkups_${userId}_${babyId}`,
   CHILD_CHECKUPS:        (userId: string, babyId: string) => `child_checkups_${userId}_${babyId}`,
 
@@ -24,14 +22,8 @@ const KEYS = {
   CURRENT_BABY:          (userId: string) => `current_baby_${userId}`,
   CONTRACTION_RECORDS:   (userId: string) => `contraction_records_${userId}`,
   KICK_RECORDS:          (userId: string) => `kick_records_${userId}`,
-  MOM_WEIGHT_RECORDS:    (userId: string) => `mom_weight_records_${userId}`,
-  MOM_WEIGHT_CONFIG:     (userId: string) => `mom_weight_config_${userId}`,
-  MOOD_RECORDS:          (userId: string) => `mood_records_${userId}`,
-  MOOD_CONFIG:           (userId: string) => `mood_config_${userId}`,
   DAD_PREP:              (userId: string) => `dad_prep_${userId}`,
   ONBOARDING_COMPLETED:  (userId: string) => `onboarding_completed_${userId}`,
-  OVULATION_RECORDS:     (userId: string) => `ovulation_records_${userId}`,
-  OVULATION_CONFIG:      (userId: string) => `ovulation_config_${userId}`,
   NOTIFICATION_CONFIG:   (userId: string) => `notification_config_${userId}`,
 };
 
@@ -229,155 +221,6 @@ export async function saveKickRecords(userId: string, records: KickRecordData[])
 }
 
 // =============================================================
-// 妈妈体重记录（user-level, 妈妈自身）
-// =============================================================
-export interface MomWeightRecord {
-  week: number;    // 孕周 0-42
-  weight: number;  // 当前体重 kg（绝对值）
-}
-
-export interface MomWeightConfig {
-  prePregnancyWeight: number;  // 孕前体重 kg
-  height: number;              // 身高 cm（用于计算 BMI）
-}
-
-export async function loadMomWeightRecords(userId: string): Promise<MomWeightRecord[]> {
-  try {
-    const json = await AsyncStorage.getItem(KEYS.MOM_WEIGHT_RECORDS(userId));
-    return json ? JSON.parse(json) : [];
-  } catch { return []; }
-}
-
-export async function saveMomWeightRecords(userId: string, records: MomWeightRecord[]): Promise<void> {
-  try { await AsyncStorage.setItem(KEYS.MOM_WEIGHT_RECORDS(userId), JSON.stringify(records)); } catch (e) { console.error('saveMomWeightRecords failed', e); }
-}
-
-export async function loadMomWeightConfig(userId: string): Promise<MomWeightConfig | null> {
-  try {
-    const json = await AsyncStorage.getItem(KEYS.MOM_WEIGHT_CONFIG(userId));
-    return json ? JSON.parse(json) : null;
-  } catch { return null; }
-}
-
-export async function saveMomWeightConfig(userId: string, config: MomWeightConfig): Promise<void> {
-  try { await AsyncStorage.setItem(KEYS.MOM_WEIGHT_CONFIG(userId), JSON.stringify(config)); } catch (e) { console.error('saveMomWeightConfig failed', e); }
-}
-
-// =============================================================
-// 爸爸情绪自评记录（user-level, 爸爸自身）
-// =============================================================
-export interface MoodRecord {
-  id: string;
-  date: string;       // YYYY-MM-DD
-  score: number;      // 0-30
-  answers: number[];  // 每题得分 0-3, 共10题
-  notes?: string;     // 备注
-}
-
-export interface MoodConfig {
-  name: string;       // 用户昵称/称呼
-  createdAt: string;  // ISO date
-}
-
-export async function loadMoodRecords(userId: string): Promise<MoodRecord[]> {
-  try {
-    const json = await AsyncStorage.getItem(KEYS.MOOD_RECORDS(userId));
-    return json ? JSON.parse(json) : [];
-  } catch { return []; }
-}
-
-export async function saveMoodRecords(userId: string, records: MoodRecord[]): Promise<void> {
-  try { await AsyncStorage.setItem(KEYS.MOOD_RECORDS(userId), JSON.stringify(records)); } catch (e) { console.error('saveMoodRecords failed', e); }
-}
-
-export async function loadMoodConfig(userId: string): Promise<MoodConfig | null> {
-  try {
-    const json = await AsyncStorage.getItem(KEYS.MOOD_CONFIG(userId));
-    return json ? JSON.parse(json) : null;
-  } catch { return null; }
-}
-
-export async function saveMoodConfig(userId: string, config: MoodConfig): Promise<void> {
-  try { await AsyncStorage.setItem(KEYS.MOOD_CONFIG(userId), JSON.stringify(config)); } catch (e) { console.error('saveMoodConfig failed', e); }
-}
-
-// =============================================================
-// 产后护理日志（baby-level）
-// =============================================================
-export interface DiaperRecord {
-  id: string;
-  timestamp: string;      // ISO string
-  date: string;           // YYYY-MM-DD
-  type: 'wet' | 'dirty' | 'both';
-  color?: 'yellow' | 'green' | 'brown' | 'black' | 'red' | 'white';
-  consistency?: 'normal' | 'watery' | 'hard' | 'mucus';
-  notes?: string;
-}
-
-export interface FeedingRecord {
-  id: string;
-  timestamp: string;      // ISO string
-  date: string;           // YYYY-MM-DD
-  type: 'breast_left' | 'breast_right' | 'breast_both' | 'formula' | 'mixed';
-  amountMl?: number;      // for formula/mixed
-  durationSec?: number;   // for breastfeeding
-  notes?: string;
-}
-
-export interface TummyTimeRecord {
-  id: string;
-  timestamp: string;      // ISO string (start time)
-  date: string;           // YYYY-MM-DD
-  durationSec: number;
-  notes?: string;
-}
-
-export type BabyCareLogEntry = {
-  id: string;
-  timestamp: string;
-  date: string;
-  type: 'diaper' | 'feeding' | 'tummy';
-  data: DiaperRecord | FeedingRecord | TummyTimeRecord;
-};
-
-export async function loadBabyCareLog(userId: string, babyId: string): Promise<BabyCareLogEntry[]> {
-  return loadBabyScoped<BabyCareLogEntry[]>(
-    KEYS.BABY_CARE_LOG(userId, babyId),
-    `baby_care_log_${userId}`,
-    []
-  );
-}
-
-export async function saveBabyCareLog(userId: string, babyId: string, entries: BabyCareLogEntry[]): Promise<void> {
-  return saveBabyScoped(KEYS.BABY_CARE_LOG(userId, babyId), entries);
-}
-
-// =============================================================
-// 宝宝睡眠日志（baby-level）
-// =============================================================
-export interface BabySleepRecord {
-  id: string;
-  startTime: string;     // ISO string
-  endTime: string | null; // ISO string (null = 正在睡)
-  date: string;          // YYYY-MM-DD
-  durationSec: number;   // 实际睡眠秒数
-  quality: 'good' | 'fair' | 'poor';
-  notes: string;
-}
-
-export async function loadSleepRecords(userId: string, babyId: string): Promise<BabySleepRecord[]> {
-  return loadBabyScoped<BabySleepRecord[]>(
-    KEYS.SLEEP_RECORDS(userId, babyId),
-    `sleep_records_${userId}`,
-    []
-  );
-}
-
-export async function saveSleepRecords(userId: string, babyId: string, records: BabySleepRecord[]): Promise<void> {
-  return saveBabyScoped(KEYS.SLEEP_RECORDS(userId, babyId), records);
-}
-
-// =============================================================
 // 产检报告记录（baby-level）
 // =============================================================
 export interface PrenatalCheckupRecord {
@@ -486,45 +329,6 @@ export async function saveDadPrepProgress(userId: string, progress: DadPrepProgr
 }
 
 // =============================================================
-// 备孕排卵追踪记录（user-level, 准妈妈自身）
-// =============================================================
-export interface OvulationRecord {
-  date: string;           // YYYY-MM-DD
-  temperature?: number;   // 基础体温 °C
-  opkResult?: 'positive' | 'weak' | 'negative'; // 排卵试纸结果
-  cervicalMucus?: 'dry' | 'sticky' | 'creamy' | 'watery' | 'egg-white'; // 宫颈粘液
-  notes?: string;
-}
-
-export interface OvulationConfig {
-  cycleLength: number;    // 周期长度，默认28
-  periodLength: number;   // 经期长度，默认5
-  lastPeriodStart?: string; // 上次经期开始日期 YYYY-MM-DD
-}
-
-export async function loadOvulationRecords(userId: string): Promise<OvulationRecord[]> {
-  try {
-    const json = await AsyncStorage.getItem(KEYS.OVULATION_RECORDS(userId));
-    return json ? JSON.parse(json) : [];
-  } catch { return []; }
-}
-
-export async function saveOvulationRecords(userId: string, records: OvulationRecord[]): Promise<void> {
-  try { await AsyncStorage.setItem(KEYS.OVULATION_RECORDS(userId), JSON.stringify(records)); } catch (e) { console.error('saveOvulationRecords failed', e); }
-}
-
-export async function loadOvulationConfig(userId: string): Promise<OvulationConfig | null> {
-  try {
-    const json = await AsyncStorage.getItem(KEYS.OVULATION_CONFIG(userId));
-    return json ? JSON.parse(json) : null;
-  } catch { return null; }
-}
-
-export async function saveOvulationConfig(userId: string, config: OvulationConfig): Promise<void> {
-  try { await AsyncStorage.setItem(KEYS.OVULATION_CONFIG(userId), JSON.stringify(config)); } catch (e) { console.error('saveOvulationConfig failed', e); }
-}
-
-// =============================================================
 // 通知配置
 // =============================================================
 export interface NotificationConfig {
@@ -568,8 +372,6 @@ export async function purgeBabyStorage(userId: string, babyId: string): Promise<
   const keysToRemove = [
     KEYS.GROWTH_RECORDS(userId, babyId),
     KEYS.FEEDING_RECORDS(userId, babyId),
-    KEYS.BABY_CARE_LOG(userId, babyId),
-    KEYS.SLEEP_RECORDS(userId, babyId),
     KEYS.PRENATAL_CHECKUPS(userId, babyId),
     KEYS.CHILD_CHECKUPS(userId, babyId),
   ];

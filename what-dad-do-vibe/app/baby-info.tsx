@@ -8,7 +8,6 @@ import { useAuth } from '../src/context/AuthContext';
 import { STAGES } from '../src/lib/stages';
 import { useColors, useTheme } from '../src/context/ThemeContext';
 import { spacing, radius, typography, shadows } from '../src/styles/tokens';
-import { loadMomWeightConfig, saveMomWeightConfig } from '../src/lib/storage';
 import { DatePicker } from '../src/components/DatePicker';
 import * as Linking from 'expo-linking';
 
@@ -27,22 +26,10 @@ export default function BabyInfoScreen() {
   const [dueDate, setDueDate] = useState(existingBaby?.dueDate || new Date().toISOString().split('T')[0]);
   // 备孕中模式（仅新增时可用）
   const [isPreconception, setIsPreconception] = useState(false);
-  const [preWeight, setPreWeight] = useState('');
-  const [height, setHeight] = useState('');
   const [hospitalName, setHospitalName] = useState(existingBaby?.hospitalName || '');
   const [hospitalAddress, setHospitalAddress] = useState(existingBaby?.hospitalLocation ? (() => { try { return JSON.parse(existingBaby.hospitalLocation).address; } catch { return ''; } })() : '');
   const hospitalLocationJson = hospitalAddress ? JSON.stringify({ address: hospitalAddress }) : '';
   const [saving, setSaving] = useState(false);
-  // 加载孕前体重/身高配置
-  useEffect(() => {
-    if (!user) return;
-    loadMomWeightConfig(user.id).then(cfg => {
-      if (cfg) {
-        setPreWeight(String(cfg.prePregnancyWeight));
-        setHeight(String(cfg.height));
-      }
-    }).catch(() => {});
-  }, [user]);
 
   const colors = useColors();
   const { isDark } = useTheme();
@@ -196,12 +183,6 @@ export default function BabyInfoScreen() {
       } else {
         await addBaby(effectiveDueDate, `宝宝${state.babies.length + 1}`, undefined, hospitalName || undefined, hospitalLocationJson);
       }
-      // 保存孕前体重/身高配置
-      const pw = parseFloat(preWeight);
-      const h = parseFloat(height);
-      if (!isNaN(pw) && pw > 0 && !isNaN(h) && h > 0 && user) {
-        await saveMomWeightConfig(user.id, { prePregnancyWeight: pw, height: h });
-      }
       safeAlert('保存成功', '孕期信息已更新');
       router.back();
     } catch (error) {
@@ -281,25 +262,6 @@ export default function BabyInfoScreen() {
             </View>
           </View>
         ) : null}
-
-        {/* 母亲信息 */}
-        <View style={styles.formSection}>
-          <Text style={styles.formTitle}>母亲信息</Text>
-          <Text style={styles.formHint}>
-            设置孕前体重和身高，用于孕期体重管理参考
-          </Text>
-          <View style={styles.motherRow}>
-            <View style={styles.motherField}>
-              <Text style={styles.motherLabel}>孕前体重(kg)</Text>
-              <TextInput style={styles.motherInput} value={preWeight} onChangeText={setPreWeight} keyboardType="decimal-pad" placeholder="55" placeholderTextColor={colors.muted} />
-            </View>
-            <View style={{ width: spacing.md }} />
-            <View style={styles.motherField}>
-              <Text style={styles.motherLabel}>身高(cm)</Text>
-              <TextInput style={styles.motherInput} value={height} onChangeText={setHeight} keyboardType="decimal-pad" placeholder="165" placeholderTextColor={colors.muted} />
-            </View>
-          </View>
-        </View>
 
         {/* 产检医院 */}
         <View style={styles.formSection}>

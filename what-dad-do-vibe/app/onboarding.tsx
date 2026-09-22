@@ -22,7 +22,7 @@ import { ToolDefinition } from '../src/components/tools/ToolBase';
 import { saveActiveTools, saveOnboardingCompleted, StoredToolInstance } from '../src/lib/storage';
 
 // 默认勾选的 3 个工具 id（按阶段过滤）
-const DEFAULT_PICKED_IDS = ['prenatal-timeline', 'food-safety', 'mood-checkin'];
+const DEFAULT_PICKED_IDS = ['prenatal-timeline', 'food-safety', 'hospital-bag'];
 
 interface FeatureCard {
   icon: keyof typeof Ionicons.glyphMap;
