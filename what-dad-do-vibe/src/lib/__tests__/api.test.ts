@@ -462,29 +462,3 @@ describe('WellChild API', () => {
 
 });
 
-// ============================================================
-// Preset tasks (with safe error handling)
-// ============================================================
-describe('getPresetTasks', () => {
-  it('正常返回数据', async () => {
-    mockSupabase.__setTableResponse('preset_tasks', [{ id: 'p1', title: 'A' }]);
-    const result = await api.getPresetTasks();
-    expect(result).toEqual([{ id: 'p1', title: 'A' }]);
-  });
-
-  it('数据为 null 时返回空数组', async () => {
-    mockSupabase.__setTableResponse('preset_tasks', null);
-    const result = await api.getPresetTasks();
-    expect(result).toEqual([]);
-  });
-
-  it('错误时不抛出（吞掉）', async () => {
-    // 不预设响应，builder._resolve() 会返回 { data: null, error: null }
-    // 模拟 from 抛错
-    mockSupabase.from.mockImplementationOnce(() => {
-      throw new Error('boom');
-    });
-    const result = await api.getPresetTasks();
-    expect(result).toEqual([]);
-  });
-});

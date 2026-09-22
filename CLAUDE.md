@@ -64,7 +64,7 @@ what-dad-do-vibe/
       supabase.ts               # Supabase client (anon key) + 所有 DB 行 TypeScript 类型
       api.ts                    # 所有 Supabase CRUD 函数 (pages/components 不直接调 supabase)
       stages.ts                 # 孕期阶段计算 (calculateStageFromDueDate / calculateBirthAge)
-      preset-tasks.ts           # 新用户种子任务（代码侧兜底，DB 的 preset_tasks.sql 优先）
+      preset-tasks.ts           # 预设任务数据（唯一数据源，142 条；原 DB preset_tasks 表已由 021 删除）
       storage.ts                # AsyncStorage 封装: 工具配置/喂奶记录/生长记录
       courses-data.ts           # 课程静态数据（主线内容，持续膨胀，将来可迁 DB/CMS）
       notifications.ts          # expo-notifications 封装
@@ -89,7 +89,7 @@ what-dad-do-vibe/
 - `useApp()` — 来自 `AppContext`，返回 `{ state, dispatch, toggleTask, addTask, updateTask, removeTask, addRecord, removeRecord, addUrgentNote, dismissUrgentNote, addBaby, updateBabyGender }`（社区相关 actions 已随社区功能移除）
 - `useColors()` — 来自 `ThemeContext`，页面/组件颜色统一从这里取，配合 `src/styles/tokens.ts` 的 spacing/typography/radius
 - `state.stage` 由 `babies[0].due_date` 在 `loadUserData` / `addBaby` / `updateBabyGender` 中自动计算并 dispatch，UI 不要手动改 stage
-- 首次登录经 `ensurePresetTasks.ts` 种入预设任务（数据在 `src/lib/preset-tasks.ts`）；完整推荐清单在 `supabase/migrations/preset_tasks.sql`（DB 版本优先）
+- 首次登录经 `ensurePresetTasks.ts` 种入预设任务（数据唯一源：`src/lib/preset-tasks.ts`）
 
 ## API 层约定
 
@@ -123,9 +123,9 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 
 ## 数据库 schema 速查
 
-表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。另有 `community_posts`, `post_likes`, `post_comments`, `knowledge_articles`, `user_knowledge_reads` 五张表保留在 DB 但已无代码消费（社区暂缓，见 ADR 0001）；`pregnancy_stages` 死表由 019 迁移删除。
+表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。另有 `community_posts`, `post_likes`, `post_comments`, `knowledge_articles`, `user_knowledge_reads` 五张表保留在 DB 但已无代码消费（社区暂缓，见 ADR 0001）；`pregnancy_stages`（019）、`preset_tasks`（021，内容收敛到代码）已删除。另：020 补齐了 tasks/records 的 schema 基线与 vaccines 的 RLS（此前 vaccines 裸奔可公开写）。
 
-迁移按编号顺序执行（`supabase/migrations/001_…019_…sql`），部分同编号迁移按主题拆分（如 `016_add_hospital_fields.sql` / `016_add_streak_columns.sql`）。
+迁移按编号顺序执行（`supabase/migrations/001_…021_…sql`），部分同编号迁移按主题拆分（如 `016_add_hospital_fields.sql` / `016_add_streak_columns.sql`）。
 
 ## 孕期阶段
 

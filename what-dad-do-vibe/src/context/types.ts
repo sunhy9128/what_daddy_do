@@ -2,6 +2,7 @@
  * 共享类型 - AppContext / 4 个子 hook 共同依赖
  */
 import type { PregnancyStage } from '../lib/stages';
+import type { HospitalLocation } from '../lib/supabase';
 import { calculateStageFromDueDate, calculateBirthAge } from '../lib/stages';
 
 export interface Task {
@@ -45,7 +46,7 @@ export interface Baby {
   is_archived: boolean;
   sort_order: number;
   hospitalName?: string | null;
-  hospitalLocation?: string | null; // JSON: { lat, lng, address }
+  hospitalLocation?: HospitalLocation | null;
 }
 
 export interface AppState {

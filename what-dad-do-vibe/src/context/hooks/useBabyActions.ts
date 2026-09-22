@@ -21,11 +21,12 @@ import { PregnancyStage, calculateStageFromDueDate, calculateBirthAge } from '..
 import { saveCurrentBabyId } from '../../lib/storage';
 import { notifyError } from '../notifyError';
 import { ensurePresetTasksForBaby } from '../ensurePresetTasks';
+import type { HospitalLocation } from '../../lib/supabase';
 import type { AppAction, AppState, Baby } from '../types';
 
 export interface UseBabyActionsResult {
-  addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
-  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
+  addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: HospitalLocation | null) => Promise<void>;
+  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string, hospitalName?: string, hospitalLocation?: HospitalLocation | null) => Promise<void>;
   setActiveBaby: (id: string) => Promise<void>;
   archiveBaby: (id: string) => Promise<void>;
   reorderBabies: (orderedIds: string[]) => Promise<void>;
@@ -44,7 +45,7 @@ export function useBabyActions(
     babiesRef.current = state.babies;
   }, [state.babies]);
 
-  const addBaby = useCallback(async (dueDate: string, name: string = '宝宝', birthDate?: string, hospitalName?: string, hospitalLocation?: string) => {
+  const addBaby = useCallback(async (dueDate: string, name: string = '宝宝', birthDate?: string, hospitalName?: string, hospitalLocation?: HospitalLocation | null) => {
     if (!user) return;
     const nextSortOrder = state.babies.length;
     try {
@@ -97,9 +98,9 @@ export function useBabyActions(
     birthDate?: string,
     name?: string,
     hospitalName?: string,
-    hospitalLocation?: string,
+    hospitalLocation?: HospitalLocation | null,
   ) => {
-    const updates: { [k: string]: string | null } = {};
+    const updates: { [k: string]: string | HospitalLocation | null } = {};
     if (dueDate) updates.due_date = dueDate;
     if (gender) updates.gender = gender;
     if (birthDate) updates.birth_date = birthDate;

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { PregnancyStage, STAGE_LABELS } from '../../src/lib/stages';
-import { getPresetTasks, PresetTask } from '../../src/lib/api';
+import { presetTasks as PRESET_TASKS, PresetTask } from '../../src/lib/preset-tasks';
 
 import { Card, ProgressBar, Tag, Button } from '../../src/components/atoms';
 import { TaskCard } from '../../src/components/molecules';
@@ -573,16 +573,10 @@ export default function TasksScreen() {
 
 
 
-  async function loadPresetTasks() {
-    setLoadingPresets(true);
-    try {
-      const tasks = await getPresetTasks();
-      setPresetTasks(tasks);
-    } catch (error) {
-      // 静默处理，退出登录后请求会 401
-    } finally {
-      setLoadingPresets(false);
-    }
+  function loadPresetTasks() {
+    // 预设任务已收敛为代码侧静态数据（src/lib/preset-tasks.ts），同步加载
+    setPresetTasks(PRESET_TASKS);
+    setLoadingPresets(false);
   }
 
   const currentStageKey = STAGE_MAP[selectedStage] || 'third';
@@ -726,12 +720,9 @@ export default function TasksScreen() {
     let hLat: number | undefined;
     let hLng: number | undefined;
     if (hLoc) {
-      try {
-        const parsed = JSON.parse(hLoc);
-        hAddr = parsed.address || '';
-        hLat = parsed.lat;
-        hLng = parsed.lng;
-      } catch {}
+      hAddr = hLoc.address || '';
+      hLat = hLoc.lat;
+      hLng = hLoc.lng;
     }
     if (!hName && !hAddr) return;
 
@@ -997,7 +988,7 @@ export default function TasksScreen() {
                           const typeLabel = task.type === 'prenatal' ? '产检' : task.type === 'checkin' ? '日打卡' : '日常';
                           return (
                             <TouchableOpacity
-                              key={task.id}
+                              key={`${task.stage}-${task.title}`}
                               style={[
                                 styles.presetRow,
                                 idx < pageTasks.length - 1 && { marginBottom: PRESET_ROW_GAP },
@@ -1284,10 +1275,7 @@ export default function TasksScreen() {
                       const hLoc = currentBaby?.hospitalLocation;
                       let hAddr = '';
                       if (hLoc) {
-                        try {
-                          const parsed = JSON.parse(hLoc);
-                          hAddr = parsed.address || '';
-                        } catch {}
+                        hAddr = hLoc.address || '';
                       }
                       if (!hName && !hAddr) return null;
                       return (

@@ -92,7 +92,6 @@ what-dad-do-vibe/
     styles/tokens.ts            # Kami 设计 token (colors/spacing/typography/radius/shadows) ← 主用
   supabase/migrations/          # 原始 SQL, 需通过 Dashboard SQL Editor 手动执行
   scripts/                      # build-apk.sh, eas-build.sh, read-xlsx.js
-  preset_tasks.sql              # 100+ 条任务初始数据 (另存于根)
   app.json, eas.json, tsconfig.json, package.json
 ```
 
@@ -131,7 +130,7 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 
 ## 数据库 Schema
 
-表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。社区相关五张表保留在 DB 但已无代码消费（2026-09 移除，见根 docs/adr/0001）；`pregnancy_stages` 死表由 019 迁移删除。
+表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。社区相关五张表保留在 DB 但已无代码消费（2026-09 移除，见根 docs/adr/0001）；`pregnancy_stages`（019）、`preset_tasks`（021，内容收敛到代码 src/lib/preset-tasks.ts）已删除；020 补齐 tasks/records schema 基线与 vaccines RLS。
 
 迁移按编号顺序，见 `supabase/migrations/001-…015_…sql`。后期大量 `00X` 编号迁移以"先聚合再分主题"方式组织（如 `008_create_preparation_and_support_tables.sql` 包含多张物品/心理支持表）。
 

@@ -125,7 +125,7 @@ type PregnancyStage = 'preconception' | 'first' | 'second' | 'third' | 'postpart
 
 ## 数据库 Schema
 
-表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `preset_tasks`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。社区相关五张表保留在 DB 但已无代码消费（2026-09 移除，见根 docs/adr/0001）；`pregnancy_stages` 死表由 019 迁移删除。
+表（在 `src/lib/supabase.ts` 都有对应 TS 类型）：`tasks`, `records`, `babies`, `urgent_notes`, `vaccines`, `vaccine_doses`, `user_vaccinations`, `preset_items`, `user_preparations`, `psychological_support`, `food_safety`, `well_child_checkups`。社区相关五张表保留在 DB 但已无代码消费（2026-09 移除，见根 docs/adr/0001）；`pregnancy_stages` 死表由 019 迁移删除。
 
 迁移按编号顺序，见 `supabase/migrations/001-…016_…sql`。后期大量 `00X` 编号迁移以"先聚合再分主题"方式组织（如 `008_create_preparation_and_support_tables.sql` 包含多张物品/心理支持表）。
 

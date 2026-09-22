@@ -57,8 +57,8 @@ interface AppContextType {
   removeRecord: (id: string) => Promise<void>;
   addUrgentNote: (content: string) => Promise<void>;
   dismissUrgentNote: (id: string) => Promise<void>;
-  addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
-  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string, hospitalName?: string, hospitalLocation?: string) => Promise<void>;
+  addBaby: (dueDate: string, name?: string, birthDate?: string, hospitalName?: string, hospitalLocation?: import('../lib/supabase').HospitalLocation | null) => Promise<void>;
+  updateBabyGender: (babyId: string, gender: string, dueDate?: string, birthDate?: string, name?: string, hospitalName?: string, hospitalLocation?: import('../lib/supabase').HospitalLocation | null) => Promise<void>;
   setActiveBaby: (id: string) => Promise<void>;
   archiveBaby: (id: string) => Promise<void>;
   reorderBabies: (orderedIds: string[]) => Promise<void>;

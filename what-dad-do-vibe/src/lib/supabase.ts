@@ -53,6 +53,13 @@ export interface User {
   created_at: string;
 }
 
+/** 医院位置信息（DB 列为 JSONB，PostgREST 直接返回对象，不要再 JSON.parse） */
+export interface HospitalLocation {
+  address: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface Baby {
   id: string;
   user_id: string;
@@ -64,16 +71,9 @@ export interface Baby {
   is_archived: boolean;
   sort_order: number;
   hospital_name: string | null;
-  hospital_location: string | null; // JSON: { lat, lng, address }
+  hospital_location: HospitalLocation | null;
   created_at: string;
   updated_at: string;
-}
-
-/** 医院位置信息 */
-export interface HospitalLocation {
-  lat: number;
-  lng: number;
-  address: string;
 }
 
 export interface FoodSafety {
@@ -90,13 +90,6 @@ export interface FoodSafety {
   baby_1_3y: 'safe' | 'caution' | 'forbidden';
   note: string | null;
   sort_order: number;
-}
-
-export interface PregnancyStage {
-  id: string;
-  name: string;
-  weeks_start: number;
-  weeks_end: number;
 }
 
 export interface Task {

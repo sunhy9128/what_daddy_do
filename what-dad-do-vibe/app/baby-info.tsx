@@ -27,8 +27,7 @@ export default function BabyInfoScreen() {
   // 备孕中模式（仅新增时可用）
   const [isPreconception, setIsPreconception] = useState(false);
   const [hospitalName, setHospitalName] = useState(existingBaby?.hospitalName || '');
-  const [hospitalAddress, setHospitalAddress] = useState(existingBaby?.hospitalLocation ? (() => { try { return JSON.parse(existingBaby.hospitalLocation).address; } catch { return ''; } })() : '');
-  const hospitalLocationJson = hospitalAddress ? JSON.stringify({ address: hospitalAddress }) : '';
+  const [hospitalAddress, setHospitalAddress] = useState(existingBaby?.hospitalLocation?.address || '');
   const [saving, setSaving] = useState(false);
 
   const colors = useColors();
@@ -179,9 +178,9 @@ export default function BabyInfoScreen() {
         ? new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         : dueDate;
       if (existingBaby) {
-        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate, undefined, undefined, hospitalName || undefined, hospitalLocationJson);
+        await updateBabyGender(existingBaby.id, existingBaby.gender || '', dueDate, undefined, undefined, hospitalName || undefined, hospitalAddress ? { address: hospitalAddress } : null);
       } else {
-        await addBaby(effectiveDueDate, `宝宝${state.babies.length + 1}`, undefined, hospitalName || undefined, hospitalLocationJson);
+        await addBaby(effectiveDueDate, `宝宝${state.babies.length + 1}`, undefined, hospitalName || undefined, hospitalAddress ? { address: hospitalAddress } : null);
       }
       safeAlert('保存成功', '孕期信息已更新');
       router.back();

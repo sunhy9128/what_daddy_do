@@ -1,33 +1,5 @@
 import { supabase, Task, Record, UrgentNote, Baby, Vaccine, VaccineDose, UserVaccination, PresetItem, UserPreparation, PsychologicalSupport, FoodSafety, WellChildVisit, WellChildCheckupItem } from '../lib/supabase';
 
-// 预设任务类型
-export interface PresetTask {
-  id: string;
-  title: string;
-  description: string;
-  stage: 'preconception' | 'first' | 'second' | 'third' | 'postpartum';
-  type: 'prenatal' | 'daily' | 'checkin';
-  due_date?: string;
-  created_at?: string;
-}
-
-// 获取预设任务列表（从数据库）
-export async function getPresetTasks(): Promise<PresetTask[]> {
-  try {
-    const { data, error } = await supabase
-      .from('preset_tasks')
-      .select('*')
-      .order('stage', { ascending: true });
-
-    if (error) {
-      return [];
-    }
-    return data || [];
-  } catch (e) {
-    return [];
-  }
-}
-
 // 孕期阶段
 // 任务 CRUD
 export async function getTasks(userId: string, babyId: string): Promise<Task[]> {
