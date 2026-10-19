@@ -39,7 +39,7 @@
 # 本地 APK（需本地 Android SDK + JDK17 at /tmp/jdk17）
 scripts/build-apk.sh
 
-# EAS 云端构建（需 EXPO_TOKEN，已在 scripts/eas-build.sh 硬编码）
+# EAS 云端构建（EXPO_TOKEN 从 what-dad-do-vibe/.env.local 读取，已 gitignore）
 scripts/eas-build.sh # 等价于 npx eas build -p android --profile preview --non-interactive
 ```
 
@@ -156,7 +156,7 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 - **生长曲线无 SVG** — `GrowthChart.tsx` 纯 View 渲染，曾引入 `react-native-svg` 因 native 兼容问题移除
 - **工具拖拽不用第三方库** — 之前试过 `react-native-draggable-flatlist` 与当前环境不兼容，改为 ▲/▼ 按钮 + LayoutAnimation
 - **AsyncStorage keys 已命名空间化** — `user_tools_<userId>` / `feeding_records_<userId>` / `growth_records_<userId>` / `mom_weight_records_<userId>` / `mom_weight_config_<userId>`，不要改 key 格式以免丢用户数据
-- **`EXPO_TOKEN` 硬编码在 `scripts/eas-build.sh`** — 已知问题，正式发布前应迁到环境变量
+- **EXPO_TOKEN 泄露史** — 旧版曾硬编码在 eas-build 脚本并进入公开仓库 git 历史；现已改为从 `.env.local` 读取。该 token 必须在 Expo 后台吊销，新 token 只放 `.env.local`，不要再写进任何被追踪的文件
 - **`src/navigation/`** 存在但为空目录
 - **`app/login.tsx`** 内联了一份 colors 对象，属于遗留代码，不要照搬
 - **类型检查** — 改完跑 `npx tsc --noEmit`，这是项目唯一的"lint"

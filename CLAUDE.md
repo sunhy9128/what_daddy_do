@@ -40,7 +40,7 @@ npx jest -t "calculateStage"                # 按用例名过滤
 
 ```bash
 scripts/build-apk.sh   # 本地 APK (需本地 Android SDK + JDK17 at /tmp/jdk17)
-scripts/eas-build.sh   # EAS 云端构建 (EXPO_TOKEN 硬编码在脚本里，已知问题)
+scripts/eas-build.sh   # EAS 云端构建 (EXPO_TOKEN 从 what-dad-do-vibe/.env.local 读取，已 gitignore)
 ```
 
 EAS profiles (`eas.json`): `preview` = `apk`（`:app:assembleRelease`），`production` = `apk`。EAS project id 见 `app.json` → `extra.eas.projectId`。
@@ -116,7 +116,6 @@ Toolbar 是一个**运行时插件化**的 UI，顺序/启用状态存 AsyncStor
 - **Confetti 动画** — `src/components/Confetti.tsx` 用 `translateY` transform 而非 `top`，`useNativeDriver: true` 要求
 - **工具拖拽不用第三方库** — `react-native-draggable-flatlist` 与环境不兼容，已改 PanResponder 手写
 - **AsyncStorage keys 已命名空间化** — `user_tools_<userId>` / `feeding_records_<userId>` / `growth_records_<userId>`，不要改 key 格式以免丢用户数据
-- **`EXPO_TOKEN` 硬编码在 `scripts/eas-build.sh`** — 已知问题，正式发布前应迁到环境变量
 - **类型检查** — 改完跑 `npx tsc --noEmit`
 - **产检医院与导航** — `baby-info.tsx` 设置产检医院名称/地址；`tasks.tsx` 产检详情显示医院信息并通过 `Linking.openURL` 唤起系统地图；注意事项（空腹/携带资料）走任务的 description 字段
 - **多宝宝** — `018_multi_baby.sql` 起支持多宝宝，改 babies 相关逻辑时注意不要再假设单宝宝
