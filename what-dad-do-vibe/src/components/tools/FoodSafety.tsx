@@ -13,15 +13,15 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 const LEVEL_COLORS: Record<string, string> = {
-  safe: '#34c759',
-  caution: '#ff9f0a',
-  forbidden: '#ff3b30',
+  safe: '#6B7B57',
+  caution: '#A98B4F',
+  forbidden: '#AE5D4C',
 };
 
 const DARK_LEVEL_COLORS: Record<string, string> = {
-  safe: '#5AB87A',
-  caution: '#D4A84E',
-  forbidden: '#D46A6A',
+  safe: '#8FA375',
+  caution: '#C2A96B',
+  forbidden: '#C97F6C',
 };
 
 const PERIODS = [

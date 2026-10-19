@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Text, StyleSheet, View, ViewProps } from 'react-native';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, colors as palette, darkColors } from '../../styles/tokens';
 import { useColors, useTheme } from '../../context/ThemeContext';
 
 type TagVariant = 'default' | 'short' | 'long' | 'success' | 'warning';
@@ -12,18 +12,18 @@ interface TagProps extends ViewProps {
 
 const VARIANT_STYLES: Record<TagVariant, { bg: string; fg: string }> = {
   default: { bg: '', fg: '' }, // handled by theme
-  short: { bg: '#f0f9ff', fg: '#007aff' },
-  long: { bg: '#f0fdf4', fg: '#34c759' },
-  success: { bg: '#f0fdf4', fg: '#34c759' },
-  warning: { bg: '#fef3c7', fg: '#d97706' },
+  short: { bg: '#EAEDEF', fg: palette.info },
+  long: { bg: '#EFF0E6', fg: palette.success },
+  success: { bg: '#EFF0E6', fg: palette.success },
+  warning: { bg: palette.warningSurface, fg: palette.warningFg },
 };
 
 const DARK_VARIANT_STYLES: Record<TagVariant, { bg: string; fg: string }> = {
   default: { bg: '', fg: '' },
-  short: { bg: '#1A2A4A', fg: '#5A9AE0' },
-  long: { bg: '#1A3A2A', fg: '#5AB87A' },
-  success: { bg: '#1A3A2A', fg: '#5AB87A' },
-  warning: { bg: '#3A2A10', fg: '#D4A84E' },
+  short: { bg: '#232B2E', fg: darkColors.info },
+  long: { bg: '#242A1E', fg: darkColors.success },
+  success: { bg: '#242A1E', fg: darkColors.success },
+  warning: { bg: darkColors.warningSurface, fg: darkColors.warningFg },
 };
 
 export function Tag({ variant = 'default', label, style, ...props }: TagProps) {

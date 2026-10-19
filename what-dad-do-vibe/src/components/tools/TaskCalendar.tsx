@@ -57,7 +57,7 @@ export function TaskCalendar({ expanded }: { userId: string; babyGender?: string
       const allDone = tasks.every(t => t.isCompleted);
       marks[dateKey] = {
         marked: true,
-        dotColor: isDark ? '#5AB87A' : '#34c759',
+        dotColor: isDark ? '#8FA375' : '#6B7B57',
         selected: dateKey === selectedDate,
         selectedColor: colors.accent,
         // 部分完成用黄色标记，全部完成用绿色标记
@@ -66,7 +66,7 @@ export function TaskCalendar({ expanded }: { userId: string; babyGender?: string
       };
       // 如果有未完成任务，用橙色圆点强调
       if (!allDone) {
-        marks[dateKey].dotColor = isDark ? '#D4A84E' : '#ff9f0a';
+        marks[dateKey].dotColor = isDark ? '#C2A96B' : '#A98B4F';
       }
     }
     if (selectedDate && !marks[selectedDate]) {
@@ -114,7 +114,7 @@ export function TaskCalendar({ expanded }: { userId: string; babyGender?: string
     todayTextColor: colors.accent,
     dayTextColor: colors.fg,
     textDisabledColor: colors.border,
-    dotColor: '#34c759',
+    dotColor: '#6B7B57',
     selectedDotColor: '#fff',
     arrowColor: colors.accent,
     monthTextColor: colors.fg,
@@ -275,7 +275,7 @@ export function TaskCalendar({ expanded }: { userId: string; babyGender?: string
                   <Ionicons
                     name={task.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
                     size={20}
-                    color={task.isCompleted ? '#34c759' : colors.muted}
+                    color={task.isCompleted ? '#6B7B57' : colors.muted}
                     style={styles.taskIcon}
                   />
                   <Text

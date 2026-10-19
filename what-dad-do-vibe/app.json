@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAF5F0"
+      "backgroundColor": "#F3F0EA"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,7 +23,7 @@
       "package": "com.seansun.whatdaddovibe",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF5F0"
+        "backgroundColor": "#F3F0EA"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -39,7 +39,7 @@
       [
         "expo-notifications",
         {
-          "color": "#FF6B6B"
+          "color": "#AE5D4C"
         }
       ]
     ],

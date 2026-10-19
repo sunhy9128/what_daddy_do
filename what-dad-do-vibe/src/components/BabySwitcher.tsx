@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, Modal, FlatList, StyleSheet, TextInput, ActivityIndicator, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useApp } from '../context/AppContext';
 import { useColors } from '../context/ThemeContext';
 import { radius, spacing, typography, shadows } from '../styles/tokens';
@@ -25,7 +24,6 @@ export function BabySwitcher() {
   const [editName, setEditName] = useState('');
   const [saving, setSaving] = useState(false);
   const [switching, setSwitching] = useState(false);
-  const router = useRouter();
   const colors = useColors();
 
   const current = state.babies.find(b => b.id === state.currentBabyId);
@@ -148,24 +146,6 @@ export function BabySwitcher() {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.surfaceSecondary,
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: colors.border,
-      marginVertical: spacing.sm,
-    },
-    actionRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.md,
-    },
-    actionText: {
-      ...typography.callout,
-      color: colors.accent,
-      fontWeight: '500',
     },
 
     // ===== 编辑姓名弹窗 =====
@@ -350,24 +330,6 @@ export function BabySwitcher() {
                 );
               }}
             />
-
-            <View style={styles.divider} />
-
-            <Pressable
-              onPress={() => { setOpen(false); router.push('/baby-info?mode=new'); }}
-              style={styles.actionRow}
-            >
-              <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
-              <Text style={styles.actionText}>新增宝宝</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => { setOpen(false); router.push('/(tabs)/profile'); }}
-              style={styles.actionRow}
-            >
-              <Ionicons name="settings-outline" size={20} color={colors.muted} />
-              <Text style={[styles.actionText, { color: colors.muted }]}>宝宝管理</Text>
-            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>

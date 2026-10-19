@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Animated, Dimensions, StyleSheet } from 'react-native';
 
 const { width: W, height: H } = Dimensions.get('window');
-const COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF8E53','#C084FC','#F472B6'];
+const COLORS = ['#AE5D4C','#C2A96B','#8FA375','#647B85','#B39B78','#C9A6A0','#9FAEC2'];
 const N = 50;
 
 interface Particle {

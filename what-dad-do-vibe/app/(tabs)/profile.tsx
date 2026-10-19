@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, Dimensions, FlatList, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, FlatList, Modal, Pressable } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -24,15 +25,19 @@ export default function ProfileScreen() {
   const activeBabies = state.babies.filter(b => !b.is_archived);
 
   // 翻页布局：
-  //   - 父容器宽度 = SCREEN_WIDTH（满屏）
-  //   - 翻页步长 STEP_WIDTH = SCREEN_WIDTH - 2 * spacing.lg
-  //   - 单张卡片宽度 = STEP_WIDTH
-  //   - 卡片之间间距通过在卡片上加 marginHorizontal: GAP/2 实现，
-  //     卡片实际渲染时左右各 GAP/2 = spacing.md/2，整页两端的额外边距由父容器 padding 控制
-  // 结果：每张卡片左/右到屏幕边缘的距离 = spacing.lg + GAP/2，对称一致。
-  const STEP_WIDTH = useMemo(() => Dimensions.get('window').width - spacing.lg * 2, []);
+  //   - 翻页步长 = 条目总宽 = 轮播容器实测宽度（onLayout），必须与 FlatList 视口宽一致，
+  //     否则 pagingEnabled 吸附步长和条目步长错位，翻页后卡片边框会被屏幕边缘裁掉
+  //   - 卡片之间间距通过卡片自身 marginHorizontal: GAP/2 实现（条目内部收窄，不加宽条目）
+  // 注意：不能用 Dimensions.get('window')——桌面 Web 上它是浏览器视口宽
+  // （如 1900px），而应用容器可能只有 400px，会导致卡片宽度与轮播错位
+  const [carouselW, setCarouselW] = useState(0);
+  const onCarouselLayout = useCallback((e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    setCarouselW(prev => (Math.abs(prev - w) > 1 ? w : prev));
+  }, []);
+  const STEP_WIDTH = carouselW;
   const GAP = spacing.md; // 卡片之间视觉间距
-  const CARD_WIDTH = STEP_WIDTH;
+  const CARD_WIDTH = STEP_WIDTH - GAP;
 
   const [signingOut, setSigningOut] = useState(false);
   const [babyPageIndex, setBabyPageIndex] = useState(0);
@@ -241,7 +246,7 @@ export default function ProfileScreen() {
     },
     babyTagRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
     babyTag: {
-      backgroundColor: isDark ? '#2A2E4A' : '#E8F0FE', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+      backgroundColor: isDark ? '#2E332A' : '#E9EBE3', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
       borderRadius: radius.sm,
     },
     babyTagText: { fontSize: 12, fontWeight: '500', color: colors.accent },
@@ -277,6 +282,21 @@ export default function ProfileScreen() {
     pageBtnDisabled: {
       opacity: 0.25,
     },
+    addBabyBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    addBabyTxt: { ...typography.footnote, fontWeight: '600', color: colors.accent },
   }), [colors, isDark]);
 
   return (
@@ -295,12 +315,12 @@ export default function ProfileScreen() {
         {/* 多宝宝信息卡片 - 左右滑动 */}
         {(activeBabies.length > 0 || state.loading) && (
           <>
-            <View style={{ width: STEP_WIDTH }}>
+            <View style={{ width: '100%' }} onLayout={onCarouselLayout}>
               {state.loading ? (
                 <View style={[styles.babyCard, { justifyContent: 'center', alignItems: 'center' }]}>
                   <ActivityIndicator size="large" color={colors.accent} />
                 </View>
-              ) : (
+              ) : STEP_WIDTH > 0 && (
                 <FlatList
                   ref={flatListRef}
                   data={activeBabies}
@@ -320,8 +340,8 @@ export default function ProfileScreen() {
 
                 if (isPostpartum) {
                   return (
-                    <View style={{ width: STEP_WIDTH, marginHorizontal: GAP / 2 }}>
-                      <View style={{ width: cardWidth }}>
+                    <View style={{ width: STEP_WIDTH }}>
+                      <View style={{ width: cardWidth, marginHorizontal: GAP / 2 }}>
                         <View style={styles.babyCard}>
                           <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
                             <Ionicons name="settings-outline" size={16} color={colors.muted} />
@@ -359,8 +379,8 @@ export default function ProfileScreen() {
                   );
                 }
                 return (
-                  <View style={{ width: STEP_WIDTH, marginHorizontal: GAP / 2 }}>
-                    <View style={{ width: cardWidth }}>
+                  <View style={{ width: STEP_WIDTH }}>
+                    <View style={{ width: cardWidth, marginHorizontal: GAP / 2 }}>
                       <View style={styles.pregCard}>
                       <TouchableOpacity style={styles.cardSettings} onPress={() => router.push(`/baby-info?babyId=${item.id}`)}>
                         <Ionicons name="settings-outline" size={16} color={colors.muted} />
@@ -427,6 +447,17 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            {/* 新增宝宝入口（从首页切换弹窗迁移至此） */}
+            <TouchableOpacity
+              style={styles.addBabyBtn}
+              onPress={() => router.push('/baby-info?mode=new')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+              <Text style={styles.addBabyTxt}>新增宝宝</Text>
+            </TouchableOpacity>
+            {/* 与下方区块的间距（宝宝数 ≤1 时分页器隐藏，靠这里保持呼吸感） */}
+            <View style={{ height: spacing.md }} />
           </>
         )}
 

@@ -24,7 +24,7 @@ export default function CongratulationsScreen() {
   const styles = useMemo(() => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isDark ? '#1E1E30' : '#FDF8F3',
+    backgroundColor: isDark ? '#1E1C18' : '#FAF8F3',
   },
   content: {
     flex: 1,
@@ -73,12 +73,12 @@ export default function CongratulationsScreen() {
     borderColor: colors.border,
   },
   genderBtnBoy: {
-    borderColor: '#4D96FF',
-    backgroundColor: isDark ? '#1A2A4A' : '#F0F7FF',
+    borderColor: '#647B85',
+    backgroundColor: isDark ? '#232B2E' : '#EDF0F0',
   },
   genderBtnGirl: {
-    borderColor: '#F472B6',
-    backgroundColor: isDark ? '#4A1A2A' : '#FFF0F6',
+    borderColor: '#C9A6A0',
+    backgroundColor: isDark ? '#332A26' : '#F4EBE8',
   },
   genderIcon: {
     fontSize: 44,
@@ -162,7 +162,7 @@ export default function CongratulationsScreen() {
             <Ionicons
               name="man-outline"
               size={44}
-              color={selectedGender === 'boy' ? '#4D96FF' : colors.fgSecondary}
+              color={selectedGender === 'boy' ? '#647B85' : colors.fgSecondary}
               style={{ opacity: selectedGender === 'boy' ? 1 : 0.5 }}
             />
             <Text style={[styles.genderLabel, selectedGender === 'boy' && styles.genderLabelActive]}>
@@ -176,7 +176,7 @@ export default function CongratulationsScreen() {
             <Ionicons
               name="woman-outline"
               size={44}
-              color={selectedGender === 'girl' ? '#F472B6' : colors.fgSecondary}
+              color={selectedGender === 'girl' ? '#C9A6A0' : colors.fgSecondary}
               style={{ opacity: selectedGender === 'girl' ? 1 : 0.5 }}
             />
             <Text style={[styles.genderLabel, selectedGender === 'girl' && styles.genderLabelActive]}>

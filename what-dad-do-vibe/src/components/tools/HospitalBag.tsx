@@ -27,9 +27,9 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 const LEVEL_STYLES = {
-  essential: { bg: '#ff3b3020', text: '#ff3b30' },
-  recommended: { bg: '#ff9f0a20', text: '#ff9f0a' },
-  optional: { bg: '#8e8e9320', text: '#8e8e93' },
+  essential: { bg: '#AE5D4C20', text: '#AE5D4C' },
+  recommended: { bg: '#A98B4F20', text: '#A98B4F' },
+  optional: { bg: '#9C968A20', text: '#9C968A' },
 };
 
 const PAGE_SIZE = 10;

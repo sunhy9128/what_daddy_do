@@ -20,36 +20,36 @@ const ALLERGEN_FILTERS = ['低敏', '蛋', '鱼', '虾', '小麦', '大豆', '�
 
 // 过敏原徽章配色（浅色背景 + 同色字）
 const ALLERGEN_COLORS: Record<string, string> = {
-  蛋: '#ff9f0a',
-  鱼: '#ff9f0a',
-  虾: '#ff9f0a',
-  小麦: '#ff9f0a',
-  坚果: '#ff3b30',
-  乳: '#ff9f0a',
-  大豆: '#ff9f0a',
+  蛋: '#A98B4F',
+  鱼: '#A98B4F',
+  虾: '#A98B4F',
+  小麦: '#A98B4F',
+  坚果: '#AE5D4C',
+  乳: '#A98B4F',
+  大豆: '#A98B4F',
 };
 const ALLERGEN_DARK_COLORS: Record<string, string> = {
-  蛋: '#D4A84E',
-  鱼: '#D4A84E',
-  虾: '#D4A84E',
-  小麦: '#D4A84E',
-  坚果: '#D46A6A',
-  乳: '#D4A84E',
-  大豆: '#D4A84E',
+  蛋: '#C2A96B',
+  鱼: '#C2A96B',
+  虾: '#C2A96B',
+  小麦: '#C2A96B',
+  坚果: '#C97F6C',
+  乳: '#C2A96B',
+  大豆: '#C2A96B',
 };
-const LOW_ALLERGEN_COLOR = '#34c759';
-const LOW_ALLERGEN_DARK_COLOR = '#5AB87A';
+const LOW_ALLERGEN_COLOR = '#6B7B57';
+const LOW_ALLERGEN_DARK_COLOR = '#8FA375';
 
 // 月龄徽章：根据 minMonth 着色，越靠后颜色越深
 const MONTH_COLORS: Record<string, string> = {
-  early: '#34c759',  // 6-8 月：绿
-  mid: '#007aff',    // 9-11 月：蓝
-  late: '#af52de',   // 12+ 月：紫
+  early: '#6B7B57',  // 6-8 月：苔绿
+  mid: '#647B85',    // 9-11 月：青灰
+  late: '#9C86A0',   // 12+ 月：紫灰
 };
 const MONTH_DARK_COLORS: Record<string, string> = {
-  early: '#5AB87A',
-  mid: '#5A9AE8',
-  late: '#B584E8',
+  early: '#8FA375',
+  mid: '#8AA0AC',
+  late: '#B39BAA',
 };
 
 function monthColorKey(min: number): 'early' | 'mid' | 'late' {
@@ -78,7 +78,7 @@ function AllergenTag({ label, isDark }: { label: string; isDark?: boolean }) {
   const isLow = label === LOW_ALLERGEN_LABEL;
   const clr = isLow
     ? (isDark ? LOW_ALLERGEN_DARK_COLOR : LOW_ALLERGEN_COLOR)
-    : (isDark ? ALLERGEN_DARK_COLORS : ALLERGEN_COLORS)[label] || '#8e8e93';
+    : (isDark ? ALLERGEN_DARK_COLORS : ALLERGEN_COLORS)[label] || '#9C968A';
   return (
     <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 6, backgroundColor: clr + '20' }}>
       <Text style={{ ...typography.caption2, fontWeight: '600', fontSize: 10, color: clr }}>{label}</Text>

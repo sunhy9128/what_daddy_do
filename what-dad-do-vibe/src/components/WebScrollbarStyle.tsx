@@ -9,8 +9,8 @@ import { Platform } from 'react-native';
  * 2. useLayoutEffect 在浏览器绘制前同步更新主题色（无闪烁）
  */
 
-const LIGHT_BG = '#F5F0E8';
-const DARK_BG = '#121220';
+const LIGHT_BG = '#F3F0EA';
+const DARK_BG = '#141311';
 
 // ───── 模块级：立即注入 ─────
 
@@ -18,9 +18,9 @@ const DARK_BG = '#121220';
 const STATIC_CSS = `
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #D4D0C8; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #B8B4A8; }
-  * { scrollbar-width: thin; scrollbar-color: #D4D0C8 transparent; }
+  ::-webkit-scrollbar-thumb { background: #CCC6B8; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #B5AFA0; }
+  * { scrollbar-width: thin; scrollbar-color: #CCC6B8 transparent; }
 
   /* 主题背景同步 — 利用 CSS 自定义属性 */
   html { background-color: var(--dadcare-bg, ${LIGHT_BG}) !important; }

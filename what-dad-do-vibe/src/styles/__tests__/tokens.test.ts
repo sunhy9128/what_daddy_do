@@ -227,7 +227,7 @@ describe('fonts', () => {
   it('display 和 body 有 fontFamily 和 fontWeight', () => {
     expect(fonts.display).toHaveProperty('fontFamily');
     expect(fonts.display).toHaveProperty('fontWeight');
-    expect(fonts.display.fontWeight).toBe('700');
+    expect(fonts.display.fontWeight).toBe('600');
     expect(fonts.body).toHaveProperty('fontFamily');
     expect(fonts.body).toHaveProperty('fontWeight');
     expect(fonts.body.fontWeight).toBe('400');

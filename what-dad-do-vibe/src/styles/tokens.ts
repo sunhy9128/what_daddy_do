@@ -1,48 +1,48 @@
-// Kami Design Tokens
-// Warm parchment · Ink-blue accent · Editorial restraint
+// Wabi-sabi Design Tokens
+// 和纸底色 · 苔绿点缀 · 土色点缀 · 大量留白 · 克制的阴影与圆角
 
 export const colors = {
-  // 主色调 — 墨蓝（kami ink-blue）
-  accent: '#2C3E6B',       // oklch(36% 0.06 270) 沉稳墨蓝
-  accentLight: '#E8ECF4',  // oklch(92% 0.008 270) 浅墨蓝背景
-  accentDark: '#1A2745',   // oklch(25% 0.05 270) 深墨蓝
+  // 主色调 — 苔绿（wabi-sabi moss）
+  accent: '#4A5A42',       // 苔绿，深而安静
+  accentLight: '#E9EBE3',  // 苔浅底
+  accentDark: '#39452F',   // 深苔
 
-  // 背景色 — 暖 parchment
-  bg: '#F5F0E8',            // oklch(96% 0.01 60)  暖羊皮纸
-  surface: '#FCFAF5',       // oklch(99% 0.006 60) 暖白
-  surfaceSecondary: '#F0ECE4', // oklch(95% 0.008 60) 暖浅灰
+  // 背景色 — 和纸
+  bg: '#F3F0EA',            // 和纸底
+  surface: '#FAF8F3',       // 纸面白
+  surfaceSecondary: '#EAE6DC', // 土灰面
 
-  // 文字色 — 墨色
-  fg: '#1A1A2E',            // oklch(18% 0.015 270) 浓墨
-  fgSecondary: '#5A5A6E',   // oklch(45% 0.012 270) 中墨
-  muted: '#8A8A9A',         // oklch(62% 0.008 270) 淡墨
+  // 文字色 — 墨
+  fg: '#26241E',            // 浓墨
+  fgSecondary: '#6E695E',   // 中墨
+  muted: '#9C968A',         // 淡墨
 
   // 边框/分隔
-  border: '#E8E4D9',        // oklch(91% 0.006 60)  暖灰边
-  divider: '#F0ECE4',       // oklch(94% 0.005 60)  更浅分隔
+  border: '#DCD6C8',        // 纸边
+  divider: '#E8E4D8',       // 更浅分隔
 
-  // 功能色（降饱和，保持 editorial 感）
-  success: '#4A7C5E',       // oklch(52% 0.08 155) 哑绿
-  warning: '#B8963E',       // oklch(62% 0.10 85)  哑琥珀
-  error: '#B84A4A',         // oklch(46% 0.10 25)  哑红
-  info: '#4A6B8A',          // oklch(48% 0.06 250) 哑钢蓝
+  // 功能色（全部降饱和，土色系）
+  success: '#6B7B57',       // 苔绿
+  warning: '#A98B4F',       // 枯茶
+  error: '#AE5D4C',         // 柿色
+  info: '#647B85',          // 青灰
   // 危险/警告状态色
-  dangerSurface: '#FEF2F2',
-  dangerBorder: '#FECACA',
-  dangerFg: '#991B1B',
-  warningSurface: '#FFFBEB',
-  warningBorder: '#FDE68A',
-  warningFg: '#92400E',
-  // 宝宝相关色
-  babyCardBg: '#FFF8F5',
-  babyCardBorder: '#F5E0D0',
-  babyName: '#5A3E2B',
-  babyAccent: '#D4A574',
-  babyGirl: '#D89BB8',
-  babyBoy: '#9BB8D8',
-  genderUnknown: '#8B6F4A',
+  dangerSurface: '#F6EDE8',
+  dangerBorder: '#E2C4B8',
+  dangerFg: '#7C4433',
+  warningSurface: '#F5F0E4',
+  warningBorder: '#E0D2AC',
+  warningFg: '#6E5A2E',
+  // 宝宝相关色（土布色系）
+  babyCardBg: '#F7F4EC',
+  babyCardBorder: '#E3D9C6',
+  babyName: '#5C4A33',
+  babyAccent: '#B39B78',
+  babyGirl: '#C9A6A0',
+  babyBoy: '#9FAEC2',
+  genderUnknown: '#8A7A5E',
   // 开关轨道
-  switchTrackOff: '#D4D0C8',
+  switchTrackOff: '#CCC6B8',
 } as const;
 
 export type ColorScheme = {
@@ -81,53 +81,53 @@ export type ColorScheme = {
 };
 
 export const darkColors: ColorScheme = {
-  // 主色调 — 亮蓝（深色背景上用更高亮度的蓝）
-  accent: '#5A8BCE',       // oklch(58% 0.10 260) 亮墨蓝
-  accentLight: '#2A2E4A',  // oklch(28% 0.04 260) 深蓝背景
-  accentDark: '#7AA8E0',   // oklch(68% 0.10 260) 更亮强调
+  // 主色调 — 亮苔
+  accent: '#A3B48F',
+  accentLight: '#2E332A',
+  accentDark: '#C2D1AE',
 
-  // 背景色 — 深夜蓝
-  bg: '#121220',            // oklch(12% 0.01 270) 深夜幕
-  surface: '#1E1E30',       // oklch(16% 0.012 270) 暗面
-  surfaceSecondary: '#28283C', // oklch(20% 0.012 270) 稍亮暗面
+  // 背景色 — 暗夜土色
+  bg: '#141311',
+  surface: '#1E1C18',
+  surfaceSecondary: '#292621',
 
-  // 文字色 — 暖白
-  fg: '#EEE8E0',            // oklch(92% 0.008 60)  暖白墨
-  fgSecondary: '#9994A0',   // oklch(62% 0.01 280) 中灰
-  muted: '#6A6A7A',         // oklch(46% 0.01 280) 暗灰
+  // 文字色 — 和纸白
+  fg: '#ECE7DC',
+  fgSecondary: '#A29C8E',
+  muted: '#6E695E',
 
   // 边框/分隔
-  border: '#333348',        // oklch(24% 0.012 280) 暗边框
-  divider: '#2A2A3E',       // oklch(20% 0.01 280)  暗分隔
+  border: '#3A372F',
+  divider: '#262420',
 
-  // 功能色（保持辨识度，略提亮）
-  success: '#5A9E74',       // oklch(60% 0.10 150) 亮哑绿
-  warning: '#D4A84E',       // oklch(68% 0.12 85)  亮琥珀
-  error: '#D46A6A',         // oklch(55% 0.12 25)  亮哑红
-  info: '#5A8AB0',          // oklch(55% 0.08 250) 亮钢蓝
+  // 功能色（提亮保持辨识度）
+  success: '#8FA375',
+  warning: '#C2A96B',
+  error: '#C97F6C',
+  info: '#8AA0AC',
   // 危险/警告状态色
-  dangerSurface: '#3A1A1A',
-  dangerBorder: '#5A2A2A',
-  dangerFg: '#FCA5A5',
-  warningSurface: '#3A2A1A',
-  warningBorder: '#5A4030',
-  warningFg: '#FCD34D',
+  dangerSurface: '#33231D',
+  dangerBorder: '#4E332A',
+  dangerFg: '#D9A18E',
+  warningSurface: '#332C1C',
+  warningBorder: '#4E422A',
+  warningFg: '#D9C58A',
   // 宝宝相关色
-  babyCardBg: '#1E1E30',
-  babyCardBorder: '#333348',
-  babyName: '#E8DCC8',
-  babyAccent: '#5A4040',
-  babyGirl: '#E8B4D8',
-  babyBoy: '#B4D8E8',
-  genderUnknown: '#B8A88A',
+  babyCardBg: '#1E1C18',
+  babyCardBorder: '#3A372F',
+  babyName: '#D9CCB2',
+  babyAccent: '#4E4030',
+  babyGirl: '#C9A6A0',
+  babyBoy: '#9FAEC2',
+  genderUnknown: '#A89A7E',
   // 开关轨道
-  switchTrackOff: '#4A4A5A',
+  switchTrackOff: '#4A463C',
 } as const;
 
 export const fonts = {
   display: {
     fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
   },
   body: {
     fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
@@ -145,61 +145,61 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 20,
-  xl: 28,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
   full: 9999,
 } as const;
 
 export const shadows = {
   sm: {
-    shadowColor: '#1A1A2E',
+    shadowColor: '#26241E',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
     elevation: 1,
   },
   md: {
-    shadowColor: '#1A1A2E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowColor: '#26241E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   lg: {
-    shadowColor: '#1A1A2E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 5,
+    shadowColor: '#26241E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 3,
   },
 } as const;
 
 export const typography = {
   largeTitle: {
     fontSize: 34,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
     lineHeight: 41,
   },
   title1: {
     fontSize: 28,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
     lineHeight: 34,
   },
   title2: {
     fontSize: 22,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     lineHeight: 28,
   },
   title3: {
     fontSize: 20,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     lineHeight: 25,
   },
   headline: {
     fontSize: 17,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     lineHeight: 22,
   },
   body: {

@@ -125,13 +125,13 @@ export function GrowthChart({ gender, records }: Props) {
         <View style={{ position: 'absolute', left: 0, top: 0, width: W, height: TOTAL_H, backgroundColor: colors.bg, borderRadius: 8 }} />
 
         {/* 上半：身长 */}
-        {drawPanel(lenData, lenMin, lenMax, 5, '#D06060', '#CC4444', '#FFE0E0', '#E8FFE8', records.map(r => ({ month: r.month, value: r.height })), 0, s)}
+        {drawPanel(lenData, lenMin, lenMax, 5, '#B37A6E', '#AE5D4C', '#F6EDE8', '#33231D', records.map(r => ({ month: r.month, value: r.height })), 0, s)}
 
         {/* 分隔线 */}
         <View style={{ position: 'absolute', left: PAD_L, top: PANEL_H, width: PLOT_W, height: 0.5, backgroundColor: colors.border }} />
 
         {/* 下半：体重 */}
-        {drawPanel(wtData, wtMin, wtMax, 2, '#6080C0', '#4466CC', '#E0ECFF', '#E8FFF0', records.map(r => ({ month: r.month, value: r.weight })), PANEL_H + GAP, s)}
+        {drawPanel(wtData, wtMin, wtMax, 2, '#8A9BA6', '#647B85', '#EAEDEF', '#232B2E', records.map(r => ({ month: r.month, value: r.weight })), PANEL_H + GAP, s)}
 
         {/* X 轴 */}
         {[0, 6, 12, 18, 24, 30, 36].map(m => (
@@ -140,13 +140,13 @@ export function GrowthChart({ gender, records }: Props) {
         <Text style={[s.xLbl, { left: W / 2 - 14, top: TOTAL_H - 14, fontWeight: '600', width: 28 }]}>月龄</Text>
 
         {/* 轴标题 */}
-        <Text style={[s.axisTitle, { left: PAD_L - 2, top: 2, color: '#CC4444' }]}>身长 cm</Text>
-        <Text style={[s.axisTitle, { left: PAD_L - 2, top: PANEL_H + GAP + 2, color: '#4466CC' }]}>体重 kg</Text>
+        <Text style={[s.axisTitle, { left: PAD_L - 2, top: 2, color: '#AE5D4C' }]}>身长 cm</Text>
+        <Text style={[s.axisTitle, { left: PAD_L - 2, top: PANEL_H + GAP + 2, color: '#647B85' }]}>体重 kg</Text>
       </View>
 
       <View style={s.legend}>
-        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#CC4444' }]} /><Text style={s.legTxt}>身长</Text></View>
-        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#4466CC' }]} /><Text style={s.legTxt}>体重</Text></View>
+        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#AE5D4C' }]} /><Text style={s.legTxt}>身长</Text></View>
+        <View style={s.legIt}><View style={[s.legDot, { backgroundColor: '#647B85' }]} /><Text style={s.legTxt}>体重</Text></View>
       </View>
     </View>
   );

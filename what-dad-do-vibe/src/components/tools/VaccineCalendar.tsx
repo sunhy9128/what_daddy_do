@@ -86,7 +86,7 @@ export function VaccineCalendar({ userId, expanded }: { userId: string; babyGend
       .filter(g => g.doses.length > 0);
   }, [groupedByVax, showFree, showPaid, showDone]);
 
-  const barColor = (cat: string) => cat === '免费' ? '#4D96FF' : '#FF8E53';
+  const barColor = (cat: string) => cat === '免费' ? '#647B85' : '#B39B78';
 
   const styles = useMemo(() => StyleSheet.create({
     container: { maxHeight: expanded ? undefined : 540 },
@@ -195,7 +195,7 @@ export function VaccineCalendar({ userId, expanded }: { userId: string; babyGend
                       return (
                         <View key={dose.id} style={[styles.bar, {
                           left, width: w, top: 4,
-                          backgroundColor: isDone ? '#6BCB77' : barColor(vax.category),
+                          backgroundColor: isDone ? '#8FA375' : barColor(vax.category),
                           opacity: isDone ? 0.6 : 1,
                         }]}>
                           {isDone ? (
@@ -218,15 +218,15 @@ export function VaccineCalendar({ userId, expanded }: { userId: string; babyGend
       {/* 图例 */}
       <View style={styles.legend}>
         <TouchableOpacity style={styles.legendItem} onPress={() => setShowFree(!showFree)}>
-          <View style={[styles.swatch, { backgroundColor: '#4D96FF', opacity: showFree ? 1 : 0.3 }]} />
+          <View style={[styles.swatch, { backgroundColor: '#647B85', opacity: showFree ? 1 : 0.3 }]} />
           <Text style={[styles.legendText, showFree ? {} : styles.legendOff]}>免费</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.legendItem} onPress={() => setShowPaid(!showPaid)}>
-          <View style={[styles.swatch, { backgroundColor: '#FF8E53', opacity: showPaid ? 1 : 0.3 }]} />
+          <View style={[styles.swatch, { backgroundColor: '#B39B78', opacity: showPaid ? 1 : 0.3 }]} />
           <Text style={[styles.legendText, showPaid ? {} : styles.legendOff]}>自费</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.legendItem} onPress={() => setShowDone(!showDone)}>
-          <View style={[styles.swatch, { backgroundColor: '#6BCB77', opacity: showDone ? 1 : 0.3 }]} />
+          <View style={[styles.swatch, { backgroundColor: '#8FA375', opacity: showDone ? 1 : 0.3 }]} />
           <Text style={[styles.legendText, showDone ? {} : styles.legendOff]}>已接种</Text>
         </TouchableOpacity>
       </View>

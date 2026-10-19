@@ -221,8 +221,8 @@ export function VaccineTracker({ userId, expanded }: { userId: string; babyGende
         </View>
       ) : (
         <>
-          {renderTable('免费疫苗', grouped.free, '#4D96FF')}
-          {renderTable('自费疫苗', grouped.paid, '#FF8E53')}
+          {renderTable('免费疫苗', grouped.free, '#647B85')}
+          {renderTable('自费疫苗', grouped.paid, '#B39B78')}
 
           <View style={styles.legend}>
             <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.success }]}><Ionicons name="checkmark" size={12} color="#fff" /></View><Text style={styles.legendText}>已接种</Text></View>

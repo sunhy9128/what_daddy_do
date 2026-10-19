@@ -56,14 +56,14 @@ export async function requestNotificationPermissions(): Promise<boolean> {
         name: '默认',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF6B6B',
+        lightColor: '#AE5D4C',
       });
 
       await Notifications.setNotificationChannelAsync('reminders', {
         name: '每日提醒',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#4ECDC4',
+        lightColor: '#647B85',
       });
     }
 

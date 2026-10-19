@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent, Pressable } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -11,7 +12,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
 import { CollapsibleGroup } from '../../src/components/organisms';
-import Card from '../../src/components/atoms/Card';
+import { SwipeActions } from '../../src/components/molecules';
 
 import { useColors, useTheme } from '../../src/context/ThemeContext';
 import { spacing, typography, radius } from '../../src/styles/tokens';
@@ -20,14 +21,11 @@ import { STAGES } from '../../src/lib/stages';
 import { BUMP_SIZE_DATA } from '../../src/lib/bump-size-data';
 
 const PAGE_WIDTH = Dimensions.get('window').width - spacing.lg * 2;
-// CollapsibleGroup 内容区实际宽度 = PAGE_WIDTH - paddingHorizontal(sm*2)
+// CollapsibleGroup 内容区实际宽度 = PAGE_WIDTH - paddingHorizontal(sm*2)。
+// 仅作首帧兜底：实际分页宽度由 onLayout 实测（见组件内 CONTENT_W）
 const CONTENT_WIDTH = PAGE_WIDTH - spacing.sm * 2;
 const ITEMS_PER_PAGE = 5; // 每页显示5个
 const ITEM_GAP = spacing.xs; // 物品间距
-// 每个物品宽度：(内容区宽度 - 间距) / 每行物品数
-const ITEM_WIDTH = (CONTENT_WIDTH - ITEM_GAP * (ITEMS_PER_PAGE - 1)) / ITEMS_PER_PAGE;
-// 每行一个物品的垂直列表布局
-const ROW_ITEM_WIDTH = CONTENT_WIDTH;
 
 const DAILY_TIPS: Record<string, string[]> = {
   preconception: [
@@ -131,6 +129,13 @@ export default function HomeScreen() {
 
   const dailyTip = useMemo(() => getDailyTip(state.stage), [state.stage]);
 
+  const bumpEntry = useMemo(() => {
+    if (state.stage === 'preconception' || state.stage === 'postpartum' || !(state.weeksPregnant > 0)) return null;
+    return BUMP_SIZE_DATA.reduce((best, curr) =>
+      !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
+    , null as typeof BUMP_SIZE_DATA[0] | null);
+  }, [state.stage, state.weeksPregnant]);
+
   const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { justifyContent: 'center', alignItems: 'center' },
@@ -141,14 +146,14 @@ export default function HomeScreen() {
   // Header
   header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   greeting: { ...typography.footnote, color: colors.muted, marginBottom: spacing.xs },
-  stageText: { ...typography.title1, fontWeight: '700', color: colors.fg },
+  stageText: { ...typography.title3, fontWeight: '700', color: colors.fg },
   stageRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  weekText: { ...typography.callout, color: colors.accent, fontWeight: '500' },
+  weekText: { ...typography.subhead, color: colors.accent, fontWeight: '500' },
   stageMotto: {
-    ...typography.subhead,
+    ...typography.footnote,
     color: colors.fgSecondary,
     marginTop: spacing.xs,
-    lineHeight: 22,
+    lineHeight: 18,
   },
 
   // 每日小贴士
@@ -325,63 +330,60 @@ export default function HomeScreen() {
     color: '#fff',
   },
 
-  // ===== 宝宝大小对比 =====
-  bumpCard: {
+  // ===== 首页顶部并排卡片（孕期 / 宝宝大小） =====
+  topBar: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  topCardsRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  topCard: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    marginBottom: spacing.lg,
-    marginHorizontal: spacing.lg,
     borderWidth: 0.5,
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  bumpHeader: {
-    backgroundColor: colors.surfaceSecondary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  bumpTitle: {
-    ...typography.footnote,
-    fontWeight: '600',
-    color: colors.accent,
-  },
-  bumpBody: {
+  topCardBody: {
+    flex: 1,
     flexDirection: 'row',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
   },
-  bumpEmojiCol: {
+  topCardIconCol: {
+    width: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 72,
   },
-  bumpEmoji: {
-    fontSize: 52,
-  },
-  bumpInfo: {
+  topCardInfo: {
     flex: 1,
-    justifyContent: 'center',
   },
-  bumpFruitRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+  bumpWeekSm: {
+    ...typography.subhead,
+    color: colors.fgSecondary,
+    marginTop: 2,
   },
   bumpFruit: {
     ...typography.title3,
     fontWeight: '700',
     color: colors.fg,
   },
-  bumpWeek: {
-    ...typography.subhead,
-    color: colors.fgSecondary,
-  },
   bumpMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     marginBottom: spacing.sm,
     flexWrap: 'wrap',
   },
@@ -529,13 +531,10 @@ export default function HomeScreen() {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: 10,
+    // 圆角与描边由 SwipeActions 容器统一裁剪，滑动时色块与卡片交界才整齐
   },
   prepItemDone: {
     backgroundColor: colors.surfaceSecondary,
-    borderColor: colors.divider,
   },
   prepCheckbox: {
     width: 20,
@@ -705,9 +704,6 @@ export default function HomeScreen() {
     paddingVertical: spacing.xs,
     gap: ITEM_GAP,
   },
-  itemCard: {
-    width: ROW_ITEM_WIDTH,
-  },
 
 }), [colors, isDark]);
 
@@ -726,17 +722,34 @@ export default function HomeScreen() {
   const prepProgrammatic = useRef(false);
   const supportProgrammatic = useRef(false);
 
+  // 分页容器实测宽度：桌面 Web 上模块常量可能是过期的视口宽（加载后窗口尺寸变化不会更新），
+  // 用 onLayout 实测，首帧测量完成前用常量兜底
+  const [measuredPageW, setMeasuredPageW] = useState(0);
+  const onSectionLayout = useCallback((e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    setMeasuredPageW(prev => (Math.abs(prev - w) > 1 ? w : prev));
+  }, []);
+  const CONTENT_W = measuredPageW || CONTENT_WIDTH;
+
   // 心理支持详情弹窗
   const [selectedTip, setSelectedTip] = useState<PsychologicalSupport | null>(null);
 
   // 预分页数据：每页 ITEMS_PER_PAGE 个物品
+  // 右滑「删除」= 标记 not_needed，从列表中隐藏
+  const visiblePresetItems = useMemo(() => {
+    const hidden = new Set(
+      userPreparations.filter(p => p.status === 'not_needed').map(p => p.item_id),
+    );
+    return presetItems.filter(item => !hidden.has(item.id));
+  }, [presetItems, userPreparations]);
+
   const prepPages = useMemo(() => {
     const pages: PresetItem[][] = [];
-    for (let i = 0; i < presetItems.length; i += ITEMS_PER_PAGE) {
-      pages.push(presetItems.slice(i, i + ITEMS_PER_PAGE));
+    for (let i = 0; i < visiblePresetItems.length; i += ITEMS_PER_PAGE) {
+      pages.push(visiblePresetItems.slice(i, i + ITEMS_PER_PAGE));
     }
     return pages;
-  }, [presetItems]);
+  }, [visiblePresetItems]);
 
   const supportPages = useMemo(() => {
     const pages: PsychologicalSupport[][] = [];
@@ -753,43 +766,43 @@ export default function HomeScreen() {
   const onPrepScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (prepProgrammatic.current) return;
     const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    const newIndex = Math.round(offsetX / CONTENT_W);
     if (newIndex >= 0 && newIndex < prepPageCount) {
       setPrepPageIndex(newIndex);
     }
-  }, [prepPageCount]);
+  }, [prepPageCount, CONTENT_W]);
 
   // 滚动结束/拖拽结束时同步指示器
   const onPrepMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    const newIndex = Math.round(offsetX / CONTENT_W);
     if (newIndex >= 0 && newIndex < prepPageCount) {
       setPrepPageIndex(newIndex);
     }
     prepProgrammatic.current = false;
-  }, [prepPageCount]);
+  }, [prepPageCount, CONTENT_W]);
 
   const onSupportScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (supportProgrammatic.current) return;
     const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    const newIndex = Math.round(offsetX / CONTENT_W);
     if (newIndex >= 0 && newIndex < supportPageCount) {
       setSupportPageIndex(newIndex);
     }
-  }, [supportPageCount]);
+  }, [supportPageCount, CONTENT_W]);
 
   const onSupportMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_WIDTH);
+    const newIndex = Math.round(offsetX / CONTENT_W);
     if (newIndex >= 0 && newIndex < supportPageCount) {
       setSupportPageIndex(newIndex);
     }
     supportProgrammatic.current = false;
-  }, [supportPageCount]);
+  }, [supportPageCount, CONTENT_W]);
 
   const scrollToPrepPage = useCallback((index: number) => {
     if (index < 0 || index >= prepPageCount) return;
-    const targetOffset = index * CONTENT_WIDTH;
+    const targetOffset = index * CONTENT_W;
     prepProgrammatic.current = true;
     // 立即更新指示器
     setPrepPageIndex(index);
@@ -800,17 +813,17 @@ export default function HomeScreen() {
       // 滚动结束后检查实际位置并修正指示器
       const finalOffset = (prepFlatListRef.current as any)?.scrollOffset;
       if (finalOffset !== undefined) {
-        const actualIndex = Math.round(finalOffset / CONTENT_WIDTH);
+        const actualIndex = Math.round(finalOffset / CONTENT_W);
         if (actualIndex !== index) {
           setPrepPageIndex(actualIndex);
         }
       }
     }, 600);
-  }, [prepPageCount]);
+  }, [prepPageCount, CONTENT_W]);
 
   const scrollToSupportPage = useCallback((index: number) => {
     if (index < 0 || index >= supportPageCount) return;
-    const targetOffset = index * CONTENT_WIDTH;
+    const targetOffset = index * CONTENT_W;
     supportProgrammatic.current = true;
     // 立即更新指示器
     setSupportPageIndex(index);
@@ -821,13 +834,13 @@ export default function HomeScreen() {
       // 滚动结束后检查实际位置并修正指示器
       const finalOffset = (supportFlatListRef.current as any)?.scrollOffset;
       if (finalOffset !== undefined) {
-        const actualIndex = Math.round(finalOffset / CONTENT_WIDTH);
+        const actualIndex = Math.round(finalOffset / CONTENT_W);
         if (actualIndex !== index) {
           setSupportPageIndex(actualIndex);
         }
       }
     }, 600);
-  }, [supportPageCount]);
+  }, [supportPageCount, CONTENT_W]);
 
   const periods = [state.stage];
   useEffect(() => {
@@ -854,18 +867,35 @@ export default function HomeScreen() {
     })();
   }, [user, state.stage]);
 
-  const handleToggleItem = async (itemId: string) => {
+  const applyPreparation = async (itemId: string, status: 'prepared' | 'not_prepared' | 'not_needed') => {
     if (!user || !state.currentBabyId) return;
-    const existing = userPreparations.find(p => p.item_id === itemId);
-    const newStatus = existing?.status === 'prepared' ? 'not_prepared' : 'prepared';
     try {
-      const updated = await setUserPreparation(user.id, state.currentBabyId, itemId, newStatus);
+      const updated = await setUserPreparation(user.id, state.currentBabyId, itemId, status);
       setUserPreparations(prev => {
         const filtered = prev.filter(p => p.item_id !== itemId);
         return [...filtered, updated];
       });
     } catch (e) {
       console.error('Failed to update item:', e);
+    }
+  };
+
+  const handleToggleItem = (itemId: string) => {
+    const existing = userPreparations.find(p => p.item_id === itemId);
+    applyPreparation(itemId, existing?.status === 'prepared' ? 'not_prepared' : 'prepared');
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    const item = presetItems.find(i => i.id === itemId);
+    const name = item?.name || '该物品';
+    const message = `确定删除"${name}"吗？删除后将从列表移除。`;
+    if (Platform.OS === 'web') {
+      if (window.confirm(message)) applyPreparation(itemId, 'not_needed');
+    } else {
+      Alert.alert('删除物品', message, [
+        { text: '取消', style: 'cancel' },
+        { text: '删除', style: 'destructive', onPress: () => applyPreparation(itemId, 'not_needed') },
+      ]);
     }
   };
 
@@ -907,36 +937,67 @@ export default function HomeScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={{ paddingTop: spacing.lg, paddingRight: spacing.lg, alignItems: 'flex-end', marginBottom: spacing.lg }}>
+        <View style={styles.topBar}>
+          <Text style={styles.greeting}>
+            {state.stage === 'postpartum' ? '新晋奶爸，辛苦了' : '准爸爸，你好'}
+          </Text>
           <View style={{ width: '33%', minWidth: 80 }}>
             <BabySwitcher />
           </View>
         </View>
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <Ionicons name="heart-outline" size={18} color={colors.accent} />
-              <Text style={styles.greeting}>
-                {state.stage === 'postpartum' ? '新晋奶爸，辛苦了' : '准爸爸，你好'}
-              </Text>
+
+        {/* ===== 孕期 / 宝宝大小 并排卡片 ===== */}
+        <View style={styles.topCardsRow}>
+          <View style={styles.topCard}>
+            <View style={styles.topCardBody}>
+              <View style={styles.topCardIconCol}>
+                <Ionicons name="heart-outline" size={36} color={colors.accent} />
+              </View>
+              <View style={styles.topCardInfo}>
+                <View style={styles.stageRow}>
+                  <Text style={styles.stageText}>{stageLabel}</Text>
+                  {state.babies.length > 0 && (
+                    <Text style={styles.weekText}>
+                      {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.stageMotto}>
+                  {state.stage === 'preconception' && '调整身心，迎接新生命的到来'}
+                  {state.stage === 'first' && '孕早期要格外注意休息和营养均衡'}
+                  {state.stage === 'second' && '宝宝正在快速发育，保持愉悦心情'}
+                  {state.stage === 'third' && '胜利在望，为宝宝的到来做最后准备'}
+                  {state.stage === 'postpartum' && '新的人生阶段开始了，享受每一刻'}
+                </Text>
+              </View>
             </View>
           </View>
-          <View style={styles.stageRow}>
-            <Text style={styles.stageText}>{stageLabel}</Text>
-            {state.babies.length > 0 && (
-              <Text style={styles.weekText}>
-                {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.stageMotto}>
-            {state.stage === 'preconception' && '调整身心，迎接新生命的到来'}
-            {state.stage === 'first' && '孕早期要格外注意休息和营养均衡'}
-            {state.stage === 'second' && '宝宝正在快速发育，保持愉悦心情'}
-            {state.stage === 'third' && '胜利在望，为宝宝的到来做最后准备'}
-            {state.stage === 'postpartum' && '新的人生阶段开始了，享受每一刻'}
-          </Text>
-        </Card>
+          {bumpEntry && (
+            <View style={styles.topCard}>
+              <View style={styles.topCardBody}>
+                <View style={styles.topCardIconCol}>
+                  <Ionicons name={bumpEntry.iconName} size={36} color={colors.accent} />
+                </View>
+                <View style={styles.topCardInfo}>
+                  <Text style={styles.bumpFruit}>像 {bumpEntry.fruit} 一样大</Text>
+                  <Text style={styles.bumpWeekSm}>第 {state.weeksPregnant} 周</Text>
+                  <View style={styles.bumpMeta}>
+                    <View style={styles.bumpMetaItem}>
+                      <Text style={styles.bumpMetaLabel}>身长</Text>
+                      <Text style={styles.bumpMetaValue}>{bumpEntry.lengthCm} cm</Text>
+                    </View>
+                    <View style={styles.bumpMetaDivider} />
+                    <View style={styles.bumpMetaItem}>
+                      <Text style={styles.bumpMetaLabel}>体重</Text>
+                      <Text style={styles.bumpMetaValue}>{bumpEntry.weightG} g</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.bumpDesc}>{bumpEntry.description}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* ===== 每日小贴士 ===== */}
         <View style={styles.tipCard}>
@@ -949,48 +1010,6 @@ export default function HomeScreen() {
             <Text style={styles.tipText}>{dailyTip}</Text>
           </View>
         </View>
-
-        {/* ===== 宝宝大小对比 ===== */}
-        {state.stage !== 'preconception' && state.stage !== 'postpartum' && state.weeksPregnant > 0 && (
-          <View style={styles.bumpCard}>
-            <View style={styles.bumpHeader}>
-              <Text style={styles.bumpTitle}>宝宝现在多大？</Text>
-            </View>
-            <View style={styles.bumpBody}>
-              {(() => {
-                const entry = BUMP_SIZE_DATA.reduce((best, curr) =>
-                  !best || Math.abs(curr.week - state.weeksPregnant) < Math.abs(best.week - state.weeksPregnant) ? curr : best
-                , null as typeof BUMP_SIZE_DATA[0] | null);
-                if (!entry) return null;
-                return (
-                  <>
-                    <View style={styles.bumpEmojiCol}>
-                      <Ionicons name={entry.iconName} size={40} color={colors.accent} />
-                    </View>
-                    <View style={styles.bumpInfo}>
-                      <View style={styles.bumpFruitRow}>
-                        <Text style={styles.bumpFruit}>像 {entry.fruit} 一样大</Text>
-                        <Text style={styles.bumpWeek}>第 {state.weeksPregnant} 周</Text>
-                      </View>
-                      <View style={styles.bumpMeta}>
-                        <View style={styles.bumpMetaItem}>
-                          <Text style={styles.bumpMetaLabel}>身长</Text>
-                          <Text style={styles.bumpMetaValue}>{entry.lengthCm} cm</Text>
-                        </View>
-                        <View style={styles.bumpMetaDivider} />
-                        <View style={styles.bumpMetaItem}>
-                          <Text style={styles.bumpMetaLabel}>体重</Text>
-                          <Text style={styles.bumpMetaValue}>{entry.weightG} g</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.bumpDesc}>{entry.description}</Text>
-                    </View>
-                  </>
-                );
-              })()}
-            </View>
-          </View>
-        )}
 
         {/* 紧急关注 */}
         <View style={styles.urgentSection}>
@@ -1083,8 +1102,9 @@ export default function HomeScreen() {
         )}
 
         {/* ===== 物品准备（水平分页） ===== */}
-        {presetItems.length > 0 && (
-          <CollapsibleGroup title="物品准备" count={presetItems.length} defaultExpanded={false}>
+        {visiblePresetItems.length > 0 && (
+          <CollapsibleGroup title="物品准备" count={visiblePresetItems.length} defaultExpanded={false}>
+            <View style={{ width: '100%' }} onLayout={onSectionLayout}>
             <FlatList
               ref={prepFlatListRef}
               data={prepPages}
@@ -1096,7 +1116,7 @@ export default function HomeScreen() {
               onMomentumScrollEnd={onPrepMomentumEnd}
               scrollEventThrottle={16}
               renderItem={({ item: pageItems }) => (
-                <View style={[styles.itemGrid, { width: CONTENT_WIDTH }]}>
+                <View style={[styles.itemGrid, { width: CONTENT_W }]}>
                   {pageItems.map((item: PresetItem) => {
                     const prep = userPreparations.find(p => p.item_id === item.id);
                     const isPrepared = prep?.status === 'prepared';
@@ -1105,38 +1125,47 @@ export default function HomeScreen() {
                     const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
 
                     return (
-                      <TouchableOpacity
+                      <SwipeActions
                         key={item.id}
-                        style={[styles.prepItem, isPrepared && styles.prepItemDone]}
-                        onPress={() => handleToggleItem(item.id)}
-                        activeOpacity={0.7}
+                        onSwipeLeft={() => handleToggleItem(item.id)}
+                        onSwipeRight={() => handleRemoveItem(item.id)}
+                        leftLabel="删除"
+                        rightLabel={isPrepared ? '未完成' : '完成'}
+                        rightColor={isPrepared ? colors.muted : colors.accent}
                       >
-                        <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
-                          {isPrepared && <Ionicons name="checkmark" size={14} color="#fff" />}
-                        </View>
-                        <View style={styles.prepInfo}>
-                          <View style={styles.prepHeaderRow}>
-                            <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
-                            <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
+                        <TouchableOpacity
+                          style={[styles.prepItem, isPrepared && styles.prepItemDone]}
+                          onPress={() => handleToggleItem(item.id)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
+                            {isPrepared && <Ionicons name="checkmark" size={14} color="#fff" />}
                           </View>
-                          {item.description && (
-                            <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={1}>
-                              {item.description}
-                            </Text>
-                          )}
-                          <View style={styles.prepMeta}>
-                            <Text style={styles.prepMetaCategory}>{item.category}</Text>
-                            {item.quantity_suggestion && (
-                              <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
+                          <View style={styles.prepInfo}>
+                            <View style={styles.prepHeaderRow}>
+                              <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
+                              <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
+                            </View>
+                            {item.description && (
+                              <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={1}>
+                                {item.description}
+                              </Text>
                             )}
+                            <View style={styles.prepMeta}>
+                              <Text style={styles.prepMetaCategory}>{item.category}</Text>
+                              {item.quantity_suggestion && (
+                                <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
+                              )}
+                            </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
+                        </TouchableOpacity>
+                      </SwipeActions>
                     );
                   })}
                 </View>
               )}
             />
+            </View>
             {/* 分页指示器 */}
             {prepPageCount > 1 && (
               <View style={styles.dotsContainer}>
@@ -1174,6 +1203,7 @@ export default function HomeScreen() {
         {/* ===== 心理支持（水平分页） ===== */}
         {supportTips.length > 0 && (
           <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
+            <View style={{ width: '100%' }} onLayout={onSectionLayout}>
             <FlatList
               ref={supportFlatListRef}
               data={supportPages}
@@ -1185,7 +1215,7 @@ export default function HomeScreen() {
               onMomentumScrollEnd={onSupportMomentumEnd}
               scrollEventThrottle={16}
               renderItem={({ item: pageItems }) => (
-                <View style={[styles.itemGrid, { width: CONTENT_WIDTH }]}>
+                <View style={[styles.itemGrid, { width: CONTENT_W }]}>
                   {pageItems.map((tip: PsychologicalSupport) => {
                     const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
                     const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
@@ -1206,6 +1236,7 @@ export default function HomeScreen() {
                 </View>
               )}
             />
+            </View>
             {/* 分页指示器 */}
             {supportPageCount > 1 && (
               <View style={styles.dotsContainer}>
