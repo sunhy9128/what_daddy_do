@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, PanResponder, Platform, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { spacing, typography } from '../../styles/tokens';
@@ -16,6 +16,10 @@ type SwipeActionsProps = {
   leftLabel?: string;
   rightLabel?: string;
   rightColor?: string;
+  /** 容器样式（卡片形态可覆盖圆角/描边/阴影） */
+  wrapStyle?: StyleProp<ViewStyle>;
+  /** 可滑动内容样式（卡牌形态需要撑满高度） */
+  contentStyle?: StyleProp<ViewStyle>;
 };
 
 // 左滑触发 onSwipeLeft（右侧露出右标签），右滑触发 onSwipeRight（左侧露出左标签）
@@ -26,6 +30,8 @@ function SwipeActions({
   leftLabel = '删除',
   rightLabel = '完成',
   rightColor,
+  wrapStyle,
+  contentStyle,
 }: SwipeActionsProps) {
   const colors = useColors();
   const translateX = useRef(new Animated.Value(0)).current;
@@ -117,7 +123,7 @@ function SwipeActions({
   });
 
   return (
-    <View ref={wrapRef} style={styles.wrap}>
+    <View ref={wrapRef} style={[styles.wrap, wrapStyle]}>
       <View style={styles.backdrop}>
         <Animated.View style={[styles.action, styles.actionLeft, { opacity: leftOpacity }]}>
           <Ionicons name="trash-outline" size={16} color="#fff" />
@@ -128,7 +134,7 @@ function SwipeActions({
           <Text style={styles.actionText}>{rightLabel}</Text>
         </Animated.View>
       </View>
-      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+      <Animated.View style={[contentStyle, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
         {children}
       </Animated.View>
     </View>

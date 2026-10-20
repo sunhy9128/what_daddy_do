@@ -9,13 +9,15 @@ interface CollapsibleGroupProps {
   count: number;
   defaultExpanded?: boolean;
   children: React.ReactNode;
+  /** 标题栏右侧动作按钮（渲染在折叠点击区外，点击不会触发展开/收起） */
+  headerAction?: React.ReactNode;
   /** 首次展开时触发（用于懒加载） */
   onInit?: () => void;
   /** 容器 ref（用于外部测量位置） */
   containerRef?: React.Ref<View>;
 }
 
-export function CollapsibleGroup({ title, count, defaultExpanded = true, children, onInit, containerRef }: CollapsibleGroupProps) {
+export function CollapsibleGroup({ title, count, defaultExpanded = true, children, headerAction, onInit, containerRef }: CollapsibleGroupProps) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const initedRef = useRef(false);
@@ -39,9 +41,16 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       padding: spacing.lg,
       backgroundColor: colors.surfaceSecondary,
+    },
+    headerToggle: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    headerChevron: {
+      paddingLeft: spacing.sm,
     },
     titleRow: {
       flexDirection: 'row',
@@ -78,15 +87,26 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
 
   return (
     <View ref={containerRef} style={styles.container} collapsable={false}>
-      <TouchableOpacity style={styles.header} onPress={() => setExpanded(!expanded)} activeOpacity={0.7}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{title}</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{count}</Text>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerToggle} onPress={() => setExpanded(!expanded)} activeOpacity={0.7}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{title}</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{count}</Text>
+            </View>
           </View>
-        </View>
-        <Ionicons name={expanded ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
-      </TouchableOpacity>
+        </TouchableOpacity>
+        {headerAction}
+        <TouchableOpacity
+          style={styles.headerChevron}
+          onPress={() => setExpanded(!expanded)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={expanded ? '收起分组' : '展开分组'}
+        >
+          <Ionicons name={expanded ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
+        </TouchableOpacity>
+      </View>
       {expanded && <View style={styles.content}>{children}</View>}
     </View>
   );

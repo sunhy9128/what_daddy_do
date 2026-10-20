@@ -86,6 +86,28 @@ export function useBabyActions(
       // 新宝宝自动设为当前
       await saveCurrentBabyId(user.id, baby.id);
       dispatch({ type: 'SET_CURRENT_BABY', payload: baby.id });
+      // 创建即注入全套预设任务（含所有孕期阶段的产检任务），并同步到内存 state
+      await ensurePresetTasksForBaby(user.id, baby.id);
+      const today = new Date().toISOString().split('T')[0];
+      const tasksData = await getTasks(user.id, baby.id);
+      dispatch({
+        type: 'SET_TASKS',
+        payload: tasksData.map(t => ({
+          id: t.id,
+          title: t.title,
+          description: t.description || undefined,
+          stage: t.stage as import('../types').AppState['stage'],
+          type: t.type,
+          taskSubtype: t.task_subtype || 'one_time',
+          dueDate: t.due_date || undefined,
+          completedAt: t.completed_at || undefined,
+          dailyCount: t.daily_date === today ? t.daily_count : 0,
+          dailyDate: t.daily_date === today ? t.daily_date : undefined,
+          isCompleted: t.type === 'checkin' ? t.last_checkin_date === today : t.is_completed,
+          streakCount: t.streak_count || 0,
+          lastCheckinDate: t.last_checkin_date || undefined,
+        })),
+      });
     } catch (error) {
       notifyError('添加宝宝', error);
     }

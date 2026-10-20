@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { useApp, Task } from '../../context/AppContext';
@@ -305,12 +305,11 @@ export function PrenatalTimeline({ userId, expanded }: { userId: string; babyGen
     },
     // ─── 表单 ───
     formOverlay: {
-      ...StyleSheet.absoluteFillObject,
+      flex: 1,
       backgroundColor: 'rgba(0,0,0,0.45)',
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: spacing.lg,
-      zIndex: 999,
     },
     formContent: {
       backgroundColor: colors.surface,
@@ -585,8 +584,8 @@ export function PrenatalTimeline({ userId, expanded }: { userId: string; babyGen
         })}
       </ScrollView>
 
-      {/* 编辑弹窗 */}
-      {editingTaskId && (
+      {/* 编辑弹窗：用 RN Modal 渲染在根层，避免被 ToolBase 的 overflow:hidden 裁剪 */}
+      <Modal visible={editingTaskId !== null} animationType="slide" transparent onRequestClose={() => setEditingTaskId(null)}>
         <View style={styles.formOverlay}>
           <View style={styles.formContent}>
             <Text style={styles.formTitle}>记录产检指标</Text>
@@ -708,7 +707,7 @@ export function PrenatalTimeline({ userId, expanded }: { userId: string; babyGen
             </View>
           </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }

@@ -2,37 +2,48 @@
  * ensurePresetTasksForBaby + addPresetTasks
  *
  * 给一组预设任务创建 DB 记录，每条独立 try/catch，一条失败不影响其他。
- * 跨宝宝只插入一次（按 (user_id, title) 去重）。
+ * 按 (user_id, baby_id, title, stage) 去重——每个宝宝独立种入全套预设，
+ * 新儿童不因哥哥姐姐已有同名任务而缺失孕期产检任务。
  *
  * 这是 P1 #5 修复：之前只在 loadUserData 里调用，切宝宝走 setActiveBaby 时不会注入预设。
  */
-import { createTask, getTasks } from '../lib/api';
+import { getTasks } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { presetTasks, PresetTask } from '../lib/preset-tasks';
 
 export async function addPresetTasks(userId: string, babyId: string, tasks: PresetTask[]): Promise<void> {
   const { data: existing } = await supabase
     .from('tasks')
-    .select('title')
-    .eq('user_id', userId);
-  const existingTitles = new Set((existing || []).map(t => t.title));
+    .select('title, stage')
+    .eq('user_id', userId)
+    .eq('baby_id', babyId);
+  const existingKeys = new Set((existing || []).map(t => `${t.title}|${t.stage}`));
 
-  for (const task of tasks) {
-    if (existingTitles.has(task.title)) continue;
-    try {
-      await createTask({
-        user_id: userId,
-        baby_id: babyId,
-        title: task.title,
-        description: task.description,
-        stage: task.stage,
-        type: task.type,
-        task_subtype: task.type === 'daily' ? 'recurring' : 'one_time',
-        due_date: task.due_date || null,
-        is_completed: false,
-      });
-    } catch (e) {
-      console.error('Failed to create preset task:', task.title);
+  const toInsert = tasks
+    .filter(t => !existingKeys.has(`${t.title}|${t.stage}`))
+    .map(task => ({
+      user_id: userId,
+      baby_id: babyId,
+      title: task.title,
+      description: task.description,
+      stage: task.stage,
+      type: task.type,
+      task_subtype: task.type === 'daily' ? 'recurring' : 'one_time',
+      due_date: task.due_date || null,
+      is_completed: false,
+    }));
+  if (toInsert.length === 0) return;
+
+  // 一次批量插入（上百条逐条插入会阻塞「保存中」几十秒）
+  const { error } = await supabase.from('tasks').insert(toInsert);
+  if (error) {
+    // 批量失败时逐条兜底，单条失败不影响其他
+    for (const task of toInsert) {
+      try {
+        await supabase.from('tasks').insert(task);
+      } catch (e) {
+        console.error('Failed to create preset task:', task.title);
+      }
     }
   }
 }

@@ -153,7 +153,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           id: n.id,
           content: n.content,
           isActive: n.is_active,
-          createdAt: new Date(n.created_at).toLocaleDateString('zh-CN'),
+          createdAt: n.created_at,
         })),
       });
 
@@ -182,7 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       dispatch({ type: 'SET_CURRENT_BABY', payload: currentBabyId });
 
-      // 预设任务注入：按 (user_id, title) 唯一判断，避免跨宝宝重复
+      // 预设任务注入：按 (user_id, baby_id, title, stage) 去重，每个宝宝独立种入全套预设
       if (currentBabyId) {
         await ensurePresetTasksForBaby(userId, currentBabyId);
       }

@@ -16,7 +16,6 @@ interface TaskCardProps {
   onPress?: () => void;
   onToggle?: () => void;
   onInfo?: () => void;
-  onNavigate?: () => void;
   onDelete?: () => void;
   readOnly?: boolean;
 }
@@ -44,7 +43,6 @@ export function TaskCard({
   onPress,
   onToggle,
   onInfo,
-  onNavigate,
   onDelete,
   readOnly = false,
 }: TaskCardProps) {
@@ -174,15 +172,6 @@ export function TaskCard({
       alignItems: 'center',
       justifyContent: 'center',
     },
-    navigateButton: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: colors.accent + '18',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: 6,
-    },
   }), [colors]);
 
   const handleToggle = () => {
@@ -266,11 +255,6 @@ export function TaskCard({
         {onInfo && (
           <TouchableOpacity style={styles.infoButton} onPress={handleInfoPress}>
             <Ionicons name="information-circle-outline" size={18} color={colors.fgSecondary} />
-          </TouchableOpacity>
-        )}
-        {type === 'prenatal' && onNavigate && (
-          <TouchableOpacity style={styles.navigateButton} onPress={onNavigate}>
-            <Ionicons name="navigate-outline" size={14} color={colors.accent} />
           </TouchableOpacity>
         )}
       </View>

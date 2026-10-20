@@ -80,6 +80,14 @@ export default function TasksScreen() {
   centered: { justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingBottom: 100 },
   taskScroll: { maxHeight: 280 },
+  headerNavButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accent + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.sm },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xs },
   titleIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center' },
@@ -310,14 +318,13 @@ export default function TasksScreen() {
     right: spacing.xl,
     width: 56,
     height: 56,
-    borderRadius: radius.lg,
+    borderRadius: 28,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.lg,
     ...Platform.select({ web: { cursor: 'pointer' } }),
   },
-  fabIcon: { fontSize: 26, color: '#fff', lineHeight: 28, fontWeight: '300' },
   // Modal
   modalOverlay: {
     flex: 1,
@@ -889,10 +896,25 @@ export default function TasksScreen() {
 
         {/* 产检任务 — 产后阶段不显示；无待办时隐藏 */}
         {currentStageKey !== 'postpartum' && prenatalTasks.length > 0 && (
-          <CollapsibleGroup title="产检任务" count={prenatalTasks.length} defaultExpanded={firstVisible === 'prenatal'}>
+          <CollapsibleGroup
+            title="产检任务"
+            count={prenatalTasks.length}
+            defaultExpanded={firstVisible === 'prenatal'}
+            headerAction={
+              <TouchableOpacity
+                style={styles.headerNavButton}
+                onPress={handleNavigateToHospital}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="导航到产检医院"
+              >
+                <Ionicons name="navigate-outline" size={16} color={colors.accent} />
+              </TouchableOpacity>
+            }
+          >
             <ScrollView style={styles.taskScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {prenatalTasks.map(task => (
-                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onNavigate={handleNavigateToHospital} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
+                <TaskCard key={task.id} title={task.title} description={task.description} type={task.type} dueDate={task.dueDate} isCompleted={task.isCompleted} dailyCount={0} onToggle={isPastStageTask(task.stage) ? undefined : () => toggleTask(task.id)} onInfo={() => handleInfoPress(task)} onDelete={isPastStageTask(task.stage) ? undefined : () => handleDeleteTask(task.id)} readOnly={isPastStageTask(task.stage)} />
               ))}
             </ScrollView>
           </CollapsibleGroup>
@@ -1058,7 +1080,7 @@ export default function TasksScreen() {
       {/* FAB — 添加任务（过去阶段隐藏） */}
       {!isPastStage && (
         <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
-          <Text style={styles.fabIcon}>+</Text>
+          <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
       )}
 

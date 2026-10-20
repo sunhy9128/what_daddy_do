@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent, Pressable } from 'react-native';
-import type { LayoutChangeEvent } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput, Pressable, Animated, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -11,21 +10,15 @@ import { loadActiveTools, saveActiveTools } from '../../src/lib/storage';
 import { useAuth } from '../../src/context/AuthContext';
 import { getPresetItemsByPeriods, getUserPreparations, setUserPreparation, getPsychologicalSupportByPeriods } from '../../src/lib/api';
 import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib/supabase';
-import { CollapsibleGroup } from '../../src/components/organisms';
 import { SwipeActions } from '../../src/components/molecules';
 
 import { useColors, useTheme } from '../../src/context/ThemeContext';
-import { spacing, typography, radius } from '../../src/styles/tokens';
+import { spacing, typography, radius, shadows } from '../../src/styles/tokens';
 
 import { STAGES } from '../../src/lib/stages';
 import { BUMP_SIZE_DATA } from '../../src/lib/bump-size-data';
+import { formatRelativeTime } from '../../src/lib/time';
 
-const PAGE_WIDTH = Dimensions.get('window').width - spacing.lg * 2;
-// CollapsibleGroup 内容区实际宽度 = PAGE_WIDTH - paddingHorizontal(sm*2)。
-// 仅作首帧兜底：实际分页宽度由 onLayout 实测（见组件内 CONTENT_W）
-const CONTENT_WIDTH = PAGE_WIDTH - spacing.sm * 2;
-const ITEMS_PER_PAGE = 5; // 每页显示5个
-const ITEM_GAP = spacing.xs; // 物品间距
 
 const DAILY_TIPS: Record<string, string[]> = {
   preconception: [
@@ -86,6 +79,716 @@ function getDailyTip(stage: string): string {
   return tips[dayOfYear % tips.length];
 }
 
+const DECK_CARD_WIDTH = 250;
+const DECK_CARD_HEIGHT = 340;
+const DECK_MAX_VISIBLE = 3;
+
+type UrgentDeckNote = { id: string; content: string; createdAt: string };
+type ThemeColors = ReturnType<typeof useColors>;
+
+function UrgentDeckCard({
+  note,
+  depth,
+  isFront,
+  exiting,
+  exitAnim,
+  onAdvance,
+  onDismiss,
+  colors,
+  flat = false,
+  flatWidth,
+  flatHeight,
+}: {
+  note: UrgentDeckNote;
+  depth: number;
+  isFront: boolean;
+  exiting: boolean;
+  exitAnim: Animated.Value;
+  onAdvance: () => void;
+  onDismiss: () => void;
+  colors: ThemeColors;
+  /** 平铺模式：静态整卡，不做堆叠与飞出 */
+  flat?: boolean;
+  flatWidth?: number;
+  flatHeight?: number;
+}) {
+  const depthAnim = useRef(new Animated.Value(depth)).current;
+  const prevDepth = useRef(depth);
+
+  useEffect(() => {
+    const from = prevDepth.current;
+    prevDepth.current = depth;
+    // 顶牌飞出后回到底层：直接落位，避免回收瞬间比新顶牌还宽
+    if (from === 0 && depth > 0) {
+      depthAnim.setValue(depth);
+      return;
+    }
+    Animated.spring(depthAnim, {
+      toValue: depth,
+      friction: 9,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+  }, [depth, depthAnim]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    slot: {
+      position: 'absolute',
+      top: 0,
+      left: '50%',
+      marginLeft: -DECK_CARD_WIDTH / 2,
+      width: DECK_CARD_WIDTH,
+      height: DECK_CARD_HEIGHT,
+    },
+    slotFlat: {
+      width: flatWidth ?? DECK_CARD_WIDTH,
+      height: flatHeight ?? DECK_CARD_HEIGHT,
+    },
+    pressArea: {
+      flex: 1,
+    },
+    card: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      paddingTop: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: 64,
+      overflow: 'hidden',
+      ...shadows.md,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    badgeText: {
+      ...typography.caption2,
+      fontWeight: '600',
+      color: colors.error,
+      letterSpacing: 0.5,
+    },
+    time: {
+      ...typography.caption2,
+      color: colors.muted,
+      letterSpacing: 0.3,
+      fontVariant: ['tabular-nums'],
+    },
+    contentWrap: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    text: {
+      ...typography.title3,
+      fontWeight: '600',
+      color: colors.fg,
+      lineHeight: 27,
+    },
+    dismissWrap: {
+      position: 'absolute',
+      right: spacing.lg,
+      bottom: spacing.lg,
+    },
+    dismiss: {
+      borderRadius: radius.full,
+      borderWidth: 0.5,
+      borderColor: colors.dangerBorder,
+      backgroundColor: colors.dangerSurface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 5,
+    },
+    dismissText: {
+      ...typography.caption1,
+      fontWeight: '600',
+      color: colors.error,
+    },
+  }), [colors, flatWidth, flatHeight]);
+
+  const translateY = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
+  const scale = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
+
+  return (
+    <Animated.View
+      style={flat ? styles.slotFlat : [styles.slot, { zIndex: DECK_MAX_VISIBLE - depth, transform: [{ translateY }, { scale }] }]}
+    >
+      <Animated.View
+        style={[
+          styles.pressArea,
+          !flat && isFront && exiting && {
+            opacity: exitAnim.interpolate({ inputRange: [0, 0.65, 1], outputRange: [1, 1, 0] }),
+            transform: [
+              { translateX: exitAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 260] }) },
+              { rotate: exitAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '7deg'] }) },
+            ],
+          },
+        ]}
+      >
+        <Pressable
+          style={styles.card}
+          onPress={flat ? undefined : onAdvance}
+          disabled={!flat && !isFront}
+          accessibilityRole={flat ? undefined : 'button'}
+          accessibilityLabel={`紧急关注：${note.content}`}
+          accessibilityHint={!flat && isFront ? '轻点切换下一条' : undefined}
+        >
+          <View style={styles.topRow}>
+            <View style={styles.badge}>
+              <Ionicons name="alert-circle-outline" size={12} color={colors.error} />
+              <Text style={styles.badgeText}>紧急关注</Text>
+            </View>
+            <Text style={styles.time}>{formatRelativeTime(note.createdAt)}</Text>
+          </View>
+          <View style={styles.contentWrap}>
+            <Text style={styles.text} numberOfLines={4}>{note.content}</Text>
+          </View>
+        </Pressable>
+        {(flat || isFront) && (
+          <View style={styles.dismissWrap} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.dismiss}
+              onPress={onDismiss}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="知道了，关闭此关注"
+            >
+              <Text style={styles.dismissText}>知道了</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+function PrepDeckCard({
+  item,
+  isPrepared,
+  depth,
+  isFront,
+  canAdvance,
+  exiting,
+  exitAnim,
+  onAdvance,
+  onToggle,
+  onRemove,
+  colors,
+  flat = false,
+  flatWidth,
+  flatHeight,
+}: {
+  item: PresetItem;
+  isPrepared: boolean;
+  depth: number;
+  isFront: boolean;
+  canAdvance: boolean;
+  exiting: boolean;
+  exitAnim: Animated.Value;
+  onAdvance: () => void;
+  onToggle: () => void;
+  onRemove: () => void;
+  colors: ThemeColors;
+  /** 平铺模式：静态整卡，不做堆叠与飞出 */
+  flat?: boolean;
+  flatWidth?: number;
+  flatHeight?: number;
+}) {
+  const depthAnim = useRef(new Animated.Value(depth)).current;
+  const prevDepth = useRef(depth);
+
+  useEffect(() => {
+    const from = prevDepth.current;
+    prevDepth.current = depth;
+    // 顶牌飞出后回到底层：直接落位，避免回收瞬间比新顶牌还宽
+    if (from === 0 && depth > 0) {
+      depthAnim.setValue(depth);
+      return;
+    }
+    Animated.spring(depthAnim, {
+      toValue: depth,
+      friction: 9,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+  }, [depth, depthAnim]);
+
+  const level = item.essential_level;
+  const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
+
+  const styles = useMemo(() => StyleSheet.create({
+    slot: {
+      position: 'absolute',
+      top: 0,
+      left: '50%',
+      marginLeft: -DECK_CARD_WIDTH / 2,
+      width: DECK_CARD_WIDTH,
+      height: DECK_CARD_HEIGHT,
+    },
+    pressArea: {
+      flex: 1,
+    },
+    slotFlat: {
+      width: flatWidth ?? DECK_CARD_WIDTH,
+      height: flatHeight ?? DECK_CARD_HEIGHT,
+    },
+    swipeWrap: {
+      flex: 1,
+      borderRadius: radius.md,
+      borderColor: isPrepared ? colors.accent + '66' : colors.border,
+      ...shadows.md,
+    },
+    swipeContent: {
+      flex: 1,
+    },
+    card: {
+      flex: 1,
+      backgroundColor: isPrepared ? colors.surfaceSecondary : colors.surface,
+      padding: spacing.lg,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    badgeText: {
+      ...typography.caption2,
+      fontWeight: '600',
+      color: colors.fgSecondary,
+      letterSpacing: 0.5,
+    },
+    level: {
+      ...typography.caption2,
+      fontWeight: '600',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      overflow: 'hidden',
+      letterSpacing: 0.3,
+    },
+    levelEssential: { color: '#fff', backgroundColor: colors.accent },
+    levelRecommended: { color: colors.accent, backgroundColor: colors.accentLight },
+    levelOptional: { color: colors.muted, backgroundColor: 'transparent' },
+    contentWrap: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    name: {
+      ...typography.title3,
+      fontWeight: '600',
+      color: colors.fg,
+      lineHeight: 27,
+    },
+    nameDone: {
+      color: colors.muted,
+      textDecorationLine: 'line-through',
+    },
+    desc: {
+      ...typography.footnote,
+      color: colors.fgSecondary,
+      lineHeight: 19,
+      marginTop: spacing.sm,
+    },
+    descDone: { color: colors.muted },
+    meta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    metaCategory: {
+      ...typography.caption2,
+      color: colors.muted,
+      fontWeight: '500',
+      letterSpacing: 0.3,
+    },
+    metaQty: {
+      ...typography.caption2,
+      color: colors.fgSecondary,
+      fontWeight: '500',
+      fontVariant: ['tabular-nums'],
+    },
+  }), [colors, isPrepared, flatWidth, flatHeight]);
+
+  const translateY = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
+  const scale = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
+
+  return (
+    <Animated.View
+      style={flat ? styles.slotFlat : [styles.slot, { zIndex: DECK_MAX_VISIBLE - depth, transform: [{ translateY }, { scale }] }]}
+      pointerEvents={flat || isFront ? 'auto' : 'none'}
+    >
+      <Animated.View
+        style={[
+          styles.pressArea,
+          !flat && isFront && exiting && {
+            opacity: exitAnim.interpolate({ inputRange: [0, 0.65, 1], outputRange: [1, 1, 0] }),
+            transform: [
+              { translateX: exitAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 260] }) },
+              { rotate: exitAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '7deg'] }) },
+            ],
+          },
+        ]}
+      >
+        <SwipeActions
+          wrapStyle={styles.swipeWrap}
+          contentStyle={styles.swipeContent}
+          onSwipeLeft={onToggle}
+          onSwipeRight={onRemove}
+          leftLabel="删除"
+          rightLabel={isPrepared ? '未完成' : '完成'}
+          rightColor={isPrepared ? colors.muted : colors.accent}
+        >
+          <Pressable
+            style={styles.card}
+            onPress={flat ? onToggle : onAdvance}
+            disabled={!flat && !isFront}
+            accessibilityRole="button"
+            accessibilityLabel={`物品准备：${item.name}${isPrepared ? '，已完成' : ''}`}
+            accessibilityHint={flat ? '点击切换完成状态，左滑标记完成，右滑删除' : isFront && canAdvance ? '轻点切换下一件，左滑标记完成，右滑删除' : undefined}
+          >
+            <View style={styles.topRow}>
+              <View style={styles.badge}>
+                <Ionicons name="bag-handle-outline" size={12} color={colors.fgSecondary} />
+                <Text style={styles.badgeText}>物品准备</Text>
+              </View>
+              <Text style={[styles.level, level === 'essential' ? styles.levelEssential : level === 'recommended' ? styles.levelRecommended : styles.levelOptional]}>
+                {levelLabel}
+              </Text>
+            </View>
+            <View style={styles.contentWrap}>
+              <Text style={[styles.name, isPrepared && styles.nameDone]} numberOfLines={2}>{item.name}</Text>
+              {item.description ? (
+                <Text style={[styles.desc, isPrepared && styles.descDone]} numberOfLines={4}>{item.description}</Text>
+              ) : null}
+              <View style={styles.meta}>
+                <Text style={styles.metaCategory}>{item.category}</Text>
+                {item.quantity_suggestion ? (
+                  <Text style={styles.metaQty}>{item.quantity_suggestion}</Text>
+                ) : null}
+              </View>
+            </View>
+          </Pressable>
+        </SwipeActions>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+function SupportDeckCard({
+  tip,
+  depth,
+  isFront,
+  canAdvance,
+  exiting,
+  exitAnim,
+  onAdvance,
+  onOpenDetail,
+  colors,
+  flat = false,
+  flatWidth,
+  flatHeight,
+}: {
+  tip: PsychologicalSupport;
+  depth: number;
+  isFront: boolean;
+  canAdvance: boolean;
+  exiting: boolean;
+  exitAnim: Animated.Value;
+  onAdvance: () => void;
+  onOpenDetail: () => void;
+  colors: ThemeColors;
+  /** 平铺模式：静态整卡，不做堆叠与飞出 */
+  flat?: boolean;
+  flatWidth?: number;
+  flatHeight?: number;
+}) {
+  const depthAnim = useRef(new Animated.Value(depth)).current;
+  const prevDepth = useRef(depth);
+
+  useEffect(() => {
+    const from = prevDepth.current;
+    prevDepth.current = depth;
+    // 顶牌飞出后回到底层：直接落位，避免回收瞬间比新顶牌还宽
+    if (from === 0 && depth > 0) {
+      depthAnim.setValue(depth);
+      return;
+    }
+    Animated.spring(depthAnim, {
+      toValue: depth,
+      friction: 9,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+  }, [depth, depthAnim]);
+
+  const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
+
+  const styles = useMemo(() => StyleSheet.create({
+    slot: {
+      position: 'absolute',
+      top: 0,
+      left: '50%',
+      marginLeft: -DECK_CARD_WIDTH / 2,
+      width: DECK_CARD_WIDTH,
+      height: DECK_CARD_HEIGHT,
+    },
+    pressArea: {
+      flex: 1,
+    },
+    slotFlat: {
+      width: flatWidth ?? DECK_CARD_WIDTH,
+      height: flatHeight ?? DECK_CARD_HEIGHT,
+    },
+    card: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      paddingTop: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: 64,
+      ...shadows.md,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    badgeText: {
+      ...typography.caption2,
+      fontWeight: '600',
+      color: colors.fgSecondary,
+      letterSpacing: 0.5,
+    },
+    typeBadge: {
+      ...typography.caption2,
+      fontWeight: '600',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      overflow: 'hidden',
+      letterSpacing: 0.3,
+    },
+    typeEmotion: { color: '#fff', backgroundColor: colors.accent },
+    typeCommunication: { color: colors.accent, backgroundColor: colors.accentLight, borderWidth: 0.5, borderColor: colors.accent + '40' },
+    typeAction: { color: '#fff', backgroundColor: colors.warning },
+    typeKnowledge: { color: colors.muted, backgroundColor: 'transparent', borderWidth: 0.5, borderColor: colors.border },
+    contentWrap: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    title: {
+      ...typography.title3,
+      fontWeight: '600',
+      color: colors.fg,
+      lineHeight: 27,
+    },
+    content: {
+      ...typography.subhead,
+      color: colors.fgSecondary,
+      lineHeight: 22,
+      marginTop: spacing.sm,
+    },
+    pillWrap: {
+      position: 'absolute',
+      right: spacing.lg,
+      bottom: spacing.lg,
+    },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      borderRadius: radius.full,
+      borderWidth: 0.5,
+      borderColor: colors.accent + '55',
+      backgroundColor: colors.accentLight,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 5,
+    },
+    pillText: {
+      ...typography.caption1,
+      fontWeight: '600',
+      color: colors.accent,
+    },
+  }), [colors, flatWidth, flatHeight]);
+
+  const translateY = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
+  const scale = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
+
+  return (
+    <Animated.View
+      style={flat ? styles.slotFlat : [styles.slot, { zIndex: DECK_MAX_VISIBLE - depth, transform: [{ translateY }, { scale }] }]}
+      pointerEvents={flat || isFront ? 'auto' : 'none'}
+    >
+      <Animated.View
+        style={[
+          styles.pressArea,
+          !flat && isFront && exiting && {
+            opacity: exitAnim.interpolate({ inputRange: [0, 0.65, 1], outputRange: [1, 1, 0] }),
+            transform: [
+              { translateX: exitAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 260] }) },
+              { rotate: exitAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '7deg'] }) },
+            ],
+          },
+        ]}
+      >
+        <Pressable
+          style={styles.card}
+          onPress={flat ? onOpenDetail : onAdvance}
+          disabled={!flat && !isFront}
+          accessibilityRole="button"
+          accessibilityLabel={`心理支持：${tip.title}`}
+          accessibilityHint={flat ? '点击查看详情' : isFront ? (canAdvance ? '轻点切换下一条，点击查看详情' : '点击查看详情') : undefined}
+        >
+          <View style={styles.topRow}>
+            <View style={styles.badge}>
+              <Ionicons name="heart-outline" size={12} color={colors.fgSecondary} />
+              <Text style={styles.badgeText}>心理支持</Text>
+            </View>
+            <Text style={[styles.typeBadge, tip.support_type === 'emotion' ? styles.typeEmotion : tip.support_type === 'communication' ? styles.typeCommunication : tip.support_type === 'action' ? styles.typeAction : styles.typeKnowledge]}>
+              {typeLabel}
+            </Text>
+          </View>
+          <View style={styles.contentWrap}>
+            <Text style={styles.title} numberOfLines={3}>{tip.title}</Text>
+            <Text style={styles.content} numberOfLines={6}>{tip.content}</Text>
+          </View>
+        </Pressable>
+        {(flat || isFront) && (
+          <View style={styles.pillWrap} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.pill}
+              onPress={onOpenDetail}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`查看${tip.title}的详情`}
+            >
+              <Ionicons name="document-text-outline" size={13} color={colors.accent} />
+              <Text style={styles.pillText}>查看详情</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+const deckToggleStyles = StyleSheet.create({
+  toggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    borderWidth: 0.5,
+    borderColor: 'rgba(250, 248, 243, 0.38)',
+    backgroundColor: 'rgba(250, 248, 243, 0.12)',
+  },
+  text: {
+    ...typography.caption1,
+    fontWeight: '600',
+    color: 'rgba(250, 248, 243, 0.9)',
+    letterSpacing: 0.3,
+  },
+});
+
+function DeckToggleButton({ expanded, onPress }: { expanded: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      style={deckToggleStyles.toggle}
+      onPress={onPress}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={expanded ? '收起堆叠' : '展开平铺'}
+    >
+      <Ionicons
+        name={expanded ? 'albums-outline' : 'expand-outline'}
+        size={14}
+        color="rgba(250, 248, 243, 0.9)"
+      />
+      <Text style={deckToggleStyles.text}>{expanded ? '收起堆叠' : '展开平铺'}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const flatPagerStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  btn: { padding: spacing.xs },
+  btnDisabled: { opacity: 0.6 },
+  text: {
+    ...typography.caption1,
+    color: 'rgba(250, 248, 243, 0.85)',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.3,
+  },
+});
+
+function FlatPager({
+  page,
+  pageCount,
+  onChange,
+}: {
+  page: number;
+  pageCount: number;
+  onChange: (page: number) => void;
+}) {
+  if (pageCount <= 1) return null;
+
+  return (
+    <View style={flatPagerStyles.row}>
+      <TouchableOpacity
+        style={[flatPagerStyles.btn, page === 0 && flatPagerStyles.btnDisabled]}
+        onPress={() => onChange(page - 1)}
+        disabled={page === 0}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="上一页"
+      >
+        <Ionicons name="chevron-back" size={16} color={page === 0 ? 'rgba(250, 248, 243, 0.3)' : 'rgba(250, 248, 243, 0.9)'} />
+      </TouchableOpacity>
+      <Text style={flatPagerStyles.text}>{page + 1} / {pageCount}</Text>
+      <TouchableOpacity
+        style={[flatPagerStyles.btn, page >= pageCount - 1 && flatPagerStyles.btnDisabled]}
+        onPress={() => onChange(page + 1)}
+        disabled={page >= pageCount - 1}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="下一页"
+      >
+        <Ionicons name="chevron-forward" size={16} color={page >= pageCount - 1 ? 'rgba(250, 248, 243, 0.3)' : 'rgba(250, 248, 243, 0.9)'} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { state, dismissUrgentNote, addUrgentNote } = useApp();
@@ -102,9 +805,103 @@ export default function HomeScreen() {
   }, [session, state.currentBabyId, state.babies, state.stage]);
 
   const [showUrgentModal, setShowUrgentModal] = useState(false);
+  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
+  const [showPrepPanel, setShowPrepPanel] = useState(false);
+  const [showSupportPanel, setShowSupportPanel] = useState(false);
   const [urgentText, setUrgentText] = useState('');
   const [urgentLoading, setUrgentLoading] = useState(false);
   const [activeTools, setActiveTools] = useState<{ instanceId: string; toolId: string }[]>([]);
+
+  // 悬浮闹铃：有紧急关注时周期性抖动，数量为 0 时静止归位
+  const bellRotate = useRef(new Animated.Value(0)).current;
+  const hasUrgentNotes = state.urgentNotes.length > 0;
+  useEffect(() => {
+    if (!hasUrgentNotes) {
+      bellRotate.setValue(0);
+      return;
+    }
+    const shake = Animated.loop(
+      Animated.sequence([
+        Animated.delay(2000),
+        Animated.timing(bellRotate, { toValue: 1, duration: 90, useNativeDriver: true }),
+        Animated.timing(bellRotate, { toValue: -0.8, duration: 90, useNativeDriver: true }),
+        Animated.timing(bellRotate, { toValue: 0.6, duration: 90, useNativeDriver: true }),
+        Animated.timing(bellRotate, { toValue: -0.35, duration: 90, useNativeDriver: true }),
+        Animated.timing(bellRotate, { toValue: 0.15, duration: 90, useNativeDriver: true }),
+        Animated.timing(bellRotate, { toValue: 0, duration: 90, useNativeDriver: true }),
+      ]),
+    );
+    shake.start();
+    return () => shake.stop();
+  }, [bellRotate, hasUrgentNotes]);
+  const bellRotation = bellRotate.interpolate({ inputRange: [-1, 1], outputRange: ['-14deg', '14deg'] });
+
+  // 弹窗浮动出现
+  const urgentModalAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!showUrgentModal) return;
+    urgentModalAnim.setValue(0);
+    Animated.spring(urgentModalAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+  }, [showUrgentModal, urgentModalAnim]);
+
+  // 紧急关注面板：浮动出现
+  const urgentPanelAnim = useRef(new Animated.Value(1)).current;
+  // 牌堆：当前置顶卡索引导与切牌动画进度
+  const [deckIndex, setDeckIndex] = useState(0);
+  const [deckExiting, setDeckExiting] = useState(false);
+  const deckExit = useRef(new Animated.Value(0)).current;
+  // 展开平铺（分页）
+  const [urgentFlat, setUrgentFlat] = useState(false);
+  const [urgentPage, setUrgentPage] = useState(0);
+  const urgentModeAnim = useRef(new Animated.Value(1)).current;
+  // 平铺面板宽度 = min(视口 - 浮层左右留白, 800)
+  const { width: windowW } = useWindowDimensions();
+  const flatRowW = Math.min(windowW - spacing.xl * 2, 800);
+  // 平铺默认两行两列：卡片宽度随面板收缩保证两列放得下，高度按原卡比例并封顶，避免两行超出屏幕
+  const flatCols = flatRowW >= DECK_CARD_WIDTH + spacing.md ? 2 : 1;
+  const flatCardW = flatCols === 2 ? Math.min(DECK_CARD_WIDTH, Math.floor((flatRowW - spacing.md) / 2)) : DECK_CARD_WIDTH;
+  const flatCardH = Math.min(Math.round((flatCardW * DECK_CARD_HEIGHT) / DECK_CARD_WIDTH), 300);
+  const flatPerPage = flatCols * 2;
+
+  const urgentDeckNotes = useMemo(() => {
+    const total = state.urgentNotes.length;
+    if (total === 0) return [];
+    return Array.from(
+      { length: Math.min(DECK_MAX_VISIBLE, total) },
+      (_, i) => state.urgentNotes[(deckIndex + i) % total],
+    );
+  }, [state.urgentNotes, deckIndex]);
+
+  const urgentPageCount = Math.max(1, Math.ceil(state.urgentNotes.length / flatPerPage));
+  const urgentSafePage = Math.min(urgentPage, urgentPageCount - 1);
+  const urgentPageNotes = useMemo(
+    () => state.urgentNotes.slice(urgentSafePage * flatPerPage, (urgentSafePage + 1) * flatPerPage),
+    [state.urgentNotes, urgentSafePage, flatPerPage],
+  );
+
+  const toggleUrgentMode = () => {
+    urgentModeAnim.setValue(0);
+    Animated.spring(urgentModeAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+    if (urgentFlat) {
+      setDeckIndex(urgentSafePage * flatPerPage);
+      setUrgentFlat(false);
+    } else {
+      setUrgentPage(Math.floor(deckIndex / flatPerPage));
+      setUrgentFlat(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!showUrgentPanel) return;
+    // 每次打开都从最新一条开始
+    setDeckIndex(0);
+    setDeckExiting(false);
+    deckExit.setValue(0);
+    setUrgentFlat(false);
+    setUrgentPage(0);
+    urgentPanelAnim.setValue(0);
+    Animated.spring(urgentPanelAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+  }, [showUrgentPanel, urgentPanelAnim, deckExit]);
 
   const colors = useColors();
   const { isDark } = useTheme();
@@ -194,78 +991,113 @@ export default function HomeScreen() {
     lineHeight: 20,
   },
 
-  // 紧急关注
-  urgentSection: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
+  // 紧急关注（铃铛浮层：前后叠放的牌堆）
+  urgentStackWrap: {
+    width: '100%',
+    maxWidth: 400,
   },
-  urgentCard: {
-    flexDirection: 'row',
+  deckContainer: {
+    height: DECK_CARD_HEIGHT + 24,
+    marginTop: spacing.md,
+  },
+  deckHint: {
+    ...typography.caption1,
+    color: 'rgba(250, 248, 243, 0.85)',
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    letterSpacing: 0.3,
+  },
+  deckSubHint: {
+    ...typography.caption2,
+    color: 'rgba(250, 248, 243, 0.55)',
+    textAlign: 'center',
+    marginTop: 2,
+    letterSpacing: 0.3,
+  },
+
+  // 展开平铺（整卡并排分页）：外层 Pressable 收缩包裹，maxWidth 撑不开，需显式宽度；
+  // 同时覆盖 urgentStackWrap 的 maxWidth: 400，否则会被钳回 400
+  flatStackWrap: {
+    width: flatRowW,
+    maxWidth: flatRowW,
+  },
+  flatRowWrap: {
+    width: '100%',
     alignItems: 'center',
-    backgroundColor: colors.dangerSurface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.dangerBorder,
-    paddingVertical: spacing.md,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.sm,
+    marginTop: spacing.md,
   },
-  urgentBody: {
-    flex: 1,
+  flatRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    // 两列时锁定行宽，防止宽面板下挤进第三列；末行不满时靠左，网格块整体仍由 flatRowWrap 居中
+    maxWidth: flatCols === 2 ? flatCardW * 2 + spacing.md : undefined,
+  },
+  urgentEmptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
+    ...shadows.md,
   },
-  urgentDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.error,
-    marginRight: spacing.sm,
-    flexShrink: 0,
+  urgentEmptyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
-  urgentText: {
+  urgentEmptyText: {
     ...typography.callout,
-    color: colors.dangerFg,
-    lineHeight: 22,
-    flexShrink: 1,
+    fontWeight: '600',
+    color: colors.fgSecondary,
+    marginBottom: spacing.xs,
   },
-  urgentClose: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.sm,
+  urgentEmptyHint: {
+    ...typography.caption1,
+    color: colors.muted,
+    textAlign: 'center',
   },
-  urgentCloseText: {
-    fontSize: 14,
-    color: colors.error,
-    fontWeight: '400',
-  },
-  urgentAddBtn: {
+  urgentAddPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md - 2,
-    gap: spacing.sm,
+    gap: spacing.xs,
+    alignSelf: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.dangerBorder,
+    ...shadows.sm,
+  },
+  urgentAddPillText: {
+    ...typography.footnote,
+    fontWeight: '600',
+    color: colors.error,
+  },
+  urgentFab: {
+    position: 'absolute',
+    right: spacing.xl,
+    bottom: 90,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.error,
-    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: colors.error,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 6,
-  },
-  urgentAddIcon: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  urgentAddText: {
-    ...typography.callout,
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
 
   // 紧急关注弹窗
@@ -338,6 +1170,43 @@ export default function HomeScreen() {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  bellBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.bg,
+  },
+  bellBadgeText: {
+    ...typography.caption2,
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: '700',
+    color: '#fff',
   },
   topCardsRow: {
     flexDirection: 'row',
@@ -524,114 +1393,47 @@ export default function HomeScreen() {
     color: colors.muted,
   },
 
-  // ===== 物品准备样式 =====
-  prepItem: {
+  // ===== 物品准备 / 心理支持入口按钮 =====
+  sectionRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    // 圆角与描边由 SwipeActions 容器统一裁剪，滑动时色块与卡片交界才整齐
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  prepItemDone: {
-    backgroundColor: colors.surfaceSecondary,
-  },
-  prepCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+  sectionBtn: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-    marginTop: 2,
-    backgroundColor: colors.bg,
-  },
-  prepCheckboxActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  prepCheckmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 14,
-  },
-  prepInfo: { flex: 1 },
-  prepHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
     gap: spacing.sm,
-    marginBottom: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    ...shadows.sm,
   },
-  prepName: {
+  sectionBtnTitle: {
     ...typography.callout,
     fontWeight: '600',
     color: colors.fg,
     flex: 1,
-    lineHeight: 21,
   },
-  prepNameDone: { color: colors.muted, textDecorationLine: 'line-through' },
-  prepLevel: {
+  sectionBtnBadge: {
+    minWidth: 20,
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: radius.sm,
+  },
+  sectionBtnBadgeText: {
     ...typography.caption2,
     fontWeight: '600',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
-    letterSpacing: 0.3,
-  },
-  prepLevelEssential: { color: '#fff', backgroundColor: colors.accent },
-  prepLevelRecommended: { color: colors.accent, backgroundColor: colors.accentLight, borderWidth: 0.5, borderColor: colors.accent + '40' },
-  prepLevelOptional: { color: colors.muted, backgroundColor: 'transparent' },
-  prepDesc: {
-    ...typography.footnote,
-    color: colors.fgSecondary,
-    marginBottom: 6,
-    lineHeight: 18,
-  },
-  prepDescDone: { color: colors.muted },
-  prepMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: 2,
-  },
-  prepMetaCategory: {
-    ...typography.caption2,
-    color: colors.muted,
-    fontWeight: '500',
-    letterSpacing: 0.3,
-  },
-  prepMetaQty: {
-    ...typography.caption2,
-    color: colors.fgSecondary,
-    fontWeight: '500',
-    fontVariant: ['tabular-nums'],
+    color: '#fff',
   },
 
-  // ===== 心理支持样式 =====
-  supportCard: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: 'transparent',
-  },
-  supportHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  supportTitle: {
-    ...typography.callout,
-    fontWeight: '600',
-    color: colors.fg,
-    flex: 1,
-    lineHeight: 22,
-  },
+  // ===== 心理支持详情样式 =====
   supportTypeBadge: {
     ...typography.caption2,
     fontWeight: '600',
@@ -645,12 +1447,6 @@ export default function HomeScreen() {
   supportTypeCommunication: { color: colors.accent, backgroundColor: colors.accentLight, borderWidth: 0.5, borderColor: colors.accent + '40' },
   supportTypeAction: { color: '#fff', backgroundColor: colors.warning },
   supportTypeKnowledge: { color: colors.muted, backgroundColor: 'transparent', borderWidth: 0.5, borderColor: colors.border },
-  supportContentBlock: {
-    borderLeftWidth: 2,
-    borderLeftColor: colors.accentLight,
-    paddingLeft: spacing.md,
-    marginBottom: spacing.md,
-  },
   supportContent: {
     ...typography.subhead,
     color: colors.fgSecondary,
@@ -682,60 +1478,49 @@ export default function HomeScreen() {
     flex: 1,
   },
 
-  // ===== 物品/支持分页样式 =====
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.xs,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
-  dotActive: { width: 24, borderRadius: 4, backgroundColor: colors.accent },
-  pageBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  pageBtnDisabled: { opacity: 0.25 },
-  // 物品/支持项单列布局（每页5行）
-  itemGrid: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xs,
-    gap: ITEM_GAP,
-  },
-
-}), [colors, isDark]);
+}), [colors, isDark, flatRowW]);
 
   // 物品准备 + 心理支持
   const [presetItems, setPresetItems] = useState<PresetItem[]>([]);
   const [userPreparations, setUserPreparations] = useState<UserPreparation[]>([]);
-  const [loadingItems, setLoadingItems] = useState(false);
   const [supportTips, setSupportTips] = useState<PsychologicalSupport[]>([]);
-  const [loadingSupport, setLoadingSupport] = useState(false);
 
-  // 分页状态
-  const [prepPageIndex, setPrepPageIndex] = useState(0);
-  const [supportPageIndex, setSupportPageIndex] = useState(0);
-  const prepFlatListRef = useRef<FlatList>(null);
-  const supportFlatListRef = useRef<FlatList>(null);
-  const prepProgrammatic = useRef(false);
-  const supportProgrammatic = useRef(false);
+  // 物品准备牌堆：当前置顶卡索引与切牌动画进度
+  const [prepDeckIndex, setPrepDeckIndex] = useState(0);
+  const [prepDeckExiting, setPrepDeckExiting] = useState(false);
+  const prepDeckExit = useRef(new Animated.Value(0)).current;
 
-  // 分页容器实测宽度：桌面 Web 上模块常量可能是过期的视口宽（加载后窗口尺寸变化不会更新），
-  // 用 onLayout 实测，首帧测量完成前用常量兜底
-  const [measuredPageW, setMeasuredPageW] = useState(0);
-  const onSectionLayout = useCallback((e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    setMeasuredPageW(prev => (Math.abs(prev - w) > 1 ? w : prev));
-  }, []);
-  const CONTENT_W = measuredPageW || CONTENT_WIDTH;
+  // 心理支持牌堆
+  const [supportDeckIndex, setSupportDeckIndex] = useState(0);
+  const [supportDeckExiting, setSupportDeckExiting] = useState(false);
+  const supportDeckExit = useRef(new Animated.Value(0)).current;
 
-  // 心理支持详情弹窗
+  // 展开平铺（分页）
+  const [prepFlat, setPrepFlat] = useState(false);
+  const [prepPage, setPrepPage] = useState(0);
+  const [supportFlat, setSupportFlat] = useState(false);
+  const [supportPage, setSupportPage] = useState(0);
+  const prepModeAnim = useRef(new Animated.Value(1)).current;
+  const supportModeAnim = useRef(new Animated.Value(1)).current;
+
+  // 浮层面板弹出动画
+  const prepPanelAnim = useRef(new Animated.Value(1)).current;
+  const supportPanelAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!showPrepPanel) return;
+    prepPanelAnim.setValue(0);
+    Animated.spring(prepPanelAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+  }, [showPrepPanel, prepPanelAnim]);
+  useEffect(() => {
+    if (!showSupportPanel) return;
+    supportPanelAnim.setValue(0);
+    Animated.spring(supportPanelAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+  }, [showSupportPanel, supportPanelAnim]);
+
+  // 心理支持详情（在支持浮层内切换）
   const [selectedTip, setSelectedTip] = useState<PsychologicalSupport | null>(null);
 
-  // 预分页数据：每页 ITEMS_PER_PAGE 个物品
-  // 右滑「删除」= 标记 not_needed，从列表中隐藏
+  // 可见物品：右滑「删除」= 标记 not_needed，从牌堆中隐藏
   const visiblePresetItems = useMemo(() => {
     const hidden = new Set(
       userPreparations.filter(p => p.status === 'not_needed').map(p => p.item_id),
@@ -743,111 +1528,120 @@ export default function HomeScreen() {
     return presetItems.filter(item => !hidden.has(item.id));
   }, [presetItems, userPreparations]);
 
-  const prepPages = useMemo(() => {
-    const pages: PresetItem[][] = [];
-    for (let i = 0; i < visiblePresetItems.length; i += ITEMS_PER_PAGE) {
-      pages.push(visiblePresetItems.slice(i, i + ITEMS_PER_PAGE));
+  const supportDeckItems = useMemo(() => {
+    const total = supportTips.length;
+    if (total === 0) return [];
+    return Array.from(
+      { length: Math.min(DECK_MAX_VISIBLE, total) },
+      (_, i) => supportTips[(supportDeckIndex + i) % total],
+    );
+  }, [supportTips, supportDeckIndex]);
+
+  const prepDeckItems = useMemo(() => {
+    const total = visiblePresetItems.length;
+    if (total === 0) return [];
+    return Array.from(
+      { length: Math.min(DECK_MAX_VISIBLE, total) },
+      (_, i) => visiblePresetItems[(prepDeckIndex + i) % total],
+    );
+  }, [visiblePresetItems, prepDeckIndex]);
+
+  const prepPageCount = Math.max(1, Math.ceil(visiblePresetItems.length / flatPerPage));
+  const prepSafePage = Math.min(prepPage, prepPageCount - 1);
+  const prepPageItems = useMemo(
+    () => visiblePresetItems.slice(prepSafePage * flatPerPage, (prepSafePage + 1) * flatPerPage),
+    [visiblePresetItems, prepSafePage, flatPerPage],
+  );
+
+  const supportPageCount = Math.max(1, Math.ceil(supportTips.length / flatPerPage));
+  const supportSafePage = Math.min(supportPage, supportPageCount - 1);
+  const supportPageItems = useMemo(
+    () => supportTips.slice(supportSafePage * flatPerPage, (supportSafePage + 1) * flatPerPage),
+    [supportTips, supportSafePage, flatPerPage],
+  );
+
+  const togglePrepMode = () => {
+    prepModeAnim.setValue(0);
+    Animated.spring(prepModeAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+    if (prepFlat) {
+      setPrepDeckIndex(prepSafePage * flatPerPage);
+      setPrepFlat(false);
+    } else {
+      setPrepPage(Math.floor(prepDeckIndex / flatPerPage));
+      setPrepFlat(true);
     }
-    return pages;
-  }, [visiblePresetItems]);
+  };
 
-  const supportPages = useMemo(() => {
-    const pages: PsychologicalSupport[][] = [];
-    for (let i = 0; i < supportTips.length; i += ITEMS_PER_PAGE) {
-      pages.push(supportTips.slice(i, i + ITEMS_PER_PAGE));
+  const toggleSupportMode = () => {
+    supportModeAnim.setValue(0);
+    Animated.spring(supportModeAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+    if (supportFlat) {
+      setSupportDeckIndex(supportSafePage * flatPerPage);
+      setSupportFlat(false);
+    } else {
+      setSupportPage(Math.floor(supportDeckIndex / flatPerPage));
+      setSupportFlat(true);
     }
-    return pages;
-  }, [supportTips]);
+  };
 
-  const prepPageCount = prepPages.length;
-  const supportPageCount = supportPages.length;
+  const openPrepPanel = () => {
+    setPrepDeckIndex(0);
+    setPrepDeckExiting(false);
+    prepDeckExit.setValue(0);
+    setPrepFlat(false);
+    setPrepPage(0);
+    setShowPrepPanel(true);
+  };
 
-  // 分页滚动处理（跳过程序化滚动触发的回调）
-  const onPrepScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (prepProgrammatic.current) return;
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_W);
-    if (newIndex >= 0 && newIndex < prepPageCount) {
-      setPrepPageIndex(newIndex);
-    }
-  }, [prepPageCount, CONTENT_W]);
+  const openSupportPanel = () => {
+    setSupportDeckIndex(0);
+    setSupportDeckExiting(false);
+    supportDeckExit.setValue(0);
+    setSupportFlat(false);
+    setSupportPage(0);
+    setSelectedTip(null);
+    setShowSupportPanel(true);
+  };
 
-  // 滚动结束/拖拽结束时同步指示器
-  const onPrepMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_W);
-    if (newIndex >= 0 && newIndex < prepPageCount) {
-      setPrepPageIndex(newIndex);
-    }
-    prepProgrammatic.current = false;
-  }, [prepPageCount, CONTENT_W]);
+  // 删除到最后一件时收起物品浮层
+  useEffect(() => {
+    if (showPrepPanel && visiblePresetItems.length === 0) setShowPrepPanel(false);
+  }, [showPrepPanel, visiblePresetItems.length]);
 
-  const onSupportScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (supportProgrammatic.current) return;
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_W);
-    if (newIndex >= 0 && newIndex < supportPageCount) {
-      setSupportPageIndex(newIndex);
-    }
-  }, [supportPageCount, CONTENT_W]);
+  // 列表缩短（删除物品）后把索引拉回可见范围
+  useEffect(() => {
+    if (prepDeckIndex < visiblePresetItems.length) return;
+    setPrepDeckIndex(0);
+  }, [visiblePresetItems.length, prepDeckIndex]);
 
-  const onSupportMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / CONTENT_W);
-    if (newIndex >= 0 && newIndex < supportPageCount) {
-      setSupportPageIndex(newIndex);
-    }
-    supportProgrammatic.current = false;
-  }, [supportPageCount, CONTENT_W]);
-
-  const scrollToPrepPage = useCallback((index: number) => {
-    if (index < 0 || index >= prepPageCount) return;
-    const targetOffset = index * CONTENT_W;
-    prepProgrammatic.current = true;
-    // 立即更新指示器
-    setPrepPageIndex(index);
-    prepFlatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
-    // 等待滚动动画完成（长距离滚动需要更长时间）
-    setTimeout(() => {
-      prepProgrammatic.current = false;
-      // 滚动结束后检查实际位置并修正指示器
-      const finalOffset = (prepFlatListRef.current as any)?.scrollOffset;
-      if (finalOffset !== undefined) {
-        const actualIndex = Math.round(finalOffset / CONTENT_W);
-        if (actualIndex !== index) {
-          setPrepPageIndex(actualIndex);
-        }
+  const advancePrepDeck = () => {
+    if (prepDeckExiting || visiblePresetItems.length < 2) return;
+    setPrepDeckExiting(true);
+    Animated.timing(prepDeckExit, { toValue: 1, duration: 220, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) {
+        setPrepDeckIndex(i => (i + 1) % visiblePresetItems.length);
       }
-    }, 600);
-  }, [prepPageCount, CONTENT_W]);
+      prepDeckExit.setValue(0);
+      setPrepDeckExiting(false);
+    });
+  };
 
-  const scrollToSupportPage = useCallback((index: number) => {
-    if (index < 0 || index >= supportPageCount) return;
-    const targetOffset = index * CONTENT_W;
-    supportProgrammatic.current = true;
-    // 立即更新指示器
-    setSupportPageIndex(index);
-    supportFlatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
-    // 等待滚动动画完成（长距离滚动需要更长时间）
-    setTimeout(() => {
-      supportProgrammatic.current = false;
-      // 滚动结束后检查实际位置并修正指示器
-      const finalOffset = (supportFlatListRef.current as any)?.scrollOffset;
-      if (finalOffset !== undefined) {
-        const actualIndex = Math.round(finalOffset / CONTENT_W);
-        if (actualIndex !== index) {
-          setSupportPageIndex(actualIndex);
-        }
+  const advanceSupportDeck = () => {
+    if (supportDeckExiting || supportTips.length < 2) return;
+    setSupportDeckExiting(true);
+    Animated.timing(supportDeckExit, { toValue: 1, duration: 220, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) {
+        setSupportDeckIndex(i => (i + 1) % supportTips.length);
       }
-    }, 600);
-  }, [supportPageCount, CONTENT_W]);
+      supportDeckExit.setValue(0);
+      setSupportDeckExiting(false);
+    });
+  };
 
   const periods = [state.stage];
   useEffect(() => {
     if (!user) return;
     (async () => {
-      setLoadingItems(true);
-      setLoadingSupport(true);
       try {
         const babyId = state.currentBabyId;
         const [items, support, preps] = await Promise.all([
@@ -860,9 +1654,6 @@ export default function HomeScreen() {
         setUserPreparations(preps);
       } catch (e) {
         console.error('Failed to load items/support:', e);
-      } finally {
-        setLoadingItems(false);
-        setLoadingSupport(false);
       }
     })();
   }, [user, state.stage]);
@@ -895,6 +1686,38 @@ export default function HomeScreen() {
       Alert.alert('删除物品', message, [
         { text: '取消', style: 'cancel' },
         { text: '删除', style: 'destructive', onPress: () => applyPreparation(itemId, 'not_needed') },
+      ]);
+    }
+  };
+
+  const advanceUrgentDeck = () => {
+    if (deckExiting || state.urgentNotes.length < 2) return;
+    setDeckExiting(true);
+    Animated.timing(deckExit, { toValue: 1, duration: 220, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) {
+        setDeckIndex(i => (i + 1) % state.urgentNotes.length);
+      }
+      deckExit.setValue(0);
+      setDeckExiting(false);
+    });
+  };
+
+  const handleDismissUrgentNote = (noteId: string) => {
+    const removeWithAnimation = () => {
+      if (deckExiting) return;
+      setDeckExiting(true);
+      Animated.timing(deckExit, { toValue: 1, duration: 200, useNativeDriver: true }).start(() => {
+        dismissUrgentNote(noteId);
+        deckExit.setValue(0);
+        setDeckExiting(false);
+      });
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('关闭后将不再展示，确定要关闭吗？')) removeWithAnimation();
+    } else {
+      Alert.alert('关闭提醒', '关闭后将不再展示，确定要关闭吗？', [
+        { text: '取消', style: 'cancel' },
+        { text: '确定关闭', style: 'destructive', onPress: removeWithAnimation },
       ]);
     }
   };
@@ -941,8 +1764,30 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>
             {state.stage === 'postpartum' ? '新晋奶爸，辛苦了' : '准爸爸，你好'}
           </Text>
-          <View style={{ width: '33%', minWidth: 80 }}>
-            <BabySwitcher />
+          <View style={styles.topBarRight}>
+            <TouchableOpacity
+              style={styles.bellBtn}
+              onPress={() => setShowUrgentPanel(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="紧急关注"
+            >
+              <Animated.View style={{ transform: [{ rotate: bellRotation }], transformOrigin: '50% 0%' }}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={18}
+                  color={hasUrgentNotes ? colors.error : colors.muted}
+                />
+              </Animated.View>
+              {state.urgentNotes.length > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{state.urgentNotes.length > 9 ? '9+' : state.urgentNotes.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <View style={{ flexShrink: 1 }}>
+              <BabySwitcher />
+            </View>
           </View>
         </View>
 
@@ -1011,45 +1856,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 紧急关注 */}
-        <View style={styles.urgentSection}>
-          {state.urgentNotes.map(note => (
-            <View key={note.id} style={styles.urgentCard}>
-              <View style={styles.urgentBody}>
-                <View style={styles.urgentDot} />
-                <Text style={styles.urgentText}>{note.content}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.urgentClose}
-                onPress={() => {
-                  if (Platform.OS === 'web') {
-                    if (window.confirm('关闭后将不再展示，确定要关闭吗？')) {
-                      dismissUrgentNote(note.id);
-                    }
-                  } else {
-                    Alert.alert(
-                      '关闭提醒',
-                      '关闭后将不再展示，确定要关闭吗？',
-                      [
-                        { text: '取消', style: 'cancel' },
-                        { text: '确定关闭', style: 'destructive', onPress: () => dismissUrgentNote(note.id) },
-                      ]
-                    );
-                  }
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="close" size={16} color={colors.muted} />
-              </TouchableOpacity>
-            </View>
-          ))}
-          {/* 新增按钮 */}
-          <TouchableOpacity style={styles.urgentAddBtn} onPress={() => { setUrgentText(''); setShowUrgentModal(true); }}>
-            <Ionicons name="add" size={16} color={colors.accent} />
-            <Text style={styles.urgentAddText}>新增紧急关注</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* ===== 下次产检倒计时 ===== */}
         {state.stage !== 'preconception' && state.stage !== 'postpartum' && nextPrenatal && (
           <TouchableOpacity
@@ -1101,174 +1907,40 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* ===== 物品准备（水平分页） ===== */}
-        {visiblePresetItems.length > 0 && (
-          <CollapsibleGroup title="物品准备" count={visiblePresetItems.length} defaultExpanded={false}>
-            <View style={{ width: '100%' }} onLayout={onSectionLayout}>
-            <FlatList
-              ref={prepFlatListRef}
-              data={prepPages}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(_, index) => `prep-page-${index}`}
-              onScroll={onPrepScroll}
-              onMomentumScrollEnd={onPrepMomentumEnd}
-              scrollEventThrottle={16}
-              renderItem={({ item: pageItems }) => (
-                <View style={[styles.itemGrid, { width: CONTENT_W }]}>
-                  {pageItems.map((item: PresetItem) => {
-                    const prep = userPreparations.find(p => p.item_id === item.id);
-                    const isPrepared = prep?.status === 'prepared';
-                    const level = item.essential_level;
-                    const levelLabel = level === 'essential' ? '必需' : level === 'recommended' ? '推荐' : '可选';
-                    const levelStyle = level === 'essential' ? styles.prepLevelEssential : level === 'recommended' ? styles.prepLevelRecommended : styles.prepLevelOptional;
-
-                    return (
-                      <SwipeActions
-                        key={item.id}
-                        onSwipeLeft={() => handleToggleItem(item.id)}
-                        onSwipeRight={() => handleRemoveItem(item.id)}
-                        leftLabel="删除"
-                        rightLabel={isPrepared ? '未完成' : '完成'}
-                        rightColor={isPrepared ? colors.muted : colors.accent}
-                      >
-                        <TouchableOpacity
-                          style={[styles.prepItem, isPrepared && styles.prepItemDone]}
-                          onPress={() => handleToggleItem(item.id)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={[styles.prepCheckbox, isPrepared && styles.prepCheckboxActive]}>
-                            {isPrepared && <Ionicons name="checkmark" size={14} color="#fff" />}
-                          </View>
-                          <View style={styles.prepInfo}>
-                            <View style={styles.prepHeaderRow}>
-                              <Text style={[styles.prepName, isPrepared && styles.prepNameDone]} numberOfLines={2}>{item.name}</Text>
-                              <Text style={[styles.prepLevel, levelStyle]}>{levelLabel}</Text>
-                            </View>
-                            {item.description && (
-                              <Text style={[styles.prepDesc, isPrepared && styles.prepDescDone]} numberOfLines={1}>
-                                {item.description}
-                              </Text>
-                            )}
-                            <View style={styles.prepMeta}>
-                              <Text style={styles.prepMetaCategory}>{item.category}</Text>
-                              {item.quantity_suggestion && (
-                                <Text style={styles.prepMetaQty}>{item.quantity_suggestion}</Text>
-                              )}
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      </SwipeActions>
-                    );
-                  })}
+        {/* ===== 物品准备 / 心理支持 入口 ===== */}
+        {(visiblePresetItems.length > 0 || supportTips.length > 0) && (
+          <View style={styles.sectionRow}>
+            {visiblePresetItems.length > 0 && (
+              <TouchableOpacity
+                style={styles.sectionBtn}
+                onPress={openPrepPanel}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`物品准备，共 ${visiblePresetItems.length} 项`}
+              >
+                <Ionicons name="bag-handle-outline" size={18} color={colors.accent} />
+                <Text style={styles.sectionBtnTitle} numberOfLines={1}>物品准备</Text>
+                <View style={styles.sectionBtnBadge}>
+                  <Text style={styles.sectionBtnBadgeText}>{visiblePresetItems.length}</Text>
                 </View>
-              )}
-            />
-            </View>
-            {/* 分页指示器 */}
-            {prepPageCount > 1 && (
-              <View style={styles.dotsContainer}>
-                <TouchableOpacity
-                  style={[styles.pageBtn, prepPageIndex === 0 && styles.pageBtnDisabled]}
-                  onPress={() => scrollToPrepPage(prepPageIndex - 1)}
-                  disabled={prepPageIndex === 0}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="chevron-back" size={16} color={prepPageIndex === 0 ? colors.muted : colors.accent} />
-                </TouchableOpacity>
-
-                {Array.from({ length: prepPageCount }).map((_, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.dot, index === prepPageIndex && styles.dotActive]}
-                    onPress={() => scrollToPrepPage(index)}
-                    activeOpacity={0.7}
-                  />
-                ))}
-
-                <TouchableOpacity
-                  style={[styles.pageBtn, prepPageIndex >= prepPageCount - 1 && styles.pageBtnDisabled]}
-                  onPress={() => scrollToPrepPage(prepPageIndex + 1)}
-                  disabled={prepPageIndex >= prepPageCount - 1}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="chevron-forward" size={16} color={prepPageIndex >= prepPageCount - 1 ? colors.muted : colors.accent} />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             )}
-          </CollapsibleGroup>
-        )}
-
-        {/* ===== 心理支持（水平分页） ===== */}
-        {supportTips.length > 0 && (
-          <CollapsibleGroup title="心理支持" count={supportTips.length} defaultExpanded={false}>
-            <View style={{ width: '100%' }} onLayout={onSectionLayout}>
-            <FlatList
-              ref={supportFlatListRef}
-              data={supportPages}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(_, index) => `support-page-${index}`}
-              onScroll={onSupportScroll}
-              onMomentumScrollEnd={onSupportMomentumEnd}
-              scrollEventThrottle={16}
-              renderItem={({ item: pageItems }) => (
-                <View style={[styles.itemGrid, { width: CONTENT_W }]}>
-                  {pageItems.map((tip: PsychologicalSupport) => {
-                    const typeLabel = tip.support_type === 'emotion' ? '情绪' : tip.support_type === 'communication' ? '沟通' : tip.support_type === 'action' ? '行动' : '知识';
-                    const badgeStyle = tip.support_type === 'emotion' ? styles.supportTypeEmotion
-                      : tip.support_type === 'communication' ? styles.supportTypeCommunication
-                      : tip.support_type === 'action' ? styles.supportTypeAction
-                      : styles.supportTypeKnowledge;
-
-                    return (
-                      <TouchableOpacity key={tip.id} style={styles.supportCard} onPress={() => setSelectedTip(tip)} activeOpacity={0.7}>
-                        <View style={styles.supportHeader}>
-                          <Text style={styles.supportTitle} numberOfLines={2}>{tip.title}</Text>
-                          <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
-                        </View>
-                        <Text style={[styles.supportContent, { fontSize: 12, lineHeight: 18 }]} numberOfLines={2}>{tip.content}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+            {supportTips.length > 0 && (
+              <TouchableOpacity
+                style={styles.sectionBtn}
+                onPress={openSupportPanel}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`心理支持，共 ${supportTips.length} 条`}
+              >
+                <Ionicons name="heart-outline" size={18} color={colors.info} />
+                <Text style={styles.sectionBtnTitle} numberOfLines={1}>心理支持</Text>
+                <View style={styles.sectionBtnBadge}>
+                  <Text style={styles.sectionBtnBadgeText}>{supportTips.length}</Text>
                 </View>
-              )}
-            />
-            </View>
-            {/* 分页指示器 */}
-            {supportPageCount > 1 && (
-              <View style={styles.dotsContainer}>
-                <TouchableOpacity
-                  style={[styles.pageBtn, supportPageIndex === 0 && styles.pageBtnDisabled]}
-                  onPress={() => scrollToSupportPage(supportPageIndex - 1)}
-                  disabled={supportPageIndex === 0}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="chevron-back" size={16} color={supportPageIndex === 0 ? colors.muted : colors.accent} />
-                </TouchableOpacity>
-
-                {Array.from({ length: supportPageCount }).map((_, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.dot, index === supportPageIndex && styles.dotActive]}
-                    onPress={() => scrollToSupportPage(index)}
-                    activeOpacity={0.7}
-                  />
-                ))}
-
-                <TouchableOpacity
-                  style={[styles.pageBtn, supportPageIndex >= supportPageCount - 1 && styles.pageBtnDisabled]}
-                  onPress={() => scrollToSupportPage(supportPageIndex + 1)}
-                  disabled={supportPageIndex >= supportPageCount - 1}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="chevron-forward" size={16} color={supportPageIndex >= supportPageCount - 1 ? colors.muted : colors.accent} />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             )}
-          </CollapsibleGroup>
+          </View>
         )}
 
         {/* ===== 工具箱九宫格 ===== */}
@@ -1288,10 +1960,33 @@ export default function HomeScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* 新增紧急关注（悬浮按钮） */}
+      <TouchableOpacity
+        style={styles.urgentFab}
+        onPress={() => { setUrgentText(''); setShowUrgentModal(true); }}
+        activeOpacity={0.85}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="新增紧急关注"
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+
       {/* 新增紧急关注弹窗 */}
       <Modal visible={showUrgentModal} animationType="fade" transparent>
         <View style={styles.urgentModalOverlay}>
-          <View style={styles.urgentModalContent}>
+          <Animated.View
+            style={[
+              styles.urgentModalContent,
+              {
+                opacity: urgentModalAnim,
+                transform: [
+                  { translateY: urgentModalAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: urgentModalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+                ],
+              },
+            ]}
+          >
             <Text style={styles.urgentModalTitle}>新增紧急关注</Text>
             <TextInput
               style={styles.urgentModalInput}
@@ -1331,47 +2026,333 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
-      {/* 心理支持详情弹窗 */}
-      <Modal visible={!!selectedTip} animationType="fade" transparent onRequestClose={() => setSelectedTip(null)}>
-        <Pressable style={styles.urgentModalOverlay} onPress={() => setSelectedTip(null)}>
-          <Pressable style={styles.urgentModalContent} onPress={e => e.stopPropagation()}>
-            {selectedTip && (() => {
-              const typeLabel = selectedTip.support_type === 'emotion' ? '情绪' : selectedTip.support_type === 'communication' ? '沟通' : selectedTip.support_type === 'action' ? '行动' : '知识';
-              const badgeStyle = selectedTip.support_type === 'emotion' ? styles.supportTypeEmotion
-                : selectedTip.support_type === 'communication' ? styles.supportTypeCommunication
-                : selectedTip.support_type === 'action' ? styles.supportTypeAction
-                : styles.supportTypeKnowledge;
-              return (
+      {/* 紧急关注浮层：卡牌直接堆叠，无外层容器 */}
+      <Modal visible={showUrgentPanel} animationType="fade" transparent onRequestClose={() => setShowUrgentPanel(false)}>
+        <Pressable style={styles.urgentModalOverlay} onPress={() => setShowUrgentPanel(false)}>
+          <Animated.View
+            style={[
+              styles.urgentStackWrap,
+              urgentFlat && styles.flatStackWrap,
+              {
+                opacity: urgentPanelAnim,
+                transform: [
+                  { translateY: urgentPanelAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: urgentPanelAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <Pressable onPress={e => e.stopPropagation()}>
+              {state.urgentNotes.length === 0 ? (
+                <View style={styles.urgentEmptyCard}>
+                  <View style={styles.urgentEmptyIcon}>
+                    <Ionicons name="notifications-off-outline" size={22} color={colors.muted} />
+                  </View>
+                  <Text style={styles.urgentEmptyText}>暂无紧急关注</Text>
+                  <Text style={styles.urgentEmptyHint}>记录需要特别留意的事，随时点铃铛查看</Text>
+                </View>
+              ) : (
                 <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
-                    <Text style={styles.urgentModalTitle}>{selectedTip.title}</Text>
-                    <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
-                  </View>
-                  <View style={{ borderLeftWidth: 2, borderLeftColor: colors.accentLight, paddingLeft: spacing.md, marginBottom: spacing.md }}>
-                    <Text style={styles.supportContent}>{selectedTip.content}</Text>
-                  </View>
-                  {selectedTip.tips && selectedTip.tips.length > 0 && (
-                    <View style={styles.supportTips}>
-                      <Text style={{ ...typography.callout, fontWeight: '600', marginBottom: spacing.sm }}>具体建议：</Text>
-                      {selectedTip.tips.map((t, i) => (
-                        <View key={i} style={styles.supportTipRow}>
-                          <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
-                          <Text style={styles.supportTipText}>{t}</Text>
+                  <Animated.View
+                    style={{
+                      opacity: urgentModeAnim,
+                      transform: [{ scale: urgentModeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) }],
+                    }}
+                  >
+                  {urgentFlat ? (
+                    <>
+                      <View style={styles.flatRowWrap}>
+                        <View style={styles.flatRow}>
+                          {urgentPageNotes.map(note => (
+                            <UrgentDeckCard
+                              key={note.id}
+                              note={note}
+                              depth={0}
+                              isFront
+                              flat
+                              flatWidth={flatCardW}
+                              flatHeight={flatCardH}
+                              exiting={false}
+                              exitAnim={deckExit}
+                              onAdvance={advanceUrgentDeck}
+                              onDismiss={() => handleDismissUrgentNote(note.id)}
+                              colors={colors}
+                            />
+                          ))}
                         </View>
-                      ))}
-                    </View>
+                      </View>
+                      <FlatPager
+                        page={urgentSafePage}
+                        pageCount={urgentPageCount}
+                        onChange={setUrgentPage}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.deckContainer}>
+                        {urgentDeckNotes.map((note, i) => (
+                          <UrgentDeckCard
+                            key={note.id}
+                            note={note}
+                            depth={i}
+                            isFront={i === 0}
+                            exiting={i === 0 && deckExiting}
+                            exitAnim={deckExit}
+                            onAdvance={advanceUrgentDeck}
+                            onDismiss={() => handleDismissUrgentNote(note.id)}
+                            colors={colors}
+                          />
+                        ))}
+                      </View>
+                      {urgentDeckNotes.length > 1 && (
+                        <Text style={styles.deckHint}>
+                          {(deckIndex % state.urgentNotes.length) + 1} / {state.urgentNotes.length} · 轻点卡片翻看下一条
+                        </Text>
+                      )}
+                    </>
                   )}
-                  <TouchableOpacity style={styles.urgentModalSave} onPress={() => setSelectedTip(null)}>
-                    <Text style={styles.urgentModalSaveText}>关闭</Text>
-                  </TouchableOpacity>
+                  </Animated.View>
+                  <DeckToggleButton expanded={urgentFlat} onPress={toggleUrgentMode} />
                 </>
-              );
-            })()}
-          </Pressable>
+              )}
+
+              <TouchableOpacity
+                style={styles.urgentAddPill}
+                onPress={() => {
+                  setShowUrgentPanel(false);
+                  setUrgentText('');
+                  setShowUrgentModal(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={15} color={colors.error} />
+                <Text style={styles.urgentAddPillText}>新增关注</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* 物品准备浮层 */}
+      <Modal visible={showPrepPanel} animationType="fade" transparent onRequestClose={() => setShowPrepPanel(false)}>
+        <Pressable style={styles.urgentModalOverlay} onPress={() => setShowPrepPanel(false)}>
+          <Animated.View
+            style={[
+              styles.urgentStackWrap,
+              prepFlat && styles.flatStackWrap,
+              {
+                opacity: prepPanelAnim,
+                transform: [
+                  { translateY: prepPanelAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: prepPanelAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <Pressable onPress={e => e.stopPropagation()}>
+              <Animated.View
+                style={{
+                  opacity: prepModeAnim,
+                  transform: [{ scale: prepModeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) }],
+                }}
+              >
+              {prepFlat ? (
+                <>
+                  <View style={styles.flatRowWrap}>
+                    <View style={styles.flatRow}>
+                      {prepPageItems.map(item => {
+                        const prep = userPreparations.find(p => p.item_id === item.id);
+                        return (
+                          <PrepDeckCard
+                            key={item.id}
+                            item={item}
+                            isPrepared={prep?.status === 'prepared'}
+                            depth={0}
+                            isFront
+                            flat
+                            flatWidth={flatCardW}
+                            flatHeight={flatCardH}
+                            canAdvance={false}
+                            exiting={false}
+                            exitAnim={prepDeckExit}
+                            onAdvance={advancePrepDeck}
+                            onToggle={() => handleToggleItem(item.id)}
+                            onRemove={() => handleRemoveItem(item.id)}
+                            colors={colors}
+                          />
+                        );
+                      })}
+                    </View>
+                  </View>
+                  <FlatPager
+                    page={prepSafePage}
+                    pageCount={prepPageCount}
+                    onChange={setPrepPage}
+                  />
+                </>
+              ) : (
+                <>
+                  <View style={styles.deckContainer}>
+                    {prepDeckItems.map((item, i) => {
+                      const prep = userPreparations.find(p => p.item_id === item.id);
+                      return (
+                        <PrepDeckCard
+                          key={item.id}
+                          item={item}
+                          isPrepared={prep?.status === 'prepared'}
+                          depth={i}
+                          isFront={i === 0}
+                          canAdvance={visiblePresetItems.length > 1}
+                          exiting={i === 0 && prepDeckExiting}
+                          exitAnim={prepDeckExit}
+                          onAdvance={advancePrepDeck}
+                          onToggle={() => handleToggleItem(item.id)}
+                          onRemove={() => handleRemoveItem(item.id)}
+                          colors={colors}
+                        />
+                      );
+                    })}
+                  </View>
+                  {visiblePresetItems.length > 1 && (
+                    <Text style={styles.deckHint}>
+                      {(prepDeckIndex % visiblePresetItems.length) + 1} / {visiblePresetItems.length} · 轻点卡片翻看下一件
+                    </Text>
+                  )}
+                </>
+              )}
+              </Animated.View>
+              <Text style={styles.deckSubHint}>左滑标记完成 · 右滑删除</Text>
+              <DeckToggleButton expanded={prepFlat} onPress={togglePrepMode} />
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* 心理支持浮层 */}
+      <Modal visible={showSupportPanel} animationType="fade" transparent onRequestClose={() => setShowSupportPanel(false)}>
+        <Pressable style={styles.urgentModalOverlay} onPress={() => setShowSupportPanel(false)}>
+          <Animated.View
+            style={[
+              styles.urgentStackWrap,
+              supportFlat && !selectedTip && styles.flatStackWrap,
+              {
+                opacity: supportPanelAnim,
+                transform: [
+                  { translateY: supportPanelAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: supportPanelAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <Pressable onPress={e => e.stopPropagation()}>
+              {selectedTip ? (
+                <View style={styles.urgentModalContent}>
+                  {(() => {
+                    const typeLabel = selectedTip.support_type === 'emotion' ? '情绪' : selectedTip.support_type === 'communication' ? '沟通' : selectedTip.support_type === 'action' ? '行动' : '知识';
+                    const badgeStyle = selectedTip.support_type === 'emotion' ? styles.supportTypeEmotion
+                      : selectedTip.support_type === 'communication' ? styles.supportTypeCommunication
+                      : selectedTip.support_type === 'action' ? styles.supportTypeAction
+                      : styles.supportTypeKnowledge;
+                    return (
+                      <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+                          <Text style={styles.urgentModalTitle}>{selectedTip.title}</Text>
+                          <Text style={[styles.supportTypeBadge, badgeStyle]}>{typeLabel}</Text>
+                        </View>
+                        <View style={{ borderLeftWidth: 2, borderLeftColor: colors.accentLight, paddingLeft: spacing.md, marginBottom: spacing.md }}>
+                          <Text style={styles.supportContent}>{selectedTip.content}</Text>
+                        </View>
+                        {selectedTip.tips && selectedTip.tips.length > 0 && (
+                          <View style={styles.supportTips}>
+                            <Text style={{ ...typography.callout, fontWeight: '600', marginBottom: spacing.sm }}>具体建议：</Text>
+                            {selectedTip.tips.map((t, i) => (
+                              <View key={i} style={styles.supportTipRow}>
+                                <Text style={styles.supportTipIndex}>{String(i + 1).padStart(2, '0')}</Text>
+                                <Text style={styles.supportTipText}>{t}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        <TouchableOpacity style={[styles.urgentModalSave, { marginTop: spacing.md }]} onPress={() => setSelectedTip(null)}>
+                          <Text style={styles.urgentModalSaveText}>返回</Text>
+                        </TouchableOpacity>
+                      </>
+                    );
+                  })()}
+                </View>
+              ) : (
+                <>
+                  <Animated.View
+                    style={{
+                      opacity: supportModeAnim,
+                      transform: [{ scale: supportModeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) }],
+                    }}
+                  >
+                  {supportFlat ? (
+                    <>
+                      <View style={styles.flatRowWrap}>
+                        <View style={styles.flatRow}>
+                          {supportPageItems.map(tip => (
+                            <SupportDeckCard
+                              key={tip.id}
+                              tip={tip}
+                              depth={0}
+                              isFront
+                              flat
+                              flatWidth={flatCardW}
+                              flatHeight={flatCardH}
+                              canAdvance={false}
+                              exiting={false}
+                              exitAnim={supportDeckExit}
+                              onAdvance={advanceSupportDeck}
+                              onOpenDetail={() => setSelectedTip(tip)}
+                              colors={colors}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                      <FlatPager
+                        page={supportSafePage}
+                        pageCount={supportPageCount}
+                        onChange={setSupportPage}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.deckContainer}>
+                        {supportDeckItems.map((tip, i) => (
+                          <SupportDeckCard
+                            key={tip.id}
+                            tip={tip}
+                            depth={i}
+                            isFront={i === 0}
+                            canAdvance={supportTips.length > 1}
+                            exiting={i === 0 && supportDeckExiting}
+                            exitAnim={supportDeckExit}
+                            onAdvance={advanceSupportDeck}
+                            onOpenDetail={() => setSelectedTip(tip)}
+                            colors={colors}
+                          />
+                        ))}
+                      </View>
+                      {supportTips.length > 1 && (
+                        <Text style={styles.deckHint}>
+                          {(supportDeckIndex % supportTips.length) + 1} / {supportTips.length} · 轻点卡片翻看下一条
+                        </Text>
+                      )}
+                    </>
+                  )}
+                  </Animated.View>
+                  <Text style={styles.deckSubHint}>点击「查看详情」阅读全文</Text>
+                  <DeckToggleButton expanded={supportFlat} onPress={toggleSupportMode} />
+                </>
+              )}
+            </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
     </View>

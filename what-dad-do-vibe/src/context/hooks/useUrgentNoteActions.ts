@@ -31,7 +31,7 @@ export function useUrgentNoteActions(
         id: note.id,
         content: note.content,
         isActive: note.is_active,
-        createdAt: new Date(note.created_at).toLocaleDateString('zh-CN'),
+        createdAt: note.created_at,
       };
       dispatch({ type: 'ADD_URGENT_NOTE', payload });
     } catch (error) {

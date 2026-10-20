@@ -250,6 +250,18 @@ export default function ProfileScreen() {
       borderRadius: radius.sm,
     },
     babyTagText: { fontSize: 12, fontWeight: '500', color: colors.accent },
+    babyEmptyTitle: {
+      ...typography.callout,
+      fontWeight: '600',
+      color: colors.fgSecondary,
+      marginTop: spacing.sm,
+    },
+    babyEmptyHint: {
+      ...typography.caption1,
+      color: colors.muted,
+      textAlign: 'center',
+      marginTop: spacing.xs,
+    },
 
     // 退出
     logoutBtn: {
@@ -312,8 +324,14 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user?.email || '未登录'}</Text>
         </View>
 
-        {/* 多宝宝信息卡片 - 左右滑动 */}
-        {(activeBabies.length > 0 || state.loading) && (
+        {/* 多宝宝信息卡片 - 左右滑动；无宝宝时显示空态 */}
+        {!state.loading && activeBabies.length === 0 ? (
+          <View style={styles.babyCard}>
+            <Ionicons name="happy-outline" size={40} color={colors.muted} />
+            <Text style={styles.babyEmptyTitle}>还没有宝宝信息</Text>
+            <Text style={styles.babyEmptyHint}>添加宝宝后，这里会显示阶段与预产期信息</Text>
+          </View>
+        ) : (
           <>
             <View style={{ width: '100%' }} onLayout={onCarouselLayout}>
               {state.loading ? (
@@ -447,19 +465,21 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
             )}
-            {/* 新增宝宝入口（从首页切换弹窗迁移至此） */}
-            <TouchableOpacity
-              style={styles.addBabyBtn}
-              onPress={() => router.push('/baby-info?mode=new')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
-              <Text style={styles.addBabyTxt}>新增宝宝</Text>
-            </TouchableOpacity>
-            {/* 与下方区块的间距（宝宝数 ≤1 时分页器隐藏，靠这里保持呼吸感） */}
-            <View style={{ height: spacing.md }} />
           </>
         )}
+        {/* 新增宝宝入口：无宝宝/加载完成后始终可见 */}
+        {!state.loading && (
+          <TouchableOpacity
+            style={styles.addBabyBtn}
+            onPress={() => router.push('/baby-info?mode=new')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+            <Text style={styles.addBabyTxt}>新增宝宝</Text>
+          </TouchableOpacity>
+        )}
+        {/* 与下方区块的间距（宝宝数 ≤1 时分页器隐藏，靠这里保持呼吸感） */}
+        <View style={{ height: spacing.md }} />
 
         {/* 账号菜单 */}
         <View style={styles.section}>
