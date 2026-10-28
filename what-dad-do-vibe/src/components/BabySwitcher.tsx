@@ -3,7 +3,7 @@ import { View, Text, Pressable, Modal, FlatList, StyleSheet, TextInput, Activity
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useColors } from '../context/ThemeContext';
-import { radius, spacing, typography, shadows } from '../styles/tokens';
+import { radius, spacing, typography, shadows, MAX_FONT_SCALE } from '../styles/tokens';
 import { calculateStageFromDueDate, calculateBirthAge } from '../lib/stages';
 
 function getBabyWeekLabel(baby: { dueDate?: string | null; birthDate?: string | null }): { text: string; type: 'postpartum' | 'pregnant' | 'preconception' } | null {
@@ -88,6 +88,7 @@ export function BabySwitcher() {
     sheet: {
       width: '80%',
       maxWidth: 340,
+      maxHeight: '70%',
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
       padding: spacing.lg,
@@ -185,7 +186,7 @@ export function BabySwitcher() {
       borderWidth: 1,
       borderColor: colors.border,
       marginBottom: spacing.lg,
-      height: 44,
+      minHeight: 44,
     },
     editActions: {
       flexDirection: 'row',
@@ -256,22 +257,22 @@ export function BabySwitcher() {
         accessibilityLabel={`切换宝宝，当前 ${current?.name ?? '未选择'}`}
       >
         <View style={styles.pillLeft}>
-          <Ionicons name="happy-outline" size={16} color={colors.accent} />
-          <Text style={styles.pillText} numberOfLines={1}>
+          <Ionicons name="happy-outline" size={16} color={colors.accent} allowFontScaling={false} />
+          <Text style={styles.pillText} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {current?.name || '选择宝宝'}
           </Text>
         </View>
-        <Ionicons name="chevron-down" size={14} color={colors.muted} />
+        <Ionicons name="chevron-down" size={14} color={colors.muted} allowFontScaling={false} />
       </Pressable>
 
       {/* 切换宝宝弹窗 */}
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable style={styles.sheet} onPress={e => e.stopPropagation()}>
-            <Text style={styles.sheetTitle}>切换宝宝</Text>
+            <Text style={styles.sheetTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>切换宝宝</Text>
 
             {active.length === 0 && (
-              <Text style={[typography.callout, { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg }]}>
+              <Text style={[typography.callout, { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 暂无宝宝，请先添加
               </Text>
             )}
@@ -298,11 +299,12 @@ export function BabySwitcher() {
                         name={isCurrent ? 'checkmark-circle' : 'happy-outline'}
                         size={20}
                         color={isCurrent ? colors.accent : colors.muted}
+                        allowFontScaling={false}
                       />
-                      <Text style={styles.rowName} numberOfLines={1}>{item.name || '宝宝'}</Text>
+                      <Text style={styles.rowName} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.name || '宝宝'}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                         {item.gender && (
-                          <Text style={styles.rowTag}>
+                          <Text style={styles.rowTag} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                             {item.gender === 'boy' ? '男宝' : item.gender === 'girl' ? '女宝' : ''}
                           </Text>
                         )}
@@ -314,7 +316,7 @@ export function BabySwitcher() {
                             : info.type === 'preconception'
                               ? styles.rowWeekPreconception
                               : styles.rowWeekPregnant;
-                          return <Text style={[styles.rowWeek, typeStyle]}>{info.text}</Text>;
+                          return <Text style={[styles.rowWeek, typeStyle]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{info.text}</Text>;
                         })()}
                       </View>
                     </Pressable>
@@ -324,7 +326,7 @@ export function BabySwitcher() {
                       onPress={() => startEditing(item)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Ionicons name="pencil-outline" size={14} color={colors.muted} />
+                      <Ionicons name="pencil-outline" size={14} color={colors.muted} allowFontScaling={false} />
                     </Pressable>
                   </View>
                 );
@@ -338,8 +340,8 @@ export function BabySwitcher() {
       <Modal visible={!!editingBaby} transparent animationType="fade" onRequestClose={() => setEditingBaby(null)}>
         <Pressable style={styles.editOverlay} onPress={() => !saving && setEditingBaby(null)}>
           <Pressable style={styles.editSheet} onPress={e => e.stopPropagation()}>
-            <Text style={styles.editTitle}>修改姓名</Text>
-            <Text style={styles.editHint}>给宝宝改个名字吧，修改后将同步更新到所有页面</Text>
+            <Text style={styles.editTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>修改姓名</Text>
+            <Text style={styles.editHint} maxFontSizeMultiplier={MAX_FONT_SCALE}>给宝宝改个名字吧，修改后将同步更新到所有页面</Text>
             <TextInput
               style={styles.editInput}
               value={editName}
@@ -355,7 +357,7 @@ export function BabySwitcher() {
                 onPress={() => setEditingBaby(null)}
                 disabled={saving}
               >
-                <Text style={styles.editCancelText}>取消</Text>
+                <Text style={styles.editCancelText} maxFontSizeMultiplier={MAX_FONT_SCALE}>取消</Text>
               </Pressable>
               <Pressable
                 style={[styles.editSave, (!editName.trim() || saving) && styles.editSaveDisabled]}
@@ -365,7 +367,7 @@ export function BabySwitcher() {
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.editSaveText}>保存</Text>
+                  <Text style={styles.editSaveText} maxFontSizeMultiplier={MAX_FONT_SCALE}>保存</Text>
                 )}
               </Pressable>
             </View>
@@ -378,7 +380,7 @@ export function BabySwitcher() {
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.loadingText}>正在切换宝宝…</Text>
+            <Text style={styles.loadingText} maxFontSizeMultiplier={MAX_FONT_SCALE}>正在切换宝宝…</Text>
           </View>
         </View>
       </Modal>

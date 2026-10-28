@@ -144,6 +144,14 @@ export const spacing = {
   xxl: 24,
 } as const;
 
+/**
+ * 系统字体缩放（Android 字体大小 / 显示大小）的上限。
+ * RN 的 Text 默认跟随系统 fontScale，固定高度的 tab 栏、计数圆、
+ * 分页列表等会被放大后的文字撑破；在布局敏感的文字上统一传入
+ * maxFontSizeMultiplier={MAX_FONT_SCALE}，既保留一定可读性又保证排版稳定。
+ */
+export const MAX_FONT_SCALE = 1.2;
+
 export const radius = {
   sm: 8,
   md: 12,

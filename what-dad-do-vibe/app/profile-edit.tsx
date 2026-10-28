@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/lib/supabase';
 import { useColors } from '../src/context/ThemeContext';
-import { spacing, radius, typography } from '../src/styles/tokens';
+import { spacing, radius, typography, MAX_FONT_SCALE } from '../src/styles/tokens';
 
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
@@ -65,7 +65,7 @@ export default function ProfileEditScreen() {
     alignItems: 'center', justifyContent: 'center',
   },
   infoLabel: { ...typography.callout, color: colors.fgSecondary },
-  infoValue: { ...typography.callout, fontWeight: '500', color: colors.fg },
+  infoValue: { ...typography.callout, fontWeight: '500', color: colors.fg, flexShrink: 1, textAlign: 'right' },
 
   // 表单
   formCard: {
@@ -83,12 +83,14 @@ export default function ProfileEditScreen() {
     borderRadius: 10,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderWidth: 1, borderColor: colors.border,
-    height: 44,
+    // minHeight 而非固定 height：系统字体放大时输入文字不被裁切
+    minHeight: 44,
   },
   saveBtn: {
     backgroundColor: colors.accent,
     borderRadius: 10,
-    height: 44,
+    minHeight: 44,
+    paddingVertical: spacing.sm,
     alignItems: 'center', justifyContent: 'center',
     marginTop: spacing.lg,
   },
@@ -132,13 +134,13 @@ export default function ProfileEditScreen() {
       {/* 顶部导航 */}
       <View style={styles.nav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.navBack}>
-          <Ionicons name="chevron-back" size={20} color={colors.accent} />
+          <Ionicons name="chevron-back" size={20} color={colors.accent} allowFontScaling={false} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>个人资料</Text>
+        <Text style={styles.navTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>个人资料</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         {/* 账号信息 */}
         <View style={styles.section}>
           <View style={styles.infoCard}>
@@ -149,7 +151,7 @@ export default function ProfileEditScreen() {
                 </View>
                 <Text style={styles.infoLabel}>邮箱</Text>
               </View>
-              <Text style={styles.infoValue}>{user?.email || '-'}</Text>
+              <Text style={styles.infoValue} numberOfLines={2} maxFontSizeMultiplier={MAX_FONT_SCALE}>{user?.email || '-'}</Text>
             </View>
           </View>
         </View>
@@ -196,7 +198,7 @@ export default function ProfileEditScreen() {
               {saving ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.saveBtnText}>更新密码</Text>
+                <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_SCALE}>更新密码</Text>
               )}
             </TouchableOpacity>
           </View>

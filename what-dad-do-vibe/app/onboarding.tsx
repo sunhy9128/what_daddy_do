@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   useWindowDimensions,
   ListRenderItem,
@@ -16,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { useApp } from '../src/context/AppContext';
 import { useColors } from '../src/context/ThemeContext';
-import { spacing, typography, radius } from '../src/styles/tokens';
+import { spacing, typography, radius, MAX_FONT_SCALE } from '../src/styles/tokens';
 import { AVAILABLE_TOOLS } from '../src/components/tools/Toolbar';
 import { ToolDefinition } from '../src/components/tools/ToolBase';
 import { saveActiveTools, saveOnboardingCompleted, StoredToolInstance } from '../src/lib/storage';
@@ -95,7 +96,8 @@ export default function OnboardingScreen() {
     },
     // ── Step 1: 欢迎页 ──
     welcomeWrap: {
-      flex: 1,
+      // 放在 ScrollView 里：字体放大后内容可滚动，不会被裁掉
+      flexGrow: 1,
       justifyContent: 'center',
       alignItems: 'center',
       paddingBottom: spacing.xxl,
@@ -241,7 +243,8 @@ export default function OnboardingScreen() {
       paddingTop: spacing.sm,
     },
     primaryBtn: {
-      height: 52,
+      minHeight: 52,
+      paddingVertical: spacing.sm,
       borderRadius: radius.md,
       backgroundColor: colors.accent,
       alignItems: 'center',
@@ -311,28 +314,28 @@ export default function OnboardingScreen() {
     if (item !== 0) return null;
     return (
       <View style={[styles.page, { paddingTop: insets.top }]}>
-        <View style={styles.welcomeWrap}>
+        <ScrollView contentContainerStyle={styles.welcomeWrap} showsVerticalScrollIndicator={false}>
           <View style={styles.logoCircle}>
-            <Ionicons name="heart" size={48} color={colors.accent} />
+            <Ionicons name="heart" size={48} color={colors.accent} allowFontScaling={false} />
           </View>
-          <Text style={styles.welcomeTitle}>欢迎来到爸爸去哪了</Text>
-          <Text style={styles.welcomeSubtitle}>
+          <Text style={styles.welcomeTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>欢迎来到爸爸去哪了</Text>
+          <Text style={styles.welcomeSubtitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             新手爸爸的孕育随军参谋{'\n'}陪你和妈妈一起迎接新生命
           </Text>
           <View style={styles.featuresCol}>
             {FEATURES.map(f => (
               <View key={f.title} style={styles.featureCard}>
                 <View style={styles.featureIconWrap}>
-                  <Ionicons name={f.icon} size={22} color={colors.accent} />
+                  <Ionicons name={f.icon} size={22} color={colors.accent} allowFontScaling={false} />
                 </View>
                 <View style={styles.featureTextCol}>
-                  <Text style={styles.featureTitle}>{f.title}</Text>
-                  <Text style={styles.featureDesc}>{f.desc}</Text>
+                  <Text style={styles.featureTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>{f.title}</Text>
+                  <Text style={styles.featureDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{f.desc}</Text>
                 </View>
               </View>
             ))}
           </View>
-        </View>
+        </ScrollView>
       </View>
     );
   }, [styles, insets.top, colors.accent]);
@@ -342,9 +345,9 @@ export default function OnboardingScreen() {
     return (
       <View style={[styles.page, { paddingTop: insets.top }]}>
         <View style={styles.toolsHeader}>
-          <Text style={styles.toolsTitle}>选几个常用工具</Text>
-          <Text style={styles.toolsSubtitle}>根据你的阶段推荐，点击卡片切换是否添加</Text>
-          <Text style={styles.toolsCount}>已选 {pickedIds.size} / {visibleTools.length}</Text>
+          <Text style={styles.toolsTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>选几个常用工具</Text>
+          <Text style={styles.toolsSubtitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>根据你的阶段推荐，点击卡片切换是否添加</Text>
+          <Text style={styles.toolsCount} maxFontSizeMultiplier={MAX_FONT_SCALE}>已选 {pickedIds.size} / {visibleTools.length}</Text>
         </View>
         <FlatList
           data={visibleTools}
@@ -360,14 +363,14 @@ export default function OnboardingScreen() {
                 style={[styles.toolItem, picked && styles.toolItemPicked]}
               >
                 <View style={[styles.toolIconWrap, picked && styles.toolIconWrapPicked]}>
-                  <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={22} color={colors.accent} />
+                  <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={22} color={colors.accent} allowFontScaling={false} />
                 </View>
                 <View style={styles.toolInfo}>
-                  <Text style={styles.toolName}>{tool.name}</Text>
-                  <Text style={styles.toolDesc}>{tool.description}</Text>
+                  <Text style={styles.toolName} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.name}</Text>
+                  <Text style={styles.toolDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.description}</Text>
                 </View>
                 <View style={[styles.checkbox, picked && styles.checkboxPicked]}>
-                  {picked && <Ionicons name="checkmark" size={16} color="#fff" />}
+                  {picked && <Ionicons name="checkmark" size={16} color="#fff" allowFontScaling={false} />}
                 </View>
               </TouchableOpacity>
             );
@@ -392,7 +395,7 @@ export default function OnboardingScreen() {
           ))}
         </View>
         <TouchableOpacity onPress={skip} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={styles.skipText}>跳过</Text>
+          <Text style={styles.skipText} maxFontSizeMultiplier={MAX_FONT_SCALE}>跳过</Text>
         </TouchableOpacity>
       </View>
 
@@ -420,10 +423,10 @@ export default function OnboardingScreen() {
               activeOpacity={0.85}
               onPress={() => scrollToStep(1)}
             >
-              <Text style={styles.primaryBtnText}>下一张</Text>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
+              <Text style={styles.primaryBtnText} maxFontSizeMultiplier={MAX_FONT_SCALE}>下一张</Text>
+              <Ionicons name="chevron-forward" size={20} color="#fff" allowFontScaling={false} />
             </TouchableOpacity>
-            <Text style={styles.swipeHint}>或左滑查看下一步</Text>
+            <Text style={styles.swipeHint} maxFontSizeMultiplier={MAX_FONT_SCALE}>或左滑查看下一步</Text>
           </>
         ) : (
           <TouchableOpacity
@@ -432,8 +435,8 @@ export default function OnboardingScreen() {
             onPress={() => finish(true)}
             disabled={finishingRef.current}
           >
-            <Text style={styles.primaryBtnText}>完成，开始使用</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Text style={styles.primaryBtnText} maxFontSizeMultiplier={MAX_FONT_SCALE}>完成，开始使用</Text>
+            <Ionicons name="arrow-forward" size={20} color="#fff" allowFontScaling={false} />
           </TouchableOpacity>
         )}
       </View>

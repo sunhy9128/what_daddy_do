@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthGuard } from '../../src/components/AuthGuard';
 import { useColors } from '../../src/context/ThemeContext';
 import { spacing } from '../../src/styles/tokens';
@@ -30,14 +31,19 @@ const tabLabels: Record<string, string> = {
 
 export default function TabLayout() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  // 自定义高度会覆盖 React Navigation 自带的 insets.bottom 计算，
+  // 必须手动把底部安全区加进来，否则 edge-to-edge / 手势条机型上图标被顶出屏幕。
+  const barBaseHeight = Platform.OS === 'ios' ? 56 : 56;
+  const bottomInset = insets.bottom > 0 ? insets.bottom : spacing.xs;
   const styles = useMemo(() => StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
     borderTopWidth: 0,
     elevation: 0,
-    height: Platform.OS === 'ios' ? 72 : 60,
+    height: barBaseHeight + bottomInset,
     paddingTop: spacing.sm,
-    paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.xs,
+    paddingBottom: bottomInset,
   },
   tabBarItem: {
     paddingVertical: 0,
@@ -46,7 +52,7 @@ export default function TabLayout() {
     alignItems: 'center',
     justifyContent: 'center',
   },
-}), [colors]);
+}), [colors, bottomInset]);
 
   function TabIcon({ routeName, color, size, focused }: { routeName: string; color: string; size: number; focused: boolean }) {
     return (
@@ -55,6 +61,7 @@ export default function TabLayout() {
           name={focused ? tabIconsActive[routeName] : tabIcons[routeName]}
           size={focused ? size + 2 : size}
           color={color}
+          allowFontScaling={false}
         />
       </View>
     );
@@ -65,6 +72,7 @@ export default function TabLayout() {
       <Tabs screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
+        tabBarAllowFontScaling: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
         tabBarIcon: ({ color, size, focused }) => (

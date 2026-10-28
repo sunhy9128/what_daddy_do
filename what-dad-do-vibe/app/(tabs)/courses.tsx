@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../src/components/atoms';
-import { StageTabs } from '../../src/components/molecules';
+import { StageTabs, MarkdownText } from '../../src/components/molecules';
 import { useColors } from '../../src/context/ThemeContext';
-import { radius, spacing, typography } from '../../src/styles/tokens';
+import { radius, spacing, typography, MAX_FONT_SCALE } from '../../src/styles/tokens';
 import { STAGE_LABELS, PregnancyStage } from '../../src/lib/stages';
 
 const STAGE_LABEL_LIST = Object.values(STAGE_LABELS);
@@ -133,11 +133,11 @@ export default function CoursesScreen() {
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <View style={styles.titleIcon}>
-              <Ionicons name="play-circle-outline" size={24} color={colors.accent} />
+              <Ionicons name="play-circle-outline" size={24} color={colors.accent} allowFontScaling={false} />
             </View>
-            <Text style={styles.title}>育儿课程</Text>
+            <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>育儿课程</Text>
           </View>
-          <Text style={styles.subtitle}>跟着视频和文章，轻松学会带娃</Text>
+          <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>跟着视频和文章，轻松学会带娃</Text>
         </View>
 
         {/* 阶段筛选 */}
@@ -155,7 +155,7 @@ export default function CoursesScreen() {
             style={[styles.categoryChip, selectedCategory === '全部' && styles.categoryChipActive]}
             onPress={() => setSelectedCategory('全部')}
           >
-            <Text style={selectedCategory === '全部' ? styles.categoryTxtActive : styles.categoryTxt}>全部</Text>
+            <Text style={selectedCategory === '全部' ? styles.categoryTxtActive : styles.categoryTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>全部</Text>
           </TouchableOpacity>
           {COURSE_CATEGORIES.map((cat) => (
             <TouchableOpacity
@@ -163,7 +163,7 @@ export default function CoursesScreen() {
               style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
               onPress={() => setSelectedCategory(cat)}
             >
-              <Text style={selectedCategory === cat ? styles.categoryTxtActive : styles.categoryTxt}>{cat}</Text>
+              <Text style={selectedCategory === cat ? styles.categoryTxtActive : styles.categoryTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>{cat}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -174,19 +174,19 @@ export default function CoursesScreen() {
             filteredCourses.map((course) => (
               <TouchableOpacity key={course.id} style={styles.courseCard} onPress={() => handleCoursePress(course)} activeOpacity={0.7}>
                 <View style={styles.courseThumb}>
-                  <Ionicons name={course.type === 'video' ? 'play-circle' : 'document-text'} size={40} color={colors.accent} />
+                  <Ionicons name={course.type === 'video' ? 'play-circle' : 'document-text'} size={40} color={colors.accent} allowFontScaling={false} />
                 </View>
                 <View style={styles.courseBody}>
-                  <Text style={styles.courseTitle} numberOfLines={1}>{course.title}</Text>
-                  <Text style={styles.courseDesc} numberOfLines={2}>{course.description}</Text>
+                  <Text style={styles.courseTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{course.title}</Text>
+                  <Text style={styles.courseDesc} numberOfLines={2} maxFontSizeMultiplier={MAX_FONT_SCALE}>{course.description}</Text>
                   <View style={styles.courseMeta}>
                     <View style={styles.courseTag}>
-                      <Text style={styles.courseTagTxt}>{course.category}</Text>
+                      <Text style={styles.courseTagTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>{course.category}</Text>
                     </View>
                     {course.duration && (
                       <View style={styles.courseDuration}>
-                        <Ionicons name="time-outline" size={12} color={colors.muted} />
-                        <Text style={styles.courseDurationTxt}>{course.duration}</Text>
+                        <Ionicons name="time-outline" size={12} color={colors.muted} allowFontScaling={false} />
+                        <Text style={styles.courseDurationTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>{course.duration}</Text>
                       </View>
                     )}
                   </View>
@@ -195,8 +195,8 @@ export default function CoursesScreen() {
             ))
           ) : (
             <View style={styles.emptyCourse}>
-              <Ionicons name="school-outline" size={48} color={colors.muted} style={styles.emptyCourseIcon} />
-              <Text style={styles.emptyCourseTxt}>该阶段暂无相关课程</Text>
+              <Ionicons name="school-outline" size={48} color={colors.muted} style={styles.emptyCourseIcon} allowFontScaling={false} />
+              <Text style={styles.emptyCourseTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>该阶段暂无相关课程</Text>
             </View>
           )}
         </View>
@@ -207,35 +207,35 @@ export default function CoursesScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle} numberOfLines={1}>{selectedCourse?.title}</Text>
+              <Text style={styles.modalTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selectedCourse?.title}</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setSelectedCourse(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="close" size={20} color={colors.fgSecondary} />
+                <Ionicons name="close" size={20} color={colors.fgSecondary} allowFontScaling={false} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalCourseTitle}>{selectedCourse?.title}</Text>
+              <Text style={styles.modalCourseTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selectedCourse?.title}</Text>
               <View style={styles.modalCourseMeta}>
                 <View style={styles.courseTag}>
-                  <Text style={styles.courseTagTxt}>{selectedCourse?.category}</Text>
+                  <Text style={styles.courseTagTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selectedCourse?.category}</Text>
                 </View>
                 {selectedCourse?.duration && (
                   <View style={styles.courseDuration}>
-                    <Ionicons name="time-outline" size={12} color={colors.muted} />
-                    <Text style={styles.courseDurationTxt}>{selectedCourse?.duration}</Text>
+                    <Ionicons name="time-outline" size={12} color={colors.muted} allowFontScaling={false} />
+                    <Text style={styles.courseDurationTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selectedCourse?.duration}</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.modalCourseDesc}>{selectedCourse?.description}</Text>
-              <Text style={styles.modalSectionTitle}>内容</Text>
-              <Text style={styles.modalContentText}>{selectedCourse?.content}</Text>
+              <Text style={styles.modalCourseDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selectedCourse?.description}</Text>
+              <Text style={styles.modalSectionTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>内容</Text>
+              <MarkdownText content={selectedCourse?.content ?? ''} textStyle={styles.modalContentText} />
               {selectedCourse?.tips && selectedCourse.tips.length > 0 && (
                 <View style={styles.tipCard}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.xs }}>
-                    <Ionicons name="bulb-outline" size={14} color={colors.accent} />
-                    <Text style={styles.tipTitle}>小贴士</Text>
+                    <Ionicons name="bulb-outline" size={14} color={colors.accent} allowFontScaling={false} />
+                    <Text style={styles.tipTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>小贴士</Text>
                   </View>
                   {selectedCourse.tips.map((tip, i) => (
-                    <Text key={i} style={styles.tipTxt}>• {tip}</Text>
+                    <Text key={i} style={styles.tipTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>• {tip}</Text>
                   ))}
                 </View>
               )}

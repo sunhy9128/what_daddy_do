@@ -22,7 +22,7 @@ import { BabyFoodRecipeTool } from './BabyFoodRecipe';
 import { ChildCheckupTool } from './ChildCheckup';
 import { DadDeliveryPrep } from './DadDeliveryPrep';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, MAX_FONT_SCALE } from '../../styles/tokens';
 
 export const AVAILABLE_TOOLS: ToolDefinition[] = [
   { id: 'feeding-timer', name: '喂奶计时器', icon: 'timer-outline', description: '记录每次喂奶时间', hideInStages: ['preconception', 'first', 'second', 'third'] },
@@ -113,7 +113,9 @@ export function Toolbar({ activeTools, userId, babyGender, currentStage, onAddTo
       flex: 1,
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
       gap: 4,
-      height: 40,
+      // minHeight：系统字体放大时按钮跟随文字长高
+      minHeight: 40,
+      paddingVertical: spacing.xs,
       borderRadius: radius.sm,
       borderWidth: 1, borderColor: colors.border,
       backgroundColor: colors.surface,
@@ -171,8 +173,8 @@ export function Toolbar({ activeTools, userId, babyGender, currentStage, onAddTo
       {/* 底部操作栏 */}
       <View style={styles.footerRow}>
         <TouchableOpacity style={styles.footerBtn} onPress={() => setShowPicker(true)}>
-          <Ionicons name="add" size={18} color={colors.accent} />
-          <Text style={styles.footerBtnText}>添加工具</Text>
+          <Ionicons name="add" size={18} color={colors.accent} allowFontScaling={false} />
+          <Text style={styles.footerBtnText} maxFontSizeMultiplier={MAX_FONT_SCALE}>添加工具</Text>
         </TouchableOpacity>
         {(activeTools.length > 0 || reordering) && (
           <TouchableOpacity
@@ -183,8 +185,9 @@ export function Toolbar({ activeTools, userId, babyGender, currentStage, onAddTo
               name={reordering ? 'checkmark-circle' : 'swap-vertical-outline'}
               size={16}
               color={reordering ? '#fff' : colors.accent}
+              allowFontScaling={false}
             />
-            <Text style={[styles.footerBtnText, reordering && styles.footerBtnTextActive]}>
+            <Text style={[styles.footerBtnText, reordering && styles.footerBtnTextActive]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               {reordering ? '完成' : '编辑'}
             </Text>
           </TouchableOpacity>
@@ -194,14 +197,14 @@ export function Toolbar({ activeTools, userId, babyGender, currentStage, onAddTo
       <Modal visible={showPicker} animationType="fade" transparent>
         <Pressable style={styles.pickerOverlay} onPress={() => setShowPicker(false)}>
           <Pressable style={styles.pickerContent} onPress={e => e.stopPropagation()}>
-            <Text style={styles.pickerTitle}>选择工具</Text>
-            {availableToAdd.length === 0 && <Text style={styles.pickerEmpty}>已添加所有可用工具</Text>}
+            <Text style={styles.pickerTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>选择工具</Text>
+            {availableToAdd.length === 0 && <Text style={styles.pickerEmpty} maxFontSizeMultiplier={MAX_FONT_SCALE}>已添加所有可用工具</Text>}
             {availableToAdd.map(tool => (
               <TouchableOpacity key={tool.id} style={styles.pickerItem} onPress={() => { onAddTool(tool.id); setShowPicker(false); }}>
-                <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={24} color={colors.accent} />
+                <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={24} color={colors.accent} allowFontScaling={false} />
                 <View style={styles.pickerItemInfo}>
-                  <Text style={styles.pickerItemName}>{tool.name}</Text>
-                  <Text style={styles.pickerItemDesc}>{tool.description}</Text>
+                  <Text style={styles.pickerItemName} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.name}</Text>
+                  <Text style={styles.pickerItemDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.description}</Text>
                 </View>
               </TouchableOpacity>
             ))}

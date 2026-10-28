@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, MAX_FONT_SCALE } from '../../styles/tokens';
 
 interface CollapsibleGroupProps {
   title: string;
@@ -90,9 +90,9 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerToggle} onPress={() => setExpanded(!expanded)} activeOpacity={0.7}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{title}</Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{count}</Text>
+              <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{count}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -104,7 +104,7 @@ export function CollapsibleGroup({ title, count, defaultExpanded = true, childre
           accessibilityRole="button"
           accessibilityLabel={expanded ? '收起分组' : '展开分组'}
         >
-          <Ionicons name={expanded ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} />
+          <Ionicons name={expanded ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.fgSecondary} allowFontScaling={false} />
         </TouchableOpacity>
       </View>
       {expanded && <View style={styles.content}>{children}</View>}

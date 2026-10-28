@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Tag } from '../atoms';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, MAX_FONT_SCALE } from '../../styles/tokens';
 
 interface TaskCardProps {
   title: string;
@@ -210,7 +210,7 @@ export function TaskCard({
           disabled={toggling || !onToggle || isCompleted || readOnly}
           activeOpacity={0.6}
         >
-          <Text style={styles.streakText}>{isCompleted ? '已打卡' : '打卡'}</Text>
+          <Text style={styles.streakText} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={MAX_FONT_SCALE}>{isCompleted ? '已打卡' : '打卡'}</Text>
         </TouchableOpacity>
       ) : isDaily ? (
         <TouchableOpacity
@@ -219,7 +219,7 @@ export function TaskCard({
           disabled={toggling || !onToggle || readOnly}
           activeOpacity={0.6}
         >
-          <Text style={styles.countText}>{dailyCount}</Text>
+          <Text style={styles.countText} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={MAX_FONT_SCALE}>{dailyCount}</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
@@ -229,7 +229,7 @@ export function TaskCard({
           activeOpacity={0.6}
         >
           {isCompleted && (
-            <Ionicons name="checkmark" size={14} color={colors.surface} />
+            <Ionicons name="checkmark" size={14} color={colors.surface} allowFontScaling={false} />
           )}
         </TouchableOpacity>
       )}
@@ -254,7 +254,7 @@ export function TaskCard({
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         {onInfo && (
           <TouchableOpacity style={styles.infoButton} onPress={handleInfoPress}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.fgSecondary} />
+            <Ionicons name="information-circle-outline" size={18} color={colors.fgSecondary} allowFontScaling={false} />
           </TouchableOpacity>
         )}
       </View>

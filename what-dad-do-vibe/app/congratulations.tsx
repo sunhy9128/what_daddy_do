@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useApp } from '../src/context/AppContext';
 import { Confetti } from '../src/components/Confetti';
 import { useColors, useTheme } from '../src/context/ThemeContext';
-import { spacing, radius, typography } from '../src/styles/tokens';
+import { spacing, radius, typography, MAX_FONT_SCALE } from '../src/styles/tokens';
 
 export default function CongratulationsScreen() {
   const insets = useSafeAreaInsets();
@@ -27,7 +27,8 @@ export default function CongratulationsScreen() {
     backgroundColor: isDark ? '#1E1C18' : '#FAF8F3',
   },
   content: {
-    flex: 1,
+    // 放在 ScrollView 里：大字号时内容可滚动
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
@@ -144,16 +145,19 @@ export default function CongratulationsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Confetti />
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: spacing.lg, paddingBottom: insets.bottom + spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* 标题 */}
-        <Ionicons name="happy-outline" size={64} color={colors.accent} style={{ marginBottom: spacing.lg }} />
-        <Text style={styles.title}>恭喜升级！</Text>
-        <Text style={styles.subtitle}>
+        <Ionicons name="happy-outline" size={64} color={colors.accent} style={{ marginBottom: spacing.lg }} allowFontScaling={false} />
+        <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SCALE}>恭喜升级！</Text>
+        <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>
           宝宝已经平安来到这个世界{'\n'}准备好迎接全新的旅程了吗？
         </Text>
 
         {/* 性别选择 */}
-        <Text style={styles.prompt}>宝宝是？</Text>
+        <Text style={styles.prompt} maxFontSizeMultiplier={MAX_FONT_SCALE}>宝宝是？</Text>
         <View style={styles.genderRow}>
           <TouchableOpacity
             style={[styles.genderBtn, selectedGender === 'boy' && styles.genderBtnBoy]}
@@ -164,8 +168,9 @@ export default function CongratulationsScreen() {
               size={44}
               color={selectedGender === 'boy' ? '#647B85' : colors.fgSecondary}
               style={{ opacity: selectedGender === 'boy' ? 1 : 0.5 }}
+              allowFontScaling={false}
             />
-            <Text style={[styles.genderLabel, selectedGender === 'boy' && styles.genderLabelActive]}>
+            <Text style={[styles.genderLabel, selectedGender === 'boy' && styles.genderLabelActive]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               小王子
             </Text>
           </TouchableOpacity>
@@ -178,8 +183,9 @@ export default function CongratulationsScreen() {
               size={44}
               color={selectedGender === 'girl' ? '#C9A6A0' : colors.fgSecondary}
               style={{ opacity: selectedGender === 'girl' ? 1 : 0.5 }}
+              allowFontScaling={false}
             />
-            <Text style={[styles.genderLabel, selectedGender === 'girl' && styles.genderLabelActive]}>
+            <Text style={[styles.genderLabel, selectedGender === 'girl' && styles.genderLabelActive]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               小公主
             </Text>
           </TouchableOpacity>
@@ -191,14 +197,14 @@ export default function CongratulationsScreen() {
           onPress={handleConfirm}
           disabled={!selectedGender || saving}
         >
-          <Text style={styles.confirmText}>{saving ? '保存中...' : '恭喜！开始新旅程'}</Text>
+          <Text style={styles.confirmText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{saving ? '保存中...' : '恭喜！开始新旅程'}</Text>
         </TouchableOpacity>
 
         {/* 还未出生 */}
         <TouchableOpacity style={styles.skipBtn} onPress={handleNotYetBorn}>
-          <Text style={styles.skipText}>宝宝还未出生</Text>
+          <Text style={styles.skipText} maxFontSizeMultiplier={MAX_FONT_SCALE}>宝宝还未出生</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }

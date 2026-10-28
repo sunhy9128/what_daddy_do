@@ -2,7 +2,7 @@ import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable, StyleSheet, Animated, LayoutAnimation, Platform, ScrollView, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
-import { spacing, typography, radius } from '../../styles/tokens';
+import { spacing, typography, radius, MAX_FONT_SCALE } from '../../styles/tokens';
 import { AVAILABLE_TOOLS } from './Toolbar';
 
 const RIPPLE_DURATION = 350;
@@ -174,8 +174,8 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
             activeOpacity={0.8}
             onPress={handleDeleteConfirm}
           >
-            <Ionicons name="trash-outline" size={28} color="#fff" />
-            <Text style={styles.deleteLabel}>删除</Text>
+            <Ionicons name="trash-outline" size={28} color="#fff" allowFontScaling={false} />
+            <Text style={styles.deleteLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>删除</Text>
           </TouchableOpacity>
         ) : (
           <View>
@@ -186,8 +186,8 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
               onLongPress={() => !isRevealing && startReveal(item.instanceId)}
               delayLongPress={400}
             >
-              <Ionicons name={def.icon as keyof typeof Ionicons.glyphMap} size={28} color={colors.accent} />
-              <Text style={styles.gridLabel} numberOfLines={1}>{def.name}</Text>
+              <Ionicons name={def.icon as keyof typeof Ionicons.glyphMap} size={28} color={colors.accent} allowFontScaling={false} />
+              <Text style={styles.gridLabel} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{def.name}</Text>
             </TouchableOpacity>
             {isRevealing && (
               <View style={styles.rippleLayer} pointerEvents="none">
@@ -389,7 +389,7 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>工具箱</Text>
+      <Text style={styles.sectionTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>工具箱</Text>
       <View style={{ position: 'relative', overflow: 'visible' }}>
         {deleteReady && (
           <Pressable style={styles.dismissOverlay} onPress={resetReveal} />
@@ -406,8 +406,8 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
                       onPress={deleteReveal ? resetReveal : () => { setShowPicker(true); setPickerPage(0); }}
                       activeOpacity={0.7}
                     >
-                      <Ionicons name="add" size={28} color={colors.muted} />
-                      <Text style={styles.addLabel}>添加</Text>
+                      <Ionicons name="add" size={28} color={colors.muted} allowFontScaling={false} />
+                      <Text style={styles.addLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>添加</Text>
                     </TouchableOpacity>
                   </View>
                 )
@@ -451,9 +451,9 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
       <Modal visible={showPicker} animationType="fade" transparent>
         <Pressable style={styles.pickerOverlay} onPress={() => setShowPicker(false)}>
           <Pressable style={styles.pickerContent} onPress={e => e.stopPropagation()}>
-            <Text style={styles.pickerTitle}>选择工具</Text>
+            <Text style={styles.pickerTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>选择工具</Text>
             {availableToAdd.length === 0 && (
-              <Text style={styles.pickerEmpty}>已添加所有可用工具</Text>
+              <Text style={styles.pickerEmpty} maxFontSizeMultiplier={MAX_FONT_SCALE}>已添加所有可用工具</Text>
             )}
             <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
               {pickerPageTools.map(tool => (
@@ -462,10 +462,10 @@ export function ToolGrid({ tools, currentStage, onToolPress, onAddTool, onRemove
                   style={styles.pickerItem}
                   onPress={() => handleAddFromPicker(tool.id)}
                 >
-                  <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={24} color={colors.accent} />
+                  <Ionicons name={tool.icon as keyof typeof Ionicons.glyphMap} size={24} color={colors.accent} allowFontScaling={false} />
                   <View style={styles.pickerItemInfo}>
-                    <Text style={styles.pickerItemName}>{tool.name}</Text>
-                    <Text style={styles.pickerItemDesc}>{tool.description}</Text>
+                    <Text style={styles.pickerItemName} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.name}</Text>
+                    <Text style={styles.pickerItemDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.description}</Text>
                   </View>
                 </TouchableOpacity>
               ))}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput, Pressable, Animated, useWindowDimensions } from 'react-native';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, TextInput, Pressable, Animated, useWindowDimensions, PixelRatio } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
@@ -13,7 +13,7 @@ import { PresetItem, UserPreparation, PsychologicalSupport } from '../../src/lib
 import { SwipeActions } from '../../src/components/molecules';
 
 import { useColors, useTheme } from '../../src/context/ThemeContext';
-import { spacing, typography, radius, shadows } from '../../src/styles/tokens';
+import { spacing, typography, radius, shadows, MAX_FONT_SCALE } from '../../src/styles/tokens';
 
 import { STAGES } from '../../src/lib/stages';
 import { BUMP_SIZE_DATA } from '../../src/lib/bump-size-data';
@@ -82,6 +82,9 @@ function getDailyTip(stage: string): string {
 const DECK_CARD_WIDTH = 250;
 const DECK_CARD_HEIGHT = 340;
 const DECK_MAX_VISIBLE = 3;
+// 堆叠层级的位姿，与 depthAnim 的插值 outputRange 保持一致
+const DECK_DEPTH_TRANSLATE_Y = [0, 10, 19] as const;
+const DECK_DEPTH_SCALE = [1, 0.96, 0.92] as const;
 
 type UrgentDeckNote = { id: string; content: string; createdAt: string };
 type ThemeColors = ReturnType<typeof useColors>;
@@ -114,10 +117,15 @@ function UrgentDeckCard({
 }) {
   const depthAnim = useRef(new Animated.Value(depth)).current;
   const prevDepth = useRef(depth);
+  // 顶牌飞出后被回收为后排的当帧，depthAnim 还是 0（整卡尺寸），
+  // 直接按目标位姿渲染，避免回收卡在新顶牌四周先露出一圈。
+  const recycledToBack = prevDepth.current === 0 && depth > 0;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const from = prevDepth.current;
     prevDepth.current = depth;
+    // 连续快翻时先停掉上一段弹簧，避免两个动画抢同一个值
+    depthAnim.stopAnimation();
     // 顶牌飞出后回到底层：直接落位，避免回收瞬间比新顶牌还宽
     if (from === 0 && depth > 0) {
       depthAnim.setValue(depth);
@@ -211,8 +219,13 @@ function UrgentDeckCard({
     },
   }), [colors, flatWidth, flatHeight]);
 
-  const translateY = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
-  const scale = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
+  const depthTier = Math.min(depth, DECK_MAX_VISIBLE - 1);
+  const translateY = recycledToBack
+    ? DECK_DEPTH_TRANSLATE_Y[depthTier]
+    : depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
+  const scale = recycledToBack
+    ? DECK_DEPTH_SCALE[depthTier]
+    : depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
 
   return (
     <Animated.View
@@ -240,13 +253,13 @@ function UrgentDeckCard({
         >
           <View style={styles.topRow}>
             <View style={styles.badge}>
-              <Ionicons name="alert-circle-outline" size={12} color={colors.error} />
-              <Text style={styles.badgeText}>紧急关注</Text>
+              <Ionicons name="alert-circle-outline" size={12} color={colors.error} allowFontScaling={false} />
+              <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>紧急关注</Text>
             </View>
-            <Text style={styles.time}>{formatRelativeTime(note.createdAt)}</Text>
+            <Text style={styles.time} maxFontSizeMultiplier={MAX_FONT_SCALE}>{formatRelativeTime(note.createdAt)}</Text>
           </View>
           <View style={styles.contentWrap}>
-            <Text style={styles.text} numberOfLines={4}>{note.content}</Text>
+            <Text style={styles.text} numberOfLines={flat ? 2 : 4} maxFontSizeMultiplier={MAX_FONT_SCALE}>{note.content}</Text>
           </View>
         </Pressable>
         {(flat || isFront) && (
@@ -259,7 +272,7 @@ function UrgentDeckCard({
               accessibilityRole="button"
               accessibilityLabel="知道了，关闭此关注"
             >
-              <Text style={styles.dismissText}>知道了</Text>
+              <Text style={styles.dismissText} maxFontSizeMultiplier={MAX_FONT_SCALE}>知道了</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -302,10 +315,15 @@ function PrepDeckCard({
 }) {
   const depthAnim = useRef(new Animated.Value(depth)).current;
   const prevDepth = useRef(depth);
+  // 顶牌飞出后被回收为后排的当帧，depthAnim 还是 0（整卡尺寸），
+  // 直接按目标位姿渲染，避免回收卡在新顶牌四周先露出一圈。
+  const recycledToBack = prevDepth.current === 0 && depth > 0;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const from = prevDepth.current;
     prevDepth.current = depth;
+    // 连续快翻时先停掉上一段弹簧，避免两个动画抢同一个值
+    depthAnim.stopAnimation();
     // 顶牌飞出后回到底层：直接落位，避免回收瞬间比新顶牌还宽
     if (from === 0 && depth > 0) {
       depthAnim.setValue(depth);
@@ -421,8 +439,13 @@ function PrepDeckCard({
     },
   }), [colors, isPrepared, flatWidth, flatHeight]);
 
-  const translateY = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
-  const scale = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
+  const depthTier = Math.min(depth, DECK_MAX_VISIBLE - 1);
+  const translateY = recycledToBack
+    ? DECK_DEPTH_TRANSLATE_Y[depthTier]
+    : depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
+  const scale = recycledToBack
+    ? DECK_DEPTH_SCALE[depthTier]
+    : depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
 
   return (
     <Animated.View
@@ -460,22 +483,22 @@ function PrepDeckCard({
           >
             <View style={styles.topRow}>
               <View style={styles.badge}>
-                <Ionicons name="bag-handle-outline" size={12} color={colors.fgSecondary} />
-                <Text style={styles.badgeText}>物品准备</Text>
+                <Ionicons name="bag-handle-outline" size={12} color={colors.fgSecondary} allowFontScaling={false} />
+                <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>物品准备</Text>
               </View>
-              <Text style={[styles.level, level === 'essential' ? styles.levelEssential : level === 'recommended' ? styles.levelRecommended : styles.levelOptional]}>
+              <Text style={[styles.level, level === 'essential' ? styles.levelEssential : level === 'recommended' ? styles.levelRecommended : styles.levelOptional]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 {levelLabel}
               </Text>
             </View>
             <View style={styles.contentWrap}>
-              <Text style={[styles.name, isPrepared && styles.nameDone]} numberOfLines={2}>{item.name}</Text>
+              <Text style={[styles.name, isPrepared && styles.nameDone]} numberOfLines={2} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.name}</Text>
               {item.description ? (
-                <Text style={[styles.desc, isPrepared && styles.descDone]} numberOfLines={4}>{item.description}</Text>
+                <Text style={[styles.desc, isPrepared && styles.descDone]} numberOfLines={flat ? 2 : 4} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.description}</Text>
               ) : null}
               <View style={styles.meta}>
-                <Text style={styles.metaCategory}>{item.category}</Text>
+                <Text style={styles.metaCategory} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.category}</Text>
                 {item.quantity_suggestion ? (
-                  <Text style={styles.metaQty}>{item.quantity_suggestion}</Text>
+                  <Text style={styles.metaQty} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.quantity_suggestion}</Text>
                 ) : null}
               </View>
             </View>
@@ -516,10 +539,15 @@ function SupportDeckCard({
 }) {
   const depthAnim = useRef(new Animated.Value(depth)).current;
   const prevDepth = useRef(depth);
+  // 顶牌飞出后被回收为后排的当帧，depthAnim 还是 0（整卡尺寸），
+  // 直接按目标位姿渲染，避免回收卡在新顶牌四周先露出一圈。
+  const recycledToBack = prevDepth.current === 0 && depth > 0;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const from = prevDepth.current;
     prevDepth.current = depth;
+    // 连续快翻时先停掉上一段弹簧，避免两个动画抢同一个值
+    depthAnim.stopAnimation();
     // 顶牌飞出后回到底层：直接落位，避免回收瞬间比新顶牌还宽
     if (from === 0 && depth > 0) {
       depthAnim.setValue(depth);
@@ -561,6 +589,9 @@ function SupportDeckCard({
       paddingHorizontal: spacing.lg,
       paddingBottom: 64,
       ...shadows.md,
+    },
+    cardFlat: {
+      paddingBottom: 56,
     },
     topRow: {
       flexDirection: 'row',
@@ -630,8 +661,13 @@ function SupportDeckCard({
     },
   }), [colors, flatWidth, flatHeight]);
 
-  const translateY = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
-  const scale = depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
+  const depthTier = Math.min(depth, DECK_MAX_VISIBLE - 1);
+  const translateY = recycledToBack
+    ? DECK_DEPTH_TRANSLATE_Y[depthTier]
+    : depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 10, 19] });
+  const scale = recycledToBack
+    ? DECK_DEPTH_SCALE[depthTier]
+    : depthAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.96, 0.92] });
 
   return (
     <Animated.View
@@ -651,7 +687,7 @@ function SupportDeckCard({
         ]}
       >
         <Pressable
-          style={styles.card}
+          style={[styles.card, flat && styles.cardFlat]}
           onPress={flat ? onOpenDetail : onAdvance}
           disabled={!flat && !isFront}
           accessibilityRole="button"
@@ -660,16 +696,16 @@ function SupportDeckCard({
         >
           <View style={styles.topRow}>
             <View style={styles.badge}>
-              <Ionicons name="heart-outline" size={12} color={colors.fgSecondary} />
-              <Text style={styles.badgeText}>心理支持</Text>
+              <Ionicons name="heart-outline" size={12} color={colors.fgSecondary} allowFontScaling={false} />
+              <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>心理支持</Text>
             </View>
-            <Text style={[styles.typeBadge, tip.support_type === 'emotion' ? styles.typeEmotion : tip.support_type === 'communication' ? styles.typeCommunication : tip.support_type === 'action' ? styles.typeAction : styles.typeKnowledge]}>
+            <Text style={[styles.typeBadge, tip.support_type === 'emotion' ? styles.typeEmotion : tip.support_type === 'communication' ? styles.typeCommunication : tip.support_type === 'action' ? styles.typeAction : styles.typeKnowledge]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               {typeLabel}
             </Text>
           </View>
           <View style={styles.contentWrap}>
-            <Text style={styles.title} numberOfLines={3}>{tip.title}</Text>
-            <Text style={styles.content} numberOfLines={6}>{tip.content}</Text>
+            <Text style={styles.title} numberOfLines={flat ? 2 : 3} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tip.title}</Text>
+            <Text style={styles.content} numberOfLines={flat ? 3 : 6} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tip.content}</Text>
           </View>
         </Pressable>
         {(flat || isFront) && (
@@ -682,8 +718,8 @@ function SupportDeckCard({
               accessibilityRole="button"
               accessibilityLabel={`查看${tip.title}的详情`}
             >
-              <Ionicons name="document-text-outline" size={13} color={colors.accent} />
-              <Text style={styles.pillText}>查看详情</Text>
+              <Ionicons name="document-text-outline" size={13} color={colors.accent} allowFontScaling={false} />
+              <Text style={styles.pillText} maxFontSizeMultiplier={MAX_FONT_SCALE}>查看详情</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -855,13 +891,28 @@ export default function HomeScreen() {
   const [urgentPage, setUrgentPage] = useState(0);
   const urgentModeAnim = useRef(new Animated.Value(1)).current;
   // 平铺面板宽度 = min(视口 - 浮层左右留白, 800)
-  const { width: windowW } = useWindowDimensions();
+  const { width: windowW, height: windowH } = useWindowDimensions();
   const flatRowW = Math.min(windowW - spacing.xl * 2, 800);
-  // 平铺默认两行两列：卡片宽度随面板收缩保证两列放得下，高度按原卡比例并封顶，避免两行超出屏幕
-  const flatCols = flatRowW >= DECK_CARD_WIDTH + spacing.md ? 2 : 1;
-  const flatCardW = flatCols === 2 ? Math.min(DECK_CARD_WIDTH, Math.floor((flatRowW - spacing.md) / 2)) : DECK_CARD_WIDTH;
-  const flatCardH = Math.min(Math.round((flatCardW * DECK_CARD_HEIGHT) / DECK_CARD_WIDTH), 300);
+  // 平铺默认两行两列：卡片宽度随面板收缩保证两列放得下；再窄就单列，避免卡头被挤到溢出
+  const flatCols = flatRowW >= 312 ? 2 : 1;
+  const flatCardW = flatCols === 2 ? Math.min(DECK_CARD_WIDTH, Math.floor((flatRowW - spacing.md) / 2)) : Math.min(DECK_CARD_WIDTH, flatRowW);
+  // 系统字体缩放封顶；等效宽度用于判断放大后是否还排得下并排入口
+  const cappedFontScale = Math.max(1, Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE));
+  const effectiveW = windowW / cappedFontScale;
+  // 两列窄卡放不下按 250x340 等比缩小的文字（标题 2 行 + 正文 3 行 + 查看详情按钮），
+  // 给平铺卡一个随字体缩放的最小高度，避免文字溢出卡片
+  const FLAT_MIN_CARD_H = 232;
+  // 卡片高度随系统字体缩放（封顶 MAX_FONT_SCALE）一起放大，否则固定高度会把放大后的文字裁掉
+  const flatCardH = Math.min(
+    Math.max(
+      Math.round(((flatCardW * DECK_CARD_HEIGHT) / DECK_CARD_WIDTH) * cappedFontScale),
+      Math.round(FLAT_MIN_CARD_H * cappedFontScale),
+    ),
+    DECK_CARD_HEIGHT,
+  );
   const flatPerPage = flatCols * 2;
+  // 浮层不允许超出屏幕：超出部分交给内部 ScrollView，避免小屏/大字体下顶部与底部被裁掉
+  const flatPanelMaxH = Math.max(260, windowH - insets.top - insets.bottom - 48);
 
   const urgentDeckNotes = useMemo(() => {
     const total = state.urgentNotes.length;
@@ -944,7 +995,7 @@ export default function HomeScreen() {
   header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   greeting: { ...typography.footnote, color: colors.muted, marginBottom: spacing.xs },
   stageText: { ...typography.title3, fontWeight: '700', color: colors.fg },
-  stageRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  stageRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: spacing.sm },
   weekText: { ...typography.subhead, color: colors.accent, fontWeight: '500' },
   stageMotto: {
     ...typography.footnote,
@@ -956,39 +1007,36 @@ export default function HomeScreen() {
   // 每日小贴士
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    backgroundColor: colors.accentLight,
     borderRadius: radius.md,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.accent,
-    overflow: 'hidden',
+    padding: spacing.lg,
+  },
+  tipIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tipBody: {
     flex: 1,
-    padding: spacing.md,
-  },
-  tipLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-    gap: spacing.xs,
-  },
-  tipLabel: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
   },
   tipLabelText: {
     ...typography.caption2,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.accent,
+    letterSpacing: 0.8,
+    marginBottom: 3,
   },
   tipText: {
-    ...typography.footnote,
+    ...typography.callout,
     color: colors.fg,
-    lineHeight: 20,
+    lineHeight: 23,
   },
 
   // 紧急关注（铃铛浮层：前后叠放的牌堆）
@@ -1215,6 +1263,10 @@ export default function HomeScreen() {
     marginBottom: spacing.md,
     gap: spacing.md,
   },
+  // 极窄屏（<360dp，或系统显示大小放大后等效宽度）并排会裁掉内容，改为上下堆叠
+  topCardsRowStacked: {
+    flexDirection: 'column',
+  },
   topCard: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -1399,6 +1451,9 @@ export default function HomeScreen() {
     gap: spacing.md,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
+  },
+  sectionRowStacked: {
+    flexDirection: 'column',
   },
   sectionBtn: {
     flex: 1,
@@ -1614,26 +1669,29 @@ export default function HomeScreen() {
     setPrepDeckIndex(0);
   }, [visiblePresetItems.length, prepDeckIndex]);
 
+  // 退出进度只在开新动画前归零（此刻没有卡片使用 exitAnim，归零不可见）。
+  // 不能在结束回调里归零：setValue 立即作用到原生视图，而索引状态要等 React
+  // 提交，旧顶牌会在提交前以 opacity 1 / translateX 0 闪回原位（真机可见）。
   const advancePrepDeck = () => {
     if (prepDeckExiting || visiblePresetItems.length < 2) return;
+    prepDeckExit.setValue(0);
     setPrepDeckExiting(true);
     Animated.timing(prepDeckExit, { toValue: 1, duration: 220, useNativeDriver: true }).start(({ finished }) => {
       if (finished) {
         setPrepDeckIndex(i => (i + 1) % visiblePresetItems.length);
       }
-      prepDeckExit.setValue(0);
       setPrepDeckExiting(false);
     });
   };
 
   const advanceSupportDeck = () => {
     if (supportDeckExiting || supportTips.length < 2) return;
+    supportDeckExit.setValue(0);
     setSupportDeckExiting(true);
     Animated.timing(supportDeckExit, { toValue: 1, duration: 220, useNativeDriver: true }).start(({ finished }) => {
       if (finished) {
         setSupportDeckIndex(i => (i + 1) % supportTips.length);
       }
-      supportDeckExit.setValue(0);
       setSupportDeckExiting(false);
     });
   };
@@ -1692,12 +1750,12 @@ export default function HomeScreen() {
 
   const advanceUrgentDeck = () => {
     if (deckExiting || state.urgentNotes.length < 2) return;
+    deckExit.setValue(0);
     setDeckExiting(true);
     Animated.timing(deckExit, { toValue: 1, duration: 220, useNativeDriver: true }).start(({ finished }) => {
       if (finished) {
         setDeckIndex(i => (i + 1) % state.urgentNotes.length);
       }
-      deckExit.setValue(0);
       setDeckExiting(false);
     });
   };
@@ -1705,10 +1763,10 @@ export default function HomeScreen() {
   const handleDismissUrgentNote = (noteId: string) => {
     const removeWithAnimation = () => {
       if (deckExiting) return;
+      deckExit.setValue(0);
       setDeckExiting(true);
       Animated.timing(deckExit, { toValue: 1, duration: 200, useNativeDriver: true }).start(() => {
         dismissUrgentNote(noteId);
-        deckExit.setValue(0);
         setDeckExiting(false);
       });
     };
@@ -1761,7 +1819,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.topBar}>
-          <Text style={styles.greeting}>
+          <Text style={styles.greeting} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {state.stage === 'postpartum' ? '新晋奶爸，辛苦了' : '准爸爸，你好'}
           </Text>
           <View style={styles.topBarRight}>
@@ -1777,11 +1835,12 @@ export default function HomeScreen() {
                   name="notifications-outline"
                   size={18}
                   color={hasUrgentNotes ? colors.error : colors.muted}
+                  allowFontScaling={false}
                 />
               </Animated.View>
               {state.urgentNotes.length > 0 && (
                 <View style={styles.bellBadge}>
-                  <Text style={styles.bellBadgeText}>{state.urgentNotes.length > 9 ? '9+' : state.urgentNotes.length}</Text>
+                  <Text style={styles.bellBadgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{state.urgentNotes.length > 9 ? '9+' : state.urgentNotes.length}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -1792,22 +1851,22 @@ export default function HomeScreen() {
         </View>
 
         {/* ===== 孕期 / 宝宝大小 并排卡片 ===== */}
-        <View style={styles.topCardsRow}>
+        <View style={[styles.topCardsRow, windowW < 360 && styles.topCardsRowStacked]}>
           <View style={styles.topCard}>
             <View style={styles.topCardBody}>
               <View style={styles.topCardIconCol}>
-                <Ionicons name="heart-outline" size={36} color={colors.accent} />
+                <Ionicons name="heart-outline" size={36} color={colors.accent} allowFontScaling={false} />
               </View>
               <View style={styles.topCardInfo}>
                 <View style={styles.stageRow}>
-                  <Text style={styles.stageText}>{stageLabel}</Text>
+                  <Text style={styles.stageText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{stageLabel}</Text>
                   {state.babies.length > 0 && (
-                    <Text style={styles.weekText}>
+                    <Text style={styles.weekText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                       {state.stage === 'postpartum' ? state.birthAgeLabel : `第 ${state.weeksPregnant} 周`}
                     </Text>
                   )}
                 </View>
-                <Text style={styles.stageMotto}>
+                <Text style={styles.stageMotto} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                   {state.stage === 'preconception' && '调整身心，迎接新生命的到来'}
                   {state.stage === 'first' && '孕早期要格外注意休息和营养均衡'}
                   {state.stage === 'second' && '宝宝正在快速发育，保持愉悦心情'}
@@ -1821,23 +1880,23 @@ export default function HomeScreen() {
             <View style={styles.topCard}>
               <View style={styles.topCardBody}>
                 <View style={styles.topCardIconCol}>
-                  <Ionicons name={bumpEntry.iconName} size={36} color={colors.accent} />
+                  <Ionicons name={bumpEntry.iconName} size={36} color={colors.accent} allowFontScaling={false} />
                 </View>
                 <View style={styles.topCardInfo}>
-                  <Text style={styles.bumpFruit}>像 {bumpEntry.fruit} 一样大</Text>
-                  <Text style={styles.bumpWeekSm}>第 {state.weeksPregnant} 周</Text>
+                  <Text style={styles.bumpFruit} maxFontSizeMultiplier={MAX_FONT_SCALE}>像 {bumpEntry.fruit} 一样大</Text>
+                  <Text style={styles.bumpWeekSm} maxFontSizeMultiplier={MAX_FONT_SCALE}>第 {state.weeksPregnant} 周</Text>
                   <View style={styles.bumpMeta}>
                     <View style={styles.bumpMetaItem}>
-                      <Text style={styles.bumpMetaLabel}>身长</Text>
-                      <Text style={styles.bumpMetaValue}>{bumpEntry.lengthCm} cm</Text>
+                      <Text style={styles.bumpMetaLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>身长</Text>
+                      <Text style={styles.bumpMetaValue} maxFontSizeMultiplier={MAX_FONT_SCALE}>{bumpEntry.lengthCm} cm</Text>
                     </View>
                     <View style={styles.bumpMetaDivider} />
                     <View style={styles.bumpMetaItem}>
-                      <Text style={styles.bumpMetaLabel}>体重</Text>
-                      <Text style={styles.bumpMetaValue}>{bumpEntry.weightG} g</Text>
+                      <Text style={styles.bumpMetaLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>体重</Text>
+                      <Text style={styles.bumpMetaValue} maxFontSizeMultiplier={MAX_FONT_SCALE}>{bumpEntry.weightG} g</Text>
                     </View>
                   </View>
-                  <Text style={styles.bumpDesc}>{bumpEntry.description}</Text>
+                  <Text style={styles.bumpDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{bumpEntry.description}</Text>
                 </View>
               </View>
             </View>
@@ -1846,13 +1905,12 @@ export default function HomeScreen() {
 
         {/* ===== 每日小贴士 ===== */}
         <View style={styles.tipCard}>
+          <View style={styles.tipIconWrap}>
+            <Ionicons name="bulb-outline" size={17} color={colors.accent} allowFontScaling={false} />
+          </View>
           <View style={styles.tipBody}>
-            <View style={styles.tipLabelRow}>
-              <View style={styles.tipLabel}>
-                <Text style={styles.tipLabelText}>今日贴士</Text>
-              </View>
-            </View>
-            <Text style={styles.tipText}>{dailyTip}</Text>
+            <Text style={styles.tipLabelText} maxFontSizeMultiplier={MAX_FONT_SCALE}>今日贴士</Text>
+            <Text style={styles.tipText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{dailyTip}</Text>
           </View>
         </View>
 
@@ -1864,17 +1922,17 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.checkupHeader}>
-              <Ionicons name="calendar-outline" size={14} color={colors.accent} />
-              <Text style={styles.checkupHeaderTitle}>下次产检</Text>
+              <Ionicons name="calendar-outline" size={14} color={colors.accent} allowFontScaling={false} />
+              <Text style={styles.checkupHeaderTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>下次产检</Text>
             </View>
             <View style={styles.checkupBody}>
               <View style={styles.checkupRow}>
                 <View style={styles.checkupIconWrap}>
-                  <Ionicons name="document-text-outline" size={22} color={colors.accent} />
+                  <Ionicons name="document-text-outline" size={22} color={colors.accent} allowFontScaling={false} />
                 </View>
                 <View style={styles.checkupInfo}>
-                  <Text style={styles.checkupLabel}>检查项目</Text>
-                  <Text style={styles.checkupName}>{nextPrenatal.title}</Text>
+                  <Text style={styles.checkupLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>检查项目</Text>
+                  <Text style={styles.checkupName} numberOfLines={2} maxFontSizeMultiplier={MAX_FONT_SCALE}>{nextPrenatal.title}</Text>
                 </View>
                 <View style={[
                   styles.checkupCountdownWrap,
@@ -1885,31 +1943,31 @@ export default function HomeScreen() {
                     styles.checkupDaysNum,
                     daysUntilNextPrenatal! <= 0 && styles.checkupDaysUrgent,
                     daysUntilNextPrenatal! <= 3 && daysUntilNextPrenatal! > 0 && styles.checkupDaysSoon,
-                  ]}>
+                  ]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                     {daysUntilNextPrenatal! <= 0 ? '今天' : `${daysUntilNextPrenatal}`}
                   </Text>
                   <Text style={[
                     styles.checkupDaysLabel,
                     daysUntilNextPrenatal! <= 0 && styles.checkupDaysLabelUrgent,
-                  ]}>
+                  ]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                     {daysUntilNextPrenatal! <= 0 ? '检查日' : '天后'}
                   </Text>
                 </View>
               </View>
               {nextPrenatal.description ? (
-                <Text style={styles.checkupDesc}>{nextPrenatal.description}</Text>
+                <Text style={styles.checkupDesc} maxFontSizeMultiplier={MAX_FONT_SCALE}>{nextPrenatal.description}</Text>
               ) : null}
             </View>
             <View style={styles.checkupFooter}>
-              <Text style={styles.checkupHint}>点击查看全部产检</Text>
-              <Ionicons name="chevron-forward" size={12} color={colors.muted} />
+              <Text style={styles.checkupHint} maxFontSizeMultiplier={MAX_FONT_SCALE}>点击查看全部产检</Text>
+              <Ionicons name="chevron-forward" size={12} color={colors.muted} allowFontScaling={false} />
             </View>
           </TouchableOpacity>
         )}
 
         {/* ===== 物品准备 / 心理支持 入口 ===== */}
         {(visiblePresetItems.length > 0 || supportTips.length > 0) && (
-          <View style={styles.sectionRow}>
+          <View style={[styles.sectionRow, (windowW < 360 || effectiveW < 340) && styles.sectionRowStacked]}>
             {visiblePresetItems.length > 0 && (
               <TouchableOpacity
                 style={styles.sectionBtn}
@@ -1918,10 +1976,10 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`物品准备，共 ${visiblePresetItems.length} 项`}
               >
-                <Ionicons name="bag-handle-outline" size={18} color={colors.accent} />
-                <Text style={styles.sectionBtnTitle} numberOfLines={1}>物品准备</Text>
+                <Ionicons name="bag-handle-outline" size={18} color={colors.accent} allowFontScaling={false} />
+                <Text style={styles.sectionBtnTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>物品准备</Text>
                 <View style={styles.sectionBtnBadge}>
-                  <Text style={styles.sectionBtnBadgeText}>{visiblePresetItems.length}</Text>
+                  <Text style={styles.sectionBtnBadgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{visiblePresetItems.length}</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -1933,10 +1991,10 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`心理支持，共 ${supportTips.length} 条`}
               >
-                <Ionicons name="heart-outline" size={18} color={colors.info} />
-                <Text style={styles.sectionBtnTitle} numberOfLines={1}>心理支持</Text>
+                <Ionicons name="heart-outline" size={18} color={colors.info} allowFontScaling={false} />
+                <Text style={styles.sectionBtnTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>心理支持</Text>
                 <View style={styles.sectionBtnBadge}>
-                  <Text style={styles.sectionBtnBadgeText}>{supportTips.length}</Text>
+                  <Text style={styles.sectionBtnBadgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{supportTips.length}</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -1969,7 +2027,7 @@ export default function HomeScreen() {
         accessibilityRole="button"
         accessibilityLabel="新增紧急关注"
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add" size={28} color="#fff" allowFontScaling={false} />
       </TouchableOpacity>
 
       {/* 新增紧急关注弹窗 */}
@@ -1987,7 +2045,7 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <Text style={styles.urgentModalTitle}>新增紧急关注</Text>
+            <Text style={styles.urgentModalTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>新增紧急关注</Text>
             <TextInput
               style={styles.urgentModalInput}
               placeholder="如：观察明天是否还有红疹"
@@ -2002,7 +2060,7 @@ export default function HomeScreen() {
                 style={styles.urgentModalCancel}
                 onPress={() => setShowUrgentModal(false)}
               >
-                <Text style={styles.urgentModalCancelText}>取消</Text>
+                <Text style={styles.urgentModalCancelText} maxFontSizeMultiplier={MAX_FONT_SCALE}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.urgentModalSave, (!urgentText.trim() || urgentLoading) && styles.urgentModalSaveDisabled]}
@@ -2022,7 +2080,7 @@ export default function HomeScreen() {
                 {urgentLoading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.urgentModalSaveText}>保存</Text>
+                  <Text style={styles.urgentModalSaveText} maxFontSizeMultiplier={MAX_FONT_SCALE}>保存</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -2047,6 +2105,13 @@ export default function HomeScreen() {
             ]}
           >
             <Pressable onPress={e => e.stopPropagation()}>
+              <ScrollView
+                style={urgentFlat ? { maxHeight: flatPanelMaxH } : undefined}
+                contentContainerStyle={urgentFlat ? { paddingVertical: spacing.sm } : undefined}
+                scrollEnabled={urgentFlat}
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+              >
               {state.urgentNotes.length === 0 ? (
                 <View style={styles.urgentEmptyCard}>
                   <View style={styles.urgentEmptyIcon}>
@@ -2132,6 +2197,7 @@ export default function HomeScreen() {
                 <Ionicons name="add" size={15} color={colors.error} />
                 <Text style={styles.urgentAddPillText}>新增关注</Text>
               </TouchableOpacity>
+              </ScrollView>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -2154,6 +2220,13 @@ export default function HomeScreen() {
             ]}
           >
             <Pressable onPress={e => e.stopPropagation()}>
+              <ScrollView
+                style={prepFlat ? { maxHeight: flatPanelMaxH } : undefined}
+                contentContainerStyle={prepFlat ? { paddingVertical: spacing.sm } : undefined}
+                scrollEnabled={prepFlat}
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+              >
               <Animated.View
                 style={{
                   opacity: prepModeAnim,
@@ -2227,6 +2300,7 @@ export default function HomeScreen() {
               </Animated.View>
               <Text style={styles.deckSubHint}>左滑标记完成 · 右滑删除</Text>
               <DeckToggleButton expanded={prepFlat} onPress={togglePrepMode} />
+              </ScrollView>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -2249,6 +2323,13 @@ export default function HomeScreen() {
             ]}
           >
             <Pressable onPress={e => e.stopPropagation()}>
+              <ScrollView
+                style={(supportFlat || selectedTip) ? { maxHeight: flatPanelMaxH } : undefined}
+                contentContainerStyle={(supportFlat || selectedTip) ? { paddingVertical: spacing.sm } : undefined}
+                scrollEnabled={supportFlat || !!selectedTip}
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+              >
               {selectedTip ? (
                 <View style={styles.urgentModalContent}>
                   {(() => {
@@ -2351,6 +2432,7 @@ export default function HomeScreen() {
                   <DeckToggleButton expanded={supportFlat} onPress={toggleSupportMode} />
                 </>
               )}
+              </ScrollView>
             </Pressable>
           </Animated.View>
         </Pressable>

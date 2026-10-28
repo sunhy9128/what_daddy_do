@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform, FlatList, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Platform, FlatList, PixelRatio, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Task } from '../../src/context/AppContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -12,7 +12,7 @@ import { StageTabs } from '../../src/components/molecules';
 import { CollapsibleGroup } from '../../src/components/organisms';
 // 物品准备/心理支持已迁移到首页（index.tsx）
 import { useColors } from '../../src/context/ThemeContext';
-import { radius, spacing, shadows, typography } from '../../src/styles/tokens';
+import { radius, spacing, shadows, typography, MAX_FONT_SCALE } from '../../src/styles/tokens';
 import { Ionicons } from '@expo/vector-icons';
 import { DatePicker } from '../../src/components/DatePicker';
 import * as Linking from 'expo-linking';
@@ -35,15 +35,13 @@ const STAGE_MAP: Record<string, PregnancyStage> = {
 
 // 物品准备/心理支持已迁移到首页（index.tsx）
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PRESET_PAGE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 const PRESET_ITEMS_PER_PAGE = 5;
 // 卡片之间的视觉间距（右侧留出 GAP，让翻页时下一张卡片有视觉缓冲）
 const PRESET_GAP = spacing.md;
-// 单条垂直卡片的预估高度（标题 + 描述 + 徽章），用于 FlatList getItemLayout 精确滚动
-const PRESET_ROW_HEIGHT = 76;
+// 单条垂直卡片的基准高度（标题 20 + 两行描述 34 + 间距 2 + 上下 padding 24），
+// 实际高度会再乘以（封顶后的）系统字体缩放比例，避免放大字体后行被裁切
+const PRESET_ROW_HEIGHT = 84;
 const PRESET_ROW_GAP = spacing.xs;
-const PRESET_PAGE_HEIGHT = PRESET_ROW_HEIGHT * PRESET_ITEMS_PER_PAGE + PRESET_ROW_GAP * (PRESET_ITEMS_PER_PAGE - 1);
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
@@ -73,6 +71,14 @@ export default function TasksScreen() {
   const isPresetScrolling = useRef(false);
   // FlatList 实际视口宽度（用 onLayout 测出，不依赖外层 padding）
   const [presetListWidth, setPresetListWidth] = useState(0);
+  // 不再用模块级 Dimensions.get（初始化后不随窗口变化），宽度走 useWindowDimensions
+  const { width: windowW } = useWindowDimensions();
+  const presetPageWidth = presetListWidth || windowW - spacing.lg * 2;
+  // 行高随系统字体缩放（封顶 MAX_FONT_SCALE）放大，避免固定页高把最后一条任务裁掉
+  const presetFontScale = Math.max(1, Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE));
+  const presetPageHeight =
+    Math.ceil(PRESET_ROW_HEIGHT * presetFontScale) * PRESET_ITEMS_PER_PAGE +
+    PRESET_ROW_GAP * (PRESET_ITEMS_PER_PAGE - 1);
   const colors = useColors();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -804,10 +810,10 @@ export default function TasksScreen() {
     if (index < 0 || index >= totalPresetPages) return;
     isPresetScrolling.current = true;
     setPresetPageIndex(index);
-    const step = presetListWidth || PRESET_PAGE_WIDTH;
+    const step = presetPageWidth;
     presetFlatListRef.current?.scrollToOffset({ offset: index * step, animated: true });
     setTimeout(() => { isPresetScrolling.current = false; }, 600);
-  }, [totalPresetPages, presetListWidth]);
+  }, [totalPresetPages, presetPageWidth]);
 
   // FlatList 可见项变化检测（更新指示器）
   const onPresetViewable = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
@@ -846,26 +852,26 @@ export default function TasksScreen() {
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <View style={styles.titleIcon}>
-              <Ionicons name="checkbox-outline" size={24} color={colors.accent} />
+              <Ionicons name="checkbox-outline" size={24} color={colors.accent} allowFontScaling={false} />
             </View>
-            <Text style={styles.title}>待办清单</Text>
+            <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>待办清单</Text>
           </View>
-          <Text style={styles.subtitle}>当前阶段：{selectedStage}</Text>
+          <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>当前阶段：{selectedStage}</Text>
           {/* 视图切换 */}
           <View style={styles.viewToggle}>
             <TouchableOpacity
               style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
               onPress={() => setViewMode('list')}
             >
-              <Ionicons name="list-outline" size={14} color={viewMode === 'list' ? colors.accent : colors.muted} />
-              <Text style={viewMode === 'list' ? styles.viewToggleTxtActive : styles.viewToggleTxt}>列表</Text>
+              <Ionicons name="list-outline" size={14} color={viewMode === 'list' ? colors.accent : colors.muted} allowFontScaling={false} />
+              <Text style={viewMode === 'list' ? styles.viewToggleTxtActive : styles.viewToggleTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>列表</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.viewToggleBtn, viewMode === 'calendar' && styles.viewToggleBtnActive]}
               onPress={() => setViewMode('calendar')}
             >
-              <Ionicons name="calendar-outline" size={14} color={viewMode === 'calendar' ? colors.accent : colors.muted} />
-              <Text style={viewMode === 'calendar' ? styles.viewToggleTxtActive : styles.viewToggleTxt}>日历</Text>
+              <Ionicons name="calendar-outline" size={14} color={viewMode === 'calendar' ? colors.accent : colors.muted} allowFontScaling={false} />
+              <Text style={viewMode === 'calendar' ? styles.viewToggleTxtActive : styles.viewToggleTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>日历</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -888,8 +894,8 @@ export default function TasksScreen() {
         {/* Progress */}
         <Card style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>{selectedStage}完成进度</Text>
-            <Text style={styles.progressValue}>{completedTasks}/{totalTasks}</Text>
+            <Text style={styles.progressTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selectedStage}完成进度</Text>
+            <Text style={styles.progressValue} maxFontSizeMultiplier={MAX_FONT_SCALE}>{completedTasks}/{totalTasks}</Text>
           </View>
           <ProgressBar value={progress} />
         </Card>
@@ -908,7 +914,7 @@ export default function TasksScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="导航到产检医院"
               >
-                <Ionicons name="navigate-outline" size={16} color={colors.accent} />
+                <Ionicons name="navigate-outline" size={16} color={colors.accent} allowFontScaling={false} />
               </TouchableOpacity>
             }
           >
@@ -951,8 +957,8 @@ export default function TasksScreen() {
         <View style={styles.presetSection}>
           {/* 标题行 */}
           <View style={styles.presetSectionHeader}>
-            <Text style={styles.presetSectionTitle}>可添加任务</Text>
-            <Text style={styles.presetSectionCount}>{filteredAvailablePresets.length} 项</Text>
+            <Text style={styles.presetSectionTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>可添加任务</Text>
+            <Text style={styles.presetSectionCount} maxFontSizeMultiplier={MAX_FONT_SCALE}>{filteredAvailablePresets.length} 项</Text>
           </View>
 
           {/* 类型筛选 */}
@@ -963,7 +969,7 @@ export default function TasksScreen() {
                 style={[styles.presetFilterChip, presetFilter === f && styles.presetFilterChipActive]}
                 onPress={() => setPresetFilter(f)}
               >
-                <Text style={presetFilter === f ? styles.presetFilterTxtActive : styles.presetFilterTxt}>
+                <Text style={presetFilter === f ? styles.presetFilterTxtActive : styles.presetFilterTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                   {f === 'all' ? '全部' : f === 'prenatal' ? '产检' : f === 'checkin' ? '打卡' : '日常'}
                 </Text>
               </TouchableOpacity>
@@ -975,7 +981,7 @@ export default function TasksScreen() {
             <>
               {/* onLayout 测出视口实际宽度，paging 步长精确等于此值 → 不会漏出下一页 */}
               <View
-                style={{ height: PRESET_PAGE_HEIGHT }}
+                style={{ height: presetPageHeight }}
                 onLayout={(e) => {
                   const w = e.nativeEvent.layout.width;
                   if (w > 0 && w !== presetListWidth) setPresetListWidth(w);
@@ -991,10 +997,10 @@ export default function TasksScreen() {
                   keyExtractor={(_, index) => `preset-page-${index}`}
                   onViewableItemsChanged={onPresetViewable}
                   viewabilityConfig={presetViewabilityConfig}
-                  getItemLayout={(_, index) => ({ length: presetListWidth, offset: presetListWidth * index, index })}
-                  style={{ height: PRESET_PAGE_HEIGHT }}
+                  getItemLayout={(_, index) => ({ length: presetPageWidth, offset: presetPageWidth * index, index })}
+                  style={{ height: presetPageHeight }}
                   renderItem={({ item: pageTasks, index: pageIndex }) => {
-                    const pageWidth = presetListWidth || PRESET_PAGE_WIDTH;
+                    const pageWidth = presetPageWidth;
                     // 所有页（含末页）都左右留出 PRESET_GAP 间距：
                     //   - 左侧 padding 让首卡片不贴边
                     //   - 右侧 padding 让末卡片也不贴边
@@ -1020,13 +1026,13 @@ export default function TasksScreen() {
                             >
                               {/* 复选风格的「+」按钮 — 仿物品准备 */}
                               <View style={styles.presetCheckbox}>
-                                <Ionicons name="add" size={16} color={colors.accent} />
+                                <Ionicons name="add" size={16} color={colors.accent} allowFontScaling={false} />
                               </View>
                             {/* 标题 + 描述 + 元信息 */}
                             <View style={styles.presetInfo}>
-                              <Text style={styles.presetName} numberOfLines={1}>{task.title}</Text>
+                              <Text style={styles.presetName} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{task.title}</Text>
                               {task.description ? (
-                                <Text style={styles.presetDesc} numberOfLines={2}>{task.description}</Text>
+                                <Text style={styles.presetDesc} numberOfLines={2} maxFontSizeMultiplier={MAX_FONT_SCALE}>{task.description}</Text>
                               ) : null}
                             </View>
                             {/* 右侧类型徽章 */}
@@ -1046,7 +1052,7 @@ export default function TasksScreen() {
                   onPress={() => scrollToPresetPage(presetPageIndex - 1)}
                   disabled={presetPageIndex === 0}
                 >
-                  <Ionicons name="chevron-back" size={14} color={colors.fg} />
+                  <Ionicons name="chevron-back" size={14} color={colors.fg} allowFontScaling={false} />
                 </TouchableOpacity>
                 {Array.from({ length: totalPresetPages }).map((_, idx) => (
                   <View
@@ -1059,14 +1065,14 @@ export default function TasksScreen() {
                   onPress={() => scrollToPresetPage(presetPageIndex + 1)}
                   disabled={presetPageIndex >= totalPresetPages - 1}
                 >
-                  <Ionicons name="chevron-forward" size={14} color={colors.fg} />
+                  <Ionicons name="chevron-forward" size={14} color={colors.fg} allowFontScaling={false} />
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <View style={styles.presetEmpty}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.muted} />
-              <Text style={styles.presetEmptyTxt}>该类型任务已全部添加</Text>
+              <Ionicons name="checkmark-circle" size={16} color={colors.muted} allowFontScaling={false} />
+              <Text style={styles.presetEmptyTxt} maxFontSizeMultiplier={MAX_FONT_SCALE}>该类型任务已全部添加</Text>
             </View>
           )}
         </View>
@@ -1080,7 +1086,7 @@ export default function TasksScreen() {
       {/* FAB — 添加任务（过去阶段隐藏） */}
       {!isPastStage && (
         <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
-          <Ionicons name="add" size={28} color="#fff" />
+          <Ionicons name="add" size={28} color="#fff" allowFontScaling={false} />
         </TouchableOpacity>
       )}
 

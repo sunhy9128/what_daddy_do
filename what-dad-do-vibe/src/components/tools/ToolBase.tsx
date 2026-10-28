@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
-import { radius, spacing, typography } from '../../styles/tokens';
+import { radius, spacing, typography, MAX_FONT_SCALE } from '../../styles/tokens';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -59,8 +59,9 @@ export function ToolBase({
       justifyContent: 'space-between',
       paddingLeft: spacing.md,
       paddingRight: spacing.sm,
-      paddingVertical: 0,
-      height: 40,
+      paddingVertical: spacing.sm,
+      // 用 minHeight 代替固定高度，系统字体放大时标题不会被裁切
+      minHeight: 40,
       backgroundColor: colors.surfaceSecondary,
     },
     headerLeft: {
@@ -128,7 +129,7 @@ export function ToolBase({
                 disabled={isFirst}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="chevron-up" size={10} color={isFirst ? colors.muted : colors.fgSecondary} />
+                <Ionicons name="chevron-up" size={10} color={isFirst ? colors.muted : colors.fgSecondary} allowFontScaling={false} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.reorderBtn, isLast && styles.reorderBtnDisabled]}
@@ -136,7 +137,7 @@ export function ToolBase({
                 disabled={isLast}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="chevron-down" size={10} color={isLast ? colors.muted : colors.fgSecondary} />
+                <Ionicons name="chevron-down" size={10} color={isLast ? colors.muted : colors.fgSecondary} allowFontScaling={false} />
               </TouchableOpacity>
             </View>
           )}
@@ -144,14 +145,16 @@ export function ToolBase({
             name={tool.icon as keyof typeof Ionicons.glyphMap}
             size={18}
             color={colors.fg}
+            allowFontScaling={false}
           />
-          <Text style={styles.toolName}>{tool.name}</Text>
+          <Text style={styles.toolName} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{tool.name}</Text>
         </View>
         <View style={styles.headerRight}>
           <Ionicons
             name={isCollapsed ? 'chevron-forward' : 'chevron-down'}
             size={14}
             color={colors.muted}
+            allowFontScaling={false}
           />
           {showRemove && (
             <TouchableOpacity
@@ -159,7 +162,7 @@ export function ToolBase({
               onPress={() => onRemove(tool.id)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close" size={14} color={colors.muted} />
+              <Ionicons name="close" size={14} color={colors.muted} allowFontScaling={false} />
             </TouchableOpacity>
           )}
         </View>

@@ -7,7 +7,7 @@ import { useApp } from '../src/context/AppContext';
 import { useAuth } from '../src/context/AuthContext';
 import { calculateStageFromDueDate, calculateBirthAge } from '../src/lib/stages';
 import { useColors, useTheme } from '../src/context/ThemeContext';
-import { spacing, radius, typography, shadows } from '../src/styles/tokens';
+import { spacing, radius, typography, shadows, MAX_FONT_SCALE } from '../src/styles/tokens';
 import { DatePicker } from '../src/components/DatePicker';
 import * as Linking from 'expo-linking';
 
@@ -80,7 +80,7 @@ export default function BabyInfoScreen() {
     paddingVertical: spacing.sm,
   },
   infoLabel: { ...typography.callout, color: colors.fgSecondary, flex: 1 },
-  infoValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
+  infoValue: { ...typography.callout, fontWeight: '600', color: colors.accent, flexShrink: 1, textAlign: 'right' },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
 
   // 表单
@@ -271,13 +271,13 @@ export default function BabyInfoScreen() {
             router.back();
           }
         }} style={styles.navBack}>
-          <Ionicons name="chevron-back" size={20} color={colors.accent} />
+          <Ionicons name="chevron-back" size={20} color={colors.accent} allowFontScaling={false} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>孕期信息</Text>
+        <Text style={styles.navTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>孕期信息</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         {/* 当前信息 */}
         {existingBaby && isPostpartum ? (
           <View style={styles.babyCard}>

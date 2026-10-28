@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, Dimensions, StyleSheet } from 'react-native';
+import { View, Animated, useWindowDimensions, StyleSheet } from 'react-native';
 
-const { width: W, height: H } = Dimensions.get('window');
 const COLORS = ['#AE5D4C','#C2A96B','#8FA375','#647B85','#B39B78','#C9A6A0','#9FAEC2'];
 const N = 50;
 
@@ -16,6 +15,8 @@ interface Particle {
 }
 
 export function Confetti() {
+  // 用 useWindowDimensions 而不是模块级 Dimensions.get，窗口尺寸变化后仍然正确
+  const { width: W, height: H } = useWindowDimensions();
   const pRef = useRef<Particle[] | null>(null);
   if (!pRef.current) {
     pRef.current = Array.from({ length: N }, (_, i) => ({

@@ -10,7 +10,7 @@ import { useApp } from '../../src/context/AppContext';
 import { useColors, useTheme } from '../../src/context/ThemeContext';
 import { Card } from '../../src/components/atoms';
 import { STAGES, calculateStageFromDueDate, calculateBirthAge } from '../../src/lib/stages';
-import { spacing, radius, typography } from '../../src/styles/tokens';
+import { spacing, radius, typography, MAX_FONT_SCALE } from '../../src/styles/tokens';
 import { loadNotificationConfig, saveNotificationConfig, NotificationConfig } from '../../src/lib/storage';
 import { requestNotificationPermissions, scheduleDailyCheckinReminder, cancelAllNotifications } from '../../src/lib/notifications';
 
@@ -210,13 +210,13 @@ export default function ProfileScreen() {
       width: 36, height: 36, borderRadius: radius.sm,
       backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center',
     },
-    pregTitle: { ...typography.headline, fontWeight: '600', color: colors.fg },
+    pregTitle: { ...typography.headline, fontWeight: '600', color: colors.fg, flexShrink: 1 },
     pregRow: {
       flexDirection: 'row', justifyContent: 'space-between', width: '100%',
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm, gap: spacing.sm,
     },
-    pregLabel: { ...typography.callout, color: colors.fgSecondary },
-    pregValue: { ...typography.callout, fontWeight: '600', color: colors.accent },
+    pregLabel: { ...typography.callout, color: colors.fgSecondary, flexShrink: 1 },
+    pregValue: { ...typography.callout, fontWeight: '600', color: colors.accent, flexShrink: 1, textAlign: 'right' },
     pregDivider: {
       width: '100%', height: StyleSheet.hairlineWidth, backgroundColor: colors.border,
     },
@@ -228,8 +228,8 @@ export default function ProfileScreen() {
       borderWidth: 1, borderColor: colors.babyCardBorder,
     },
     babyHeader: { alignItems: 'center', marginBottom: spacing.md },
-    babyNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    babyName: { ...typography.title2, fontWeight: '700', color: colors.babyName },
+    babyNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, maxWidth: '100%' },
+    babyName: { ...typography.title2, fontWeight: '700', color: colors.babyName, flexShrink: 1 },
     babyStage: {
       fontSize: 11, fontWeight: '600', color: '#fff',
       backgroundColor: colors.babyAccent, paddingHorizontal: spacing.sm, paddingVertical: 2,
@@ -321,7 +321,7 @@ export default function ProfileScreen() {
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </Text>
           </View>
-          <Text style={styles.email}>{user?.email || '未登录'}</Text>
+          <Text style={styles.email} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{user?.email || '未登录'}</Text>
         </View>
 
         {/* 多宝宝信息卡片 - 左右滑动；无宝宝时显示空态 */}
@@ -373,7 +373,7 @@ export default function ProfileScreen() {
                               <Ionicons name="help-circle-outline" size={48} color={colors.genderUnknown} style={{ marginBottom: spacing.sm }} />
                             )}
                             <View style={styles.babyNameRow}>
-                              <Text style={styles.babyName}>{item.name || '宝宝'}</Text>
+                              <Text style={styles.babyName} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.name || '宝宝'}</Text>
                               <Text style={styles.babyStage}>已出生</Text>
                             </View>
                           </View>
@@ -407,21 +407,21 @@ export default function ProfileScreen() {
                         <View style={styles.pregIcon}>
                           <Ionicons name="calendar-outline" size={20} color={colors.accent} />
                         </View>
-                        <Text style={styles.pregTitle}>{item.name || '宝宝'} 孕期信息</Text>
+                        <Text style={styles.pregTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.name || '宝宝'} 孕期信息</Text>
                       </View>
                       <View style={styles.pregRow}>
                         <Text style={styles.pregLabel}>当前阶段</Text>
-                        <Text style={styles.pregValue}>{calc.stageLabel}</Text>
+                        <Text style={styles.pregValue} maxFontSizeMultiplier={MAX_FONT_SCALE}>{calc.stageLabel}</Text>
                       </View>
                       <View style={styles.pregDivider} />
                       <View style={styles.pregRow}>
                         <Text style={styles.pregLabel}>当前孕周</Text>
-                        <Text style={styles.pregValue}>第 {calc.weeksPregnant} 周</Text>
+                        <Text style={styles.pregValue} maxFontSizeMultiplier={MAX_FONT_SCALE}>第 {calc.weeksPregnant} 周</Text>
                       </View>
                       <View style={styles.pregDivider} />
                       <View style={styles.pregRow}>
                         <Text style={styles.pregLabel}>预产期</Text>
-                        <Text style={styles.pregValue}>{item.dueDate || '-'}</Text>
+                        <Text style={styles.pregValue} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.dueDate || '-'}</Text>
                       </View>
                     </View>
                     </View>

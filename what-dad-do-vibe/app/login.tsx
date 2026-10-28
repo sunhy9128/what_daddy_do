@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/lib/supabase';
 
 import { useColors } from '../src/context/ThemeContext';
-import { spacing, radius, shadows, typography } from '../src/styles/tokens';
+import { spacing, radius, shadows, typography, MAX_FONT_SCALE } from '../src/styles/tokens';
 
 const DEFAULT_CODE = '0000';
 
@@ -34,7 +34,7 @@ export default function LoginScreen() {
 
   const styles = useMemo(() => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
   logoContainer: { alignItems: 'center', marginBottom: spacing.xxl },
   logo: { width: 80, height: 80, borderRadius: radius.lg, marginBottom: spacing.md },
   title: { ...typography.title1, color: colors.fg },
@@ -70,7 +70,7 @@ export default function LoginScreen() {
   codeInput: { flex: 1, marginBottom: 0 },
   codeBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
-    paddingHorizontal: spacing.md, height: 50,
+    paddingHorizontal: spacing.md, minHeight: 50, paddingVertical: spacing.sm,
     alignItems: 'center', justifyContent: 'center',
     minWidth: 96,
   },
@@ -188,11 +188,15 @@ export default function LoginScreen() {
       style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.logoContainer}>
           <Image source={require('../assets/icon.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.title}>爸爸去哪了</Text>
-          <Text style={styles.subtitle}>新手爸爸的育儿随军参谋</Text>
+          <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SCALE}>爸爸去哪了</Text>
+          <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>新手爸爸的育儿随军参谋</Text>
         </View>
 
         {/* 登录方式切换 */}
@@ -201,15 +205,15 @@ export default function LoginScreen() {
             style={[styles.modeBtn, mode === 'email' && styles.modeBtnActive]}
             onPress={() => setMode('email')}
           >
-            <Ionicons name="mail-outline" size={14} color={mode === 'email' ? '#fff' : colors.accent} />
-            <Text style={[styles.modeText, mode === 'email' && styles.modeTextActive]}>邮箱</Text>
+            <Ionicons name="mail-outline" size={14} color={mode === 'email' ? '#fff' : colors.accent} allowFontScaling={false} />
+            <Text style={[styles.modeText, mode === 'email' && styles.modeTextActive]} maxFontSizeMultiplier={MAX_FONT_SCALE}>邮箱</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modeBtn, mode === 'phone' && styles.modeBtnActive]}
             onPress={() => setMode('phone')}
           >
-            <Ionicons name="phone-portrait-outline" size={14} color={mode === 'phone' ? '#fff' : colors.accent} />
-            <Text style={[styles.modeText, mode === 'phone' && styles.modeTextActive]}>手机</Text>
+            <Ionicons name="phone-portrait-outline" size={14} color={mode === 'phone' ? '#fff' : colors.accent} allowFontScaling={false} />
+            <Text style={[styles.modeText, mode === 'phone' && styles.modeTextActive]} maxFontSizeMultiplier={MAX_FONT_SCALE}>手机</Text>
           </TouchableOpacity>
         </View>
 
@@ -239,7 +243,7 @@ export default function LoginScreen() {
                 onPress={handleEmailSubmit}
                 disabled={loading}
               >
-                <Text style={styles.buttonText}>
+                <Text style={styles.buttonText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                   {loading ? '请稍候...' : isSignUp ? '注册' : '登录'}
                 </Text>
               </TouchableOpacity>
@@ -270,7 +274,7 @@ export default function LoginScreen() {
                   onPress={handleSendCode}
                   disabled={codeSent}
                 >
-                  <Text style={[styles.codeBtnText, codeSent && styles.codeBtnTextDisabled]}>
+                  <Text style={[styles.codeBtnText, codeSent && styles.codeBtnTextDisabled]} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                     {codeSent ? `${countdown}s` : '获取验证码'}
                   </Text>
                 </TouchableOpacity>
@@ -280,7 +284,7 @@ export default function LoginScreen() {
                 onPress={handlePhoneSubmit}
                 disabled={loading}
               >
-                <Text style={styles.buttonText}>
+                <Text style={styles.buttonText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                   {loading ? '请稍候...' : '登录 / 注册'}
                 </Text>
               </TouchableOpacity>
@@ -289,14 +293,14 @@ export default function LoginScreen() {
 
           {mode === 'email' && (
             <View style={styles.switchRow}>
-              <Text style={styles.switchHint}>{isSignUp ? '已有账号？' : '没有账号？'}</Text>
+              <Text style={styles.switchHint} maxFontSizeMultiplier={MAX_FONT_SCALE}>{isSignUp ? '已有账号？' : '没有账号？'}</Text>
               <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
-                <Text style={styles.switchAction}>{isSignUp ? '登录' : '注册'}</Text>
+                <Text style={styles.switchAction} maxFontSizeMultiplier={MAX_FONT_SCALE}>{isSignUp ? '登录' : '注册'}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
